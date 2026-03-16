@@ -37,9 +37,10 @@ export default function Watchlist() {
     <div className="w-full flex flex-col gap-2">
       <p className="text-white/40 text-xs uppercase tracking-widest font-semibold px-1 mb-2">Din liste</p>
       {items.map(item => (
-        <div
+        <a
           key={item.id}
-          className="flex items-center gap-4 rounded-2xl p-3 cursor-pointer hover:bg-white/5 transition-all active:scale-98"
+          href={`/${item.media_type === 'movie' ? 'movie' : 'tv'}/${item.tmdb_id}`}
+          className="flex items-center gap-4 rounded-2xl p-3 hover:bg-white/5 transition-all active:scale-95 no-underline"
         >
           {item.poster ? (
             <img
@@ -68,7 +69,7 @@ export default function Watchlist() {
             </div>
           </div>
           <div className="text-white/20 text-xl flex-shrink-0">›</div>
-        </div>
+             </a>
       ))}
     </div>
   )
