@@ -9,7 +9,7 @@ export async function GET(request: Request) {
   }
 
   const response = await fetch(
-    `https://api.themoviedb.org/3/search/multi?query=${encodeURIComponent(query)}&language=da-DK&region=DK&include_adult=false`,
+    `https://api.themoviedb.org/3/search/multi?query=${encodeURIComponent(query)}&language=en-US&include_adult=false`,
     {
       headers: {
         Authorization: `Bearer ${process.env.TMDB_API_KEY}`,

@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import Search from './components/Search'
+import WatchlistProvider from './components/WatchlistProvider'
 
 export default async function Home() {
   const supabase = await createClient()
@@ -9,7 +9,7 @@ export default async function Home() {
   if (!user) redirect('/login')
 
   return (
-    <main className="min-h-screen bg-black flex flex-col items-center justify-center px-6 gap-8">
+    <main className="min-h-screen bg-black flex flex-col items-center justify-center px-6 gap-8 py-16">
       <div className="text-center">
         <h1 className="text-5xl font-extrabold tracking-tight text-white mb-3">
           Watched<span className="text-white/30">It</span>
@@ -18,7 +18,7 @@ export default async function Home() {
           Velkommen, {user.user_metadata.full_name} 👋
         </p>
       </div>
-      <Search />
+      <WatchlistProvider userName={user.user_metadata.full_name} />
     </main>
   )
 }

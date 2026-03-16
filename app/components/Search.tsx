@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 type Result = {
   tmdb_id: number
@@ -10,11 +10,33 @@ type Result = {
   poster: string | null
 }
 
-export default function Search() {
+export default function Search({ onAdd }: { onAdd?: () => void }) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Result[]>([])
   const [loading, setLoading] = useState(false)
   const [added, setAdded] = useState<number[]>([])
+  const [existingIds, setExistingIds] = useState<number[]>([])
+  const wrapperRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    fetch('/api/watchlist/list')
+      .then(res => res.json())
+      .then(data => {
+        const ids = (data.items || []).map((i: any) => i.tmdb_id)
+        setExistingIds(ids)
+      })
+  }, [])
+
+  // Luk liste ved klik udenfor
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setResults([])
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const search = async (q: string) => {
     setQuery(q)
@@ -38,15 +60,21 @@ export default function Search() {
 
     if (res.ok) {
       setAdded(prev => [...prev, item.tmdb_id])
+      setExistingIds(prev => [...prev, item.tmdb_id])
+      onAdd?.()
+      setTimeout(() => {
+        setResults([])
+      }, 325)
     }
   }
 
   return (
-    <div className="w-full max-w-md">
+    <div className="w-full max-w-md" ref={wrapperRef}>
       <input
         type="text"
         value={query}
         onChange={(e) => search(e.target.value)}
+        onFocus={() => query.length >= 2 && search(query)}
         placeholder="Søg efter film eller serie..."
         className="w-full bg-white/10 text-white placeholder-white/40 rounded-2xl px-5 py-4 text-base outline-none border border-white/10 focus:border-white/30 transition-all"
       />
@@ -58,9 +86,9 @@ export default function Search() {
           {results.map((item) => (
             <div
               key={item.tmdb_id}
-              onClick={() => !added.includes(item.tmdb_id) && addToList(item)}
+              onClick={() => !added.includes(item.tmdb_id) && !existingIds.includes(item.tmdb_id) && addToList(item)}
               className={`flex items-center gap-3 border rounded-2xl p-3 cursor-pointer transition-all ${
-                added.includes(item.tmdb_id)
+                added.includes(item.tmdb_id) || existingIds.includes(item.tmdb_id)
                   ? 'bg-green-500/10 border-green-500/30'
                   : 'bg-white/5 border-white/10 hover:bg-white/10'
               }`}
@@ -81,7 +109,7 @@ export default function Search() {
                 </p>
               </div>
               <div className="text-lg">
-                {added.includes(item.tmdb_id) ? '✓' : '+'}
+                {added.includes(item.tmdb_id) || existingIds.includes(item.tmdb_id) ? '✓' : '+'}
               </div>
             </div>
           ))}
