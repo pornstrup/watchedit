@@ -12,7 +12,7 @@ export default function WatchlistProvider({ userName }: { userName: string }) {
   }, [])
 
   return (
-    <div className="flex flex-col items-center gap-8 w-full">
+    <div className="w-full max-w-md flex flex-col gap-12">
       <Search onAdd={refresh} />
       <Watchlist key={refreshKey} />
     </div>

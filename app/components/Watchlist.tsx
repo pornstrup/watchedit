@@ -34,7 +34,7 @@ export default function Watchlist() {
   )
 
   return (
-    <div className="w-full max-w-md flex flex-col gap-3">
+    <div className="w-full flex flex-col gap-3">
       <p className="text-white/50 text-xs uppercase tracking-widest font-semibold">Din liste</p>
       {items.map(item => (
         <div

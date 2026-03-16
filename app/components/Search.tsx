@@ -69,7 +69,7 @@ export default function Search({ onAdd }: { onAdd?: () => void }) {
   }
 
   return (
-    <div className="w-full max-w-md" ref={wrapperRef}>
+    <div className="w-full relative" ref={wrapperRef}>
       <input
         type="text"
         value={query}
@@ -82,7 +82,7 @@ export default function Search({ onAdd }: { onAdd?: () => void }) {
         <p className="text-white/40 text-sm mt-3 text-center">Søger...</p>
       )}
       {results.length > 0 && (
-        <div className="mt-3 flex flex-col gap-2">
+        <div className="absolute top-full left-0 right-0 mt-2 flex flex-col gap-2 z-50">
           {results.map((item) => (
             <div
               key={item.tmdb_id}
