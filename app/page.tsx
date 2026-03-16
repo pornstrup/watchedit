@@ -9,16 +9,10 @@ export default async function Home() {
   if (!user) redirect('/login')
 
   return (
-    <main className="min-h-screen bg-black flex flex-col items-center px-6 pt-16 pb-8 gap-8">
-      <div className="text-center w-full max-w-md">
-        <h1 className="text-5xl font-extrabold tracking-tight text-white mb-3">
-          Watched<span className="text-white/30">It</span>
-        </h1>
-        <p className="text-white/50 text-lg">
-          Velkommen, {user.user_metadata.full_name} 👋
-        </p>
+    <main className="min-h-screen bg-black flex flex-col items-center">
+      <div className="w-full max-w-md px-6 flex flex-col pt-14">
+        <WatchlistProvider userName={user.user_metadata.full_name} />
       </div>
-      <WatchlistProvider userName={user.user_metadata.full_name} />
     </main>
   )
 }

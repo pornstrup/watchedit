@@ -26,39 +26,48 @@ export default function Watchlist() {
   }, [])
 
   if (loading) return (
-    <p className="text-white/40 text-sm">Henter din liste...</p>
+    <p className="text-white/40 text-sm text-center py-8">Henter din liste...</p>
   )
 
   if (items.length === 0) return (
-    <p className="text-white/40 text-sm">Din liste er tom – søg efter noget at se!</p>
+    <p className="text-white/40 text-sm text-center py-8">Din liste er tom – søg efter noget at se!</p>
   )
 
   return (
-    <div className="w-full flex flex-col gap-3">
-      <p className="text-white/50 text-xs uppercase tracking-widest font-semibold">Din liste</p>
+    <div className="w-full flex flex-col gap-2">
+      <p className="text-white/40 text-xs uppercase tracking-widest font-semibold px-1 mb-2">Din liste</p>
       {items.map(item => (
         <div
           key={item.id}
-          className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl p-3"
+          className="flex items-center gap-4 rounded-2xl p-3 cursor-pointer hover:bg-white/5 transition-all active:scale-98"
         >
           {item.poster ? (
             <img
               src={item.poster}
               alt={item.title}
-              className="w-12 h-16 rounded-lg object-cover flex-shrink-0"
+              className="w-14 h-20 rounded-xl object-cover flex-shrink-0 shadow-lg"
             />
           ) : (
-            <div className="w-12 h-16 rounded-lg bg-white/10 flex-shrink-0" />
+            <div className="w-14 h-20 rounded-xl bg-white/8 flex-shrink-0" />
           )}
-          <div>
-            <p className="text-white font-semibold text-sm">{item.title}</p>
-            <p className="text-white/40 text-xs">
-              {item.media_type === 'tv' ? 'Serie' : 'Film'} {item.year && `· ${item.year}`}
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-semibold text-base leading-tight mb-1 truncate">{item.title}</p>
+            <p className="text-white/40 text-sm">
+              {item.media_type === 'tv' ? 'Serie' : 'Film'}{item.year && ` · ${item.year}`}
             </p>
-            <p className="text-white/30 text-xs mt-1">
-              {item.status === 'want' ? 'Vil se' : item.status === 'watching' ? 'I gang' : 'Set'}
-            </p>
+            <div className="mt-2">
+              <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                    item.status === 'watching'
+                    ? 'bg-white/10 text-green-400/70'
+                    : item.status === 'done'
+                    ? 'bg-white/10 text-white/40'
+                    : 'bg-white/10 text-white/40'
+                }`}>
+                {item.status === 'want' ? 'Vil se' : item.status === 'watching' ? 'I gang' : 'Set'}
+              </span>
+            </div>
           </div>
+          <div className="text-white/20 text-xl flex-shrink-0">›</div>
         </div>
       ))}
     </div>
