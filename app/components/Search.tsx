@@ -14,6 +14,7 @@ export default function Search() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Result[]>([])
   const [loading, setLoading] = useState(false)
+  const [added, setAdded] = useState<number[]>([])
 
   const search = async (q: string) => {
     setQuery(q)
@@ -23,6 +24,21 @@ export default function Search() {
     const data = await res.json()
     setResults(data.results || [])
     setLoading(false)
+  }
+
+  const addToList = async (item: Result) => {
+    const res = await fetch('/api/watchlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        tmdb_id: item.tmdb_id,
+        media_type: item.media_type,
+      })
+    })
+
+    if (res.ok) {
+      setAdded(prev => [...prev, item.tmdb_id])
+    }
   }
 
   return (
@@ -42,7 +58,12 @@ export default function Search() {
           {results.map((item) => (
             <div
               key={item.tmdb_id}
-              className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl p-3 cursor-pointer hover:bg-white/10 transition-all"
+              onClick={() => !added.includes(item.tmdb_id) && addToList(item)}
+              className={`flex items-center gap-3 border rounded-2xl p-3 cursor-pointer transition-all ${
+                added.includes(item.tmdb_id)
+                  ? 'bg-green-500/10 border-green-500/30'
+                  : 'bg-white/5 border-white/10 hover:bg-white/10'
+              }`}
             >
               {item.poster ? (
                 <img
@@ -53,11 +74,14 @@ export default function Search() {
               ) : (
                 <div className="w-10 h-14 rounded-lg bg-white/10 flex-shrink-0" />
               )}
-              <div>
+              <div className="flex-1">
                 <p className="text-white font-semibold text-sm">{item.title}</p>
                 <p className="text-white/40 text-xs">
                   {item.media_type === 'tv' ? 'Serie' : 'Film'} {item.year && `· ${item.year}`}
                 </p>
+              </div>
+              <div className="text-lg">
+                {added.includes(item.tmdb_id) ? '✓' : '+'}
               </div>
             </div>
           ))}
