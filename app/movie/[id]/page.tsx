@@ -14,6 +14,15 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
   )
   const movie = await res.json()
 
+  const providersRes = await fetch(
+  `https://api.themoviedb.org/3/movie/${id}/watch/providers`,
+  { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` } }
+)
+const providersData = await providersRes.json()
+const providers = providersData.results?.DK?.flatrate || []
+
+ // console.log('Providers for', id, ':', JSON.stringify(providersData.results?.DK))
+
   const { data: item } = await supabase
     .from('watchlist_items')
     .select('*')
@@ -60,6 +69,25 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
   <div className="mb-6">
     <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-3">Status</p>
     <StatusButtons itemId={item.id} initialStatus={item.status as 'want' | 'watching' | 'done'} />
+  </div>
+)}
+
+{/* STREAMING */}
+{providers.length > 0 && (
+  <div className="mb-6">
+    <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-3">Hvor kan du se den</p>
+    <div className="flex gap-3 flex-wrap">
+      {providers.map((p: any) => (
+        <div key={p.provider_id} className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
+          <img
+            src={`https://image.tmdb.org/t/p/w45${p.logo_path}`}
+            alt={p.provider_name}
+            className="w-6 h-6 rounded-md"
+          />
+          <span className="text-white/70 text-sm font-medium">{p.provider_name}</span>
+        </div>
+      ))}
+    </div>
   </div>
 )}
 
