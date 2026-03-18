@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
+import BottomNav from './components/BottomNav'
 
 export const metadata: Metadata = {
   title: 'WatchedIt',
@@ -15,6 +16,7 @@ export default function RootLayout({
     <html lang="da">
       <body style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif' }}>
         {children}
+        <BottomNav />
       </body>
     </html>
   )
