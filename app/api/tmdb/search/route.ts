@@ -19,7 +19,7 @@ export async function GET(request: Request) {
   const responses = await Promise.all(
     endpoints.map(t =>
       fetch(
-        `https://api.themoviedb.org/3/search/${t}?query=${encodeURIComponent(query)}&language=da-DK&include_adult=false`,
+        `https://api.themoviedb.org/3/search/${t}?query=${encodeURIComponent(query)}&language=en-US&include_adult=false`,
         { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` } }
       ).then(r => r.json()).then(d => (d.results || []).map((i: any) => ({ ...i, media_type: t })))
     )

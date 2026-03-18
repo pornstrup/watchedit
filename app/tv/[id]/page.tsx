@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import StatusButtons from '../../components/StatusButtons'
 import EpisodeTracker from '../../components/EpisodeTracker'
 import PageTransition from '../../components/PageTransition'
-
+import BackButton from '../../components/BackButton'
 
 export default async function TVPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -56,8 +56,8 @@ export default async function TVPage({ params }: { params: Promise<{ id: string 
           <img src={backdrop} alt={show.name} className="w-full h-full object-cover opacity-40" />
         )}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black" />
-        <a href="/" className="absolute top-14 left-6 text-white/60 text-sm font-medium">← Tilbage</a>
-      </div>
+        <BackButton />
+        </div>
 
       {/* INDHOLD */}
       <div className="px-6 -mt-16 relative">

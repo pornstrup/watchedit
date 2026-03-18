@@ -12,27 +12,8 @@ type Result = {
   genre_ids: number[]
 }
 
-// Danske genre-navne
-const GENRES: { id: number; name: string }[] = [
-  { id: 28, name: 'Action' },
-  { id: 35, name: 'Komedie' },
-  { id: 18, name: 'Drama' },
-  { id: 27, name: 'Gyser' },
-  { id: 10749, name: 'Romantik' },
-  { id: 878, name: 'Sci-fi' },
-  { id: 99, name: 'Dokumentar' },
-  { id: 16, name: 'Animation' },
-  { id: 53, name: 'Thriller' },
-  { id: 10751, name: 'Familie' },
-]
-
-const PLATFORMS = [
-  { id: 8, name: 'Netflix' },
-  { id: 119, name: 'Prime' },
-  { id: 337, name: 'Disney+' },
-  { id: 384, name: 'HBO' },
-  { id: 283, name: 'Crunchyroll' },
-]
+type Genre = { id: number; name: string }
+type Provider = { id: number; name: string; logo: string }
 
 const TYPES = [
   { value: null, label: 'Alle' },
@@ -43,22 +24,43 @@ const TYPES = [
 export default function SearchPage() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Result[]>([])
-  const [trending, setTrending] = useState<Result[]>([])
+  const [discoverResults, setDiscoverResults] = useState<Result[]>([])
+  const [genres, setGenres] = useState<Genre[]>([])
+  const [providers, setProviders] = useState<Provider[]>([])
   const [loading, setLoading] = useState(false)
-  const [trendingLoading, setTrendingLoading] = useState(true)
+  const [discoverLoading, setDiscoverLoading] = useState(true)
   const [selectedType, setSelectedType] = useState<string | null>(null)
   const [selectedGenre, setSelectedGenre] = useState<number | null>(null)
-  const [selectedPlatform, setSelectedPlatform] = useState<number | null>(null)
+  const [selectedProvider, setSelectedProvider] = useState<number | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Hent genres + providers ved load
   useEffect(() => {
-    fetch('/api/tmdb/trending')
+    Promise.all([
+      fetch('/api/tmdb/genres').then(r => r.json()),
+      fetch('/api/tmdb/providers').then(r => r.json()),
+    ]).then(([g, p]) => {
+      setGenres(g.genres || [])
+      setProviders(p.providers || [])
+    })
+  }, [])
+
+  // Hent discover resultater når filtre ændres
+  useEffect(() => {
+    if (query.length >= 2) return // Søge-mode, skip discover
+    setDiscoverLoading(true)
+    const params = new URLSearchParams()
+    if (selectedType) params.set('type', selectedType)
+    if (selectedGenre) params.set('genre', String(selectedGenre))
+    if (selectedProvider) params.set('provider', String(selectedProvider))
+
+    fetch(`/api/tmdb/discover?${params}`)
       .then(r => r.json())
       .then(d => {
-        setTrending(d.results || [])
-        setTrendingLoading(false)
+        setDiscoverResults(d.results || [])
+        setDiscoverLoading(false)
       })
-  }, [])
+  }, [selectedType, selectedGenre, selectedProvider, query])
 
   const search = async (q: string) => {
     setQuery(q)
@@ -76,22 +78,19 @@ export default function SearchPage() {
     }, 300)
   }
 
-  // Re-søg når filtre ændres
+  // Re-søg når filtre ændres i søge-mode
   useEffect(() => {
     if (query.length >= 2) search(query)
   }, [selectedType, selectedGenre])
 
-  // Filtrér trending på valgte filtre (client-side)
-  const filteredTrending = trending
-    .filter(i => !selectedType || i.media_type === selectedType)
-    .filter(i => !selectedGenre || i.genre_ids.includes(selectedGenre))
-
   const showResults = query.length >= 2
-  const displayItems = showResults ? results : filteredTrending
+  const displayItems = showResults ? results : discoverResults
+  const isLoading = showResults ? loading : discoverLoading
+
+  const clearFilters = selectedType || selectedGenre || selectedProvider
 
   return (
     <div className="w-full">
-      {/* TITEL */}
       <h1 className="text-white text-2xl font-bold mb-5">Søg</h1>
 
       {/* SØGEFELT */}
@@ -111,7 +110,7 @@ export default function SearchPage() {
           {TYPES.map(t => (
             <button
               key={String(t.value)}
-              onClick={() => setSelectedType(t.value)}
+              onClick={() => setSelectedType(selectedType === t.value ? null : t.value)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
                 selectedType === t.value
                   ? 'bg-white text-black'
@@ -123,61 +122,78 @@ export default function SearchPage() {
           ))}
         </div>
 
-        {/* Genre */}
-        <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
-          {GENRES.map(g => (
-            <button
-              key={g.id}
-              onClick={() => setSelectedGenre(selectedGenre === g.id ? null : g.id)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                selectedGenre === g.id
-                  ? 'bg-white text-black'
-                  : 'bg-white/8 text-white/50 hover:bg-white/15'
-              }`}
-            >
-              {g.name}
-            </button>
-          ))}
-        </div>
+        {/* Platforme med logoer */}
+        {providers.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
+            {providers.map(p => (
+              <button
+                key={p.id}
+                onClick={() => setSelectedProvider(selectedProvider === p.id ? null : p.id)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
+                  selectedProvider === p.id
+                    ? 'bg-white text-black'
+                    : 'bg-white/8 text-white/50 hover:bg-white/15'
+                }`}
+              >
+                <img src={p.logo} alt={p.name} className="w-4 h-4 rounded-sm" />
+                {p.name}
+              </button>
+            ))}
+          </div>
+        )}
 
-        {/* Platform */}
-        <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
-          {PLATFORMS.map(p => (
-            <button
-              key={p.id}
-              onClick={() => setSelectedPlatform(selectedPlatform === p.id ? null : p.id)}
-              className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-                selectedPlatform === p.id
-                  ? 'bg-white text-black'
-                  : 'bg-white/8 text-white/50 hover:bg-white/15'
-              }`}
-            >
-              {p.name}
-            </button>
-          ))}
-        </div>
+        {/* Genres */}
+        {genres.length > 0 && (
+          <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
+            {genres.map(g => (
+              <button
+                key={g.id}
+                onClick={() => setSelectedGenre(selectedGenre === g.id ? null : g.id)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
+                  selectedGenre === g.id
+                    ? 'bg-white text-black'
+                    : 'bg-white/8 text-white/50 hover:bg-white/15'
+                }`}
+              >
+                {g.name}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* Ryd filtre */}
+        {clearFilters && (
+          <button
+            onClick={() => {
+              setSelectedType(null)
+              setSelectedGenre(null)
+              setSelectedProvider(null)
+            }}
+            className="text-white/40 text-xs self-start hover:text-white/70 transition-colors"
+          >
+            Ryd filtre ×
+          </button>
+        )}
       </div>
 
       {/* LABEL */}
       {!showResults && (
         <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-3">
-          Populært i Danmark
+          {selectedProvider || selectedGenre ? 'Resultater' : 'Populært i Danmark'}
         </p>
       )}
 
       {/* RESULTATER */}
       <AnimatePresence mode="wait">
-        {loading ? (
-          <p className="text-white/40 text-sm text-center py-8">Søger...</p>
-        ) : trendingLoading && !showResults ? (
-          <div className="flex flex-col gap-2">
+        {isLoading ? (
+          <div key="skeleton" className="flex flex-col gap-2">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="h-20 rounded-2xl bg-white/5 animate-pulse" />
             ))}
           </div>
         ) : displayItems.length > 0 ? (
           <motion.div
-            key={showResults ? 'search' : 'trending'}
+            key={`${showResults ? 'search' : 'discover'}-${selectedType}-${selectedGenre}-${selectedProvider}`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -214,7 +230,7 @@ export default function SearchPage() {
             ))}
           </motion.div>
         ) : (
-          <p className="text-white/40 text-sm text-center py-8">
+          <p key="empty" className="text-white/40 text-sm text-center py-8">
             {showResults ? `Ingen resultater for "${query}"` : 'Ingen resultater'}
           </p>
         )}

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import StatusButtons from '../../components/StatusButtons'
 import PageTransition from '../../components/PageTransition'
+import BackButton from '@/app/components/BackButton'
 
 export default async function MoviePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -47,8 +48,8 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
             <img src={backdrop} alt={movie.title} className="w-full h-full object-cover opacity-40" />
           )}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black" />
-          <a href="/" className="absolute top-14 left-6 text-white/60 text-sm font-medium">← Tilbage</a>
-        </div>
+            <BackButton />
+            </div>
 
         {/* INDHOLD */}
         <div className="px-6 -mt-16 relative">

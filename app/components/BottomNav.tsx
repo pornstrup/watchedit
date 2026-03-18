@@ -1,14 +1,14 @@
 'use client'
 
 import { usePathname } from 'next/navigation'
-import { Tv2, Compass, Search, User } from 'lucide-react'
+import { Tv2, Search, User } from 'lucide-react'
 
 export default function BottomNav() {
   const pathname = usePathname()
 
   const items = [
     { href: '/', icon: Tv2, label: 'Min liste' },
-    { href: '/discover', icon: Compass, label: 'Opdag' },
+   // { href: '/discover', icon: Compass, label: 'Opdag' },
     { href: '/search', icon: Search, label: 'Søg' },
     { href: '/profile', icon: User, label: 'Profil' },
   ]
