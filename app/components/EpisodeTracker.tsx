@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { motion } from 'framer-motion'
 
 type Season = {
   season_number: number
@@ -34,18 +35,15 @@ export default function EpisodeTracker({
 }) {
   const [activeSeason, setActiveSeason] = useState(seasons[0]?.season_number || 1)
   const [episodes, setEpisodes] = useState<Episode[]>([])
-  const [loading, setLoading] = useState(true)
   const [watched, setWatched] = useState<Set<string>>(
     new Set(progress.map(p => `${p.season_number}-${p.episode_number}`))
   )
 
   useEffect(() => {
-    setLoading(true)
     fetch(`/api/tmdb/season?showId=${showId}&season=${activeSeason}`)
       .then(res => res.json())
       .then(data => {
         setEpisodes(data.episodes || [])
-        setLoading(false)
       })
   }, [activeSeason, showId])
 
@@ -89,17 +87,19 @@ export default function EpisodeTracker({
       {/* SÆSON TABS */}
       <div className="flex gap-2 mb-4 overflow-x-auto scrollbar-none pb-1">
         {seasons.map(s => (
-          <button
+          <motion.button
             key={s.season_number}
             onClick={() => setActiveSeason(s.season_number)}
             className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
               activeSeason === s.season_number
-                ? 'bg-white text-black'
-                : 'bg-white/8 text-white/50'
+                ? 'bg-white text-black shadow-lg'
+                : 'bg-white/8 text-white/50 hover:bg-white/20'
             }`}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
           >
             S{s.season_number}
-          </button>
+          </motion.button>
         ))}
       </div>
 
@@ -108,22 +108,43 @@ export default function EpisodeTracker({
         {watchedInSeason} af {currentSeason?.episode_count || 0} episoder set
       </p>
 
-      {/* EPISODE GRID */}
-      {loading ? (
-        <p className="text-white/30 text-sm py-4">Henter episoder...</p>
-      ) : (
-        <div className="grid grid-cols-6 gap-2 mb-4">
-          {episodes.map(ep => {
+      {/* EPISODE GRID – **PERFEKT FADE FØRST → SCALE SENERE** */}
+      <motion.div 
+        key={`season-${activeSeason}`}
+        className="grid grid-cols-6 gap-2 mb-4"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6 }}
+      >
+        {episodes.length === 0 ? (
+          Array.from({ length: 24 }).map((_, i) => (
+            <div
+              key={`skeleton-${i}`}
+              className="relative rounded-2xl overflow-hidden aspect-video border border-white/8 bg-gradient-to-r from-white/5 to-white/10 animate-pulse"
+            />
+          ))
+        ) : (
+          episodes.map(ep => {
             const isWatched = watched.has(`${activeSeason}-${ep.episode_number}`)
             return (
-              <div
+              <motion.div
                 key={ep.episode_number}
-                onClick={() => toggleEpisode(activeSeason, ep.episode_number)}
+                initial={{ opacity: 0 }}
+                animate={{ 
+                  opacity: 1,
+                  scale: 1 
+                }}
+                transition={{ 
+                  opacity: { duration: 0.6 },      // LANGT fade først
+                  scale: { duration: 0.3, delay: 0.2 }  // KORT scale EFTER fade
+                }}
                 className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all active:scale-95 aspect-video border ${
                   isWatched
                     ? 'border-white/20 opacity-40'
-                    : 'border-white/8'
+                    : 'border-white/8 hover:border-white/20'
                 }`}
+                onClick={() => toggleEpisode(activeSeason, ep.episode_number)}
+                whileHover={{ scale: 1.02 }}
               >
                 {ep.still_path ? (
                   <img
@@ -144,19 +165,21 @@ export default function EpisodeTracker({
                     <span className="text-white text-2xl">✓</span>
                   </div>
                 )}
-              </div>
+              </motion.div>
             )
-          })}
-        </div>
-      )}
+          })
+        )}
+      </motion.div>
 
       {/* MARKER SÆSON */}
-      <button
+      <motion.button
         onClick={() => markSeasonWatched(activeSeason, currentSeason?.episode_count || 0)}
         className="w-full py-2.5 rounded-2xl bg-white/5 border border-white/10 text-white/50 text-sm font-medium hover:bg-white/10 transition-all"
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.98 }}
       >
         Marker hele sæsonen som set
-      </button>
+      </motion.button>
     </div>
   )
 }
