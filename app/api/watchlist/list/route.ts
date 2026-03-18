@@ -32,6 +32,37 @@ export async function GET() {
       )
       const tmdb = await res.json()
 
+      // **PROGRESS FOR TV-SERIER**
+      let progress = null
+      if (item.media_type === 'tv' && item.status === 'watching') {
+        try {
+          const tvRes = await fetch(
+            `https://api.themoviedb.org/3/tv/${item.tmdb_id}?language=en-US`,
+            {
+              headers: {
+                Authorization: `Bearer ${process.env.TMDB_API_KEY}`,
+              },
+            }
+          )
+          const tvData = await tvRes.json()
+          const totalEpisodes = tvData.number_of_episodes || 0
+
+          const { count: watchedCount } = await supabase
+            .from('watchlist_episodes')
+            .select('*', { count: 'exact', head: true })
+            .eq('watchlist_item_id', item.id)
+
+          if (totalEpisodes > 0) {
+            progress = {
+              total_episodes: totalEpisodes,
+              watched_episodes: watchedCount || 0
+            }
+          }
+        } catch (err) {
+          console.log('Progress error:', err)
+        }
+      }
+
       return {
         ...item,
         title: tmdb.title || tmdb.name,
@@ -39,6 +70,7 @@ export async function GET() {
           ? `https://image.tmdb.org/t/p/w300${tmdb.poster_path}`
           : null,
         year: (tmdb.release_date || tmdb.first_air_date)?.split('-')[0],
+        progress,
       }
     })
   )

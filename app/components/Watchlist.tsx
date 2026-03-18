@@ -11,6 +11,10 @@ type WatchlistItem = {
   title: string
   poster: string | null
   year?: string
+  progress?: {
+    total_episodes: number
+    watched_episodes: number
+  }
 }
 
 const item = {
@@ -48,6 +52,29 @@ const WatchlistItems = ({ items }: { items: WatchlistItem[] }) => (
           <p className="text-white/40 text-sm">
             {item_.media_type === 'tv' ? 'Serie' : 'Film'}{item_.year && ` · ${item_.year}`}
           </p>
+          
+          {/* **PROCENT-CIRKEL** */}
+          {item_.media_type === 'tv' && item_.progress && item_.status === 'watching' && (
+            <div className="mt-1 flex items-center gap-2">
+              <div className="flex gap-0.5">
+                {Array.from({ length: 5 }).map((_, i) => {
+                  const percentage = (item_.progress!.watched_episodes || 0) / item_.progress!.total_episodes
+                  const filledDots = Math.ceil(percentage * 5)
+                  return (
+                    <span
+                      key={i}
+                      className={`w-2 h-2 rounded-full transition-all ${
+                        i < filledDots ? 'bg-emerald-400 scale-110' : 'bg-white/20'
+                      }`}
+                    />
+                  )
+                })}
+              </div>
+              <span className="text-emerald-400/80 text-xs font-medium">
+                {Math.round(((item_.progress!.watched_episodes || 0) / item_.progress!.total_episodes) * 100)}%
+              </span>
+            </div>
+          )}
         </div>
         <div className="text-white/20 text-xl flex-shrink-0">›</div>
       </motion.a>
@@ -76,14 +103,12 @@ export default function Watchlist() {
     <p className="text-white/40 text-sm text-center py-8">Din liste er tom – søg efter noget at se!</p>
   )
 
-  // GRUPPER efter status
   const wantItems = items.filter(item => item.status === 'want')
   const watchingItems = items.filter(item => item.status === 'watching')
   const doneItems = items.filter(item => item.status === 'done')
 
   return (
     <div className="w-full flex flex-col space-y-8">
-      {/* VIL SE */}
       {wantItems.length > 0 && (
         <section>
           <h3 className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-4">
@@ -93,7 +118,6 @@ export default function Watchlist() {
         </section>
       )}
 
-      {/* I GANG */}
       {watchingItems.length > 0 && (
         <section>
           <h3 className="text-emerald-400/80 text-xs uppercase tracking-widest font-semibold mb-4">
@@ -103,7 +127,6 @@ export default function Watchlist() {
         </section>
       )}
 
-      {/* SET */}
       {doneItems.length > 0 && (
         <section>
           <h3 className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-4">
