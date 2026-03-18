@@ -48,7 +48,7 @@ export async function GET() {
           const totalEpisodes = tvData.number_of_episodes || 0
 
           const { count: watchedCount } = await supabase
-            .from('watchlist_episodes')
+            .from('episode_progress')
             .select('*', { count: 'exact', head: true })
             .eq('watchlist_item_id', item.id)
 
