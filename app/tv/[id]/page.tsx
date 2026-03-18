@@ -46,7 +46,7 @@ export default async function TVPage({ params }: { params: Promise<{ id: string 
   const seasons = show.seasons?.filter((s: any) => s.season_number > 0) || []
 
   return (
-    <main className="min-h-screen bg-black">
+    <main className="min-h-screen bg-black pb-24">
 
       {/* HERO */}
       <div className="relative h-72 overflow-hidden">
