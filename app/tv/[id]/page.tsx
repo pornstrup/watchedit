@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import StatusButtons from '../../components/StatusButtons'
 import EpisodeTracker from '../../components/EpisodeTracker'
+import PageTransition from '../../components/PageTransition'
+
 
 export default async function TVPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -47,7 +49,7 @@ export default async function TVPage({ params }: { params: Promise<{ id: string 
 
   return (
     <main className="min-h-screen bg-black pb-24">
-
+    <PageTransition>  {/* ← NY */}
       {/* HERO */}
       <div className="relative h-72 overflow-hidden">
         {backdrop && (
@@ -118,6 +120,7 @@ export default async function TVPage({ params }: { params: Promise<{ id: string 
 
         
       </div>
+      </PageTransition>  {/* ← NY */}  
     </main>
   )
 }

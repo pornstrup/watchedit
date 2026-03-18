@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 
 type WatchlistItem = {
   id: string
@@ -10,6 +11,11 @@ type WatchlistItem = {
   title: string
   poster: string | null
   year?: string
+}
+
+const item = {
+  hidden: { opacity: 0, y: 12 },
+  show: { opacity: 1, y: 0 },
 }
 
 export default function Watchlist() {
@@ -36,41 +42,48 @@ export default function Watchlist() {
   return (
     <div className="w-full flex flex-col gap-2">
       <p className="text-white/40 text-xs uppercase tracking-widest font-semibold px-1 mb-2">Din liste</p>
-      {items.map(item => (
-        <a
-          key={item.id}
-          href={`/${item.media_type === 'movie' ? 'movie' : 'tv'}/${item.tmdb_id}`}
-          className="flex items-center gap-4 rounded-2xl p-3 hover:bg-white/5 transition-all active:scale-95 no-underline"
-        >
-          {item.poster ? (
-            <img
-              src={item.poster}
-              alt={item.title}
-              className="w-14 h-20 rounded-xl object-cover flex-shrink-0 shadow-lg"
-            />
-          ) : (
-            <div className="w-14 h-20 rounded-xl bg-white/8 flex-shrink-0" />
-          )}
-          <div className="flex-1 min-w-0">
-            <p className="text-white font-semibold text-base leading-tight mb-1 truncate">{item.title}</p>
-            <p className="text-white/40 text-sm">
-              {item.media_type === 'tv' ? 'Serie' : 'Film'}{item.year && ` · ${item.year}`}
-            </p>
-            <div className="mt-2">
-              <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                    item.status === 'watching'
-                    ? 'bg-white/10 text-green-400/70'
-                    : item.status === 'done'
-                    ? 'bg-white/10 text-white/40'
-                    : 'bg-white/10 text-white/40'
-                }`}>
-                {item.status === 'want' ? 'Vil se' : item.status === 'watching' ? 'I gang' : 'Set'}
-              </span>
-            </div>
-          </div>
-          <div className="text-white/20 text-xl flex-shrink-0">›</div>
-             </a>
-      ))}
+      <motion.div
+        className="flex flex-col gap-2"
+        variants={{ show: { transition: { staggerChildren: 0.06 } } }}
+        initial="hidden"
+        animate="show"
+      >
+        {items.map(item_ => {
+            return (
+                <motion.a
+                    key={item_.id}
+                    href={`/${item_.media_type === 'movie' ? 'movie' : 'tv'}/${item_.tmdb_id}`}
+                    variants={item}
+                    transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+                    whileTap={{ scale: 0.97 }}
+                    className="flex items-center gap-4 rounded-2xl p-3 hover:bg-white/5 transition-colors no-underline"
+                >
+                    {item_.poster ? (
+                        <img
+                            src={item_.poster}
+                            alt={item_.title}
+                            className="w-14 h-20 rounded-xl object-cover flex-shrink-0 shadow-lg" />
+                    ) : (
+                        <div className="w-14 h-20 rounded-xl bg-white/8 flex-shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                        <p className="text-white font-semibold text-base leading-tight mb-1 truncate">{item_.title}</p>
+                        <p className="text-white/40 text-sm">
+                            {item_.media_type === 'tv' ? 'Serie' : 'Film'}{item_.year && ` · ${item_.year}`}
+                        </p>
+                        <div className="mt-2">
+                            <span className={`text-xs font-semibold px-2 py-1 rounded-full ${item_.status === 'watching'
+                                    ? 'bg-white/10 text-green-400/70'
+                                    : 'bg-white/10 text-white/40'}`}>
+                                {item_.status === 'want' ? 'Vil se' : item_.status === 'watching' ? 'I gang' : 'Set'}
+                            </span>
+                        </div>
+                    </div>
+                    <div className="text-white/20 text-xl flex-shrink-0">›</div>
+                </motion.a>
+            )
+        })}
+      </motion.div>
     </div>
   )
 }
