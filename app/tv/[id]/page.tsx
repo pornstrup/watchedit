@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import StatusButtons from '../../components/StatusButtons'
-import EpisodeTracker from '../../components/EpisodeTracker'
+import TVDetailClient from '../../components/TVDetailClient'
 import PageTransition from '../../components/PageTransition'
 import BackButton from '../../components/BackButton'
 import RemoveFromList from '../../components/RemoveFromList'
@@ -32,6 +31,7 @@ export default async function TVPage({ params }: { params: Promise<{ id: string 
     .eq('owner_id', user.id)
     .eq('tmdb_id', id)
     .eq('media_type', 'tv')
+    .is('deleted_at', null)
     .single()
 
   const { data: episodeProgress } = await supabase
@@ -50,7 +50,6 @@ export default async function TVPage({ params }: { params: Promise<{ id: string 
   const seasons = show.seasons?.filter((s: any) => s.season_number > 0) || []
 
   return (
-    
     <main className="min-h-screen bg-black pb-24">
       <StickyHeader title={show.name} />
       <PageTransition>
@@ -75,53 +74,15 @@ export default async function TVPage({ params }: { params: Promise<{ id: string 
           </div>
 
           {item && (
-            <div className="mb-6">
-              <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-3">Status</p>
-              <StatusButtons itemId={item.id} initialStatus={item.status as 'want' | 'watching' | 'done'} />
-            </div>
-          )}
-
-          {providers.length > 0 && (
-            <div className="mb-6">
-              <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-3">Hvor kan du se den</p>
-              <div className="flex gap-3 flex-wrap">
-                {providers.map((p: any) => (
-                  <div
-  key={p.provider_id}
-  className="flex items-center gap-2 rounded-xl px-3 py-2"
-  style={{
-    background: 'rgba(255, 255, 255, 0.07)',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-    border: '1px solid rgba(255, 255, 255, 0.12)',
-    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.08)',
-  }}
->
-  <img src={`https://image.tmdb.org/t/p/w45${p.logo_path}`} alt={p.provider_name} className="w-6 h-6 rounded-md" />
-  <span className="text-white/70 text-sm font-medium">{p.provider_name}</span>
-</div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {show.overview && (
-            <div className="mb-6">
-              <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-2">Handling</p>
-              <p className="text-white/60 text-sm leading-relaxed">{show.overview}</p>
-            </div>
-          )}
-
-          {item && seasons.length > 0 && (
-            <div className="mb-6">
-              <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-3">Episoder</p>
-              <EpisodeTracker
-                itemId={item.id}
-                seasons={seasons}
-                progress={episodeProgress || []}
-                showId={id}
-              />
-            </div>
+            <TVDetailClient
+              item={{ id: item.id }}
+              seasons={seasons}
+              episodeProgress={episodeProgress || []}
+              showId={id}
+              initialStatus={item.status}
+              providers={providers}
+              overview={show.overview}
+            />
           )}
 
           {item && (

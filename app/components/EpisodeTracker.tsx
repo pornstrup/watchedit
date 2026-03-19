@@ -26,12 +26,16 @@ export default function EpisodeTracker({
   itemId,
   seasons,
   progress,
-  showId
+  showId,
+  currentStatus,
+  onStatusChange,
 }: {
   itemId: string
   seasons: Season[]
   progress: Progress[]
   showId: string
+  currentStatus: string
+  onStatusChange?: (status: string) => void
 }) {
   const [activeSeason, setActiveSeason] = useState(seasons[0]?.season_number || 1)
   const [episodes, setEpisodes] = useState<Episode[]>([])
@@ -42,9 +46,7 @@ export default function EpisodeTracker({
   useEffect(() => {
     fetch(`/api/tmdb/season?showId=${showId}&season=${activeSeason}`)
       .then(res => res.json())
-      .then(data => {
-        setEpisodes(data.episodes || [])
-      })
+      .then(data => setEpisodes(data.episodes || []))
   }, [activeSeason, showId])
 
   const toggleEpisode = async (season: number, episode: number) => {
@@ -63,6 +65,16 @@ export default function EpisodeTracker({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ watchlist_item_id: itemId, season_number: season, episode_number: episode })
     })
+
+    // Auto-sæt til "I gang" hvis status er "want"
+    if (!isWatched && currentStatus === 'want') {
+      await fetch('/api/watchlist/status', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: itemId, status: 'watching' })
+      })
+      onStatusChange?.('watching')
+    }
   }
 
   const markSeasonWatched = async (season: number, episodeCount: number) => {
@@ -77,6 +89,15 @@ export default function EpisodeTracker({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ watchlist_item_id: itemId, season_number: season, episode_count: episodeCount })
     })
+
+    if (currentStatus === 'want') {
+      await fetch('/api/watchlist/status', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: itemId, status: 'watching' })
+      })
+      onStatusChange?.('watching')
+    }
   }
 
   const currentSeason = seasons.find(s => s.season_number === activeSeason)
@@ -91,15 +112,15 @@ export default function EpisodeTracker({
             key={s.season_number}
             onClick={() => setActiveSeason(s.season_number)}
             className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 ${
-            activeSeason === s.season_number
-            ? 'bg-white text-black'
-            : 'text-white/50 hover:text-white/70'
+              activeSeason === s.season_number
+                ? 'bg-white text-black'
+                : 'text-white/50 hover:text-white/70'
             }`}
             style={activeSeason === s.season_number ? {} : {
-            background: 'rgba(255, 255, 255, 0.07)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
+              background: 'rgba(255, 255, 255, 0.07)',
+              backdropFilter: 'blur(20px)',
+              WebkitBackdropFilter: 'blur(20px)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
             }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
@@ -114,8 +135,8 @@ export default function EpisodeTracker({
         {watchedInSeason} af {currentSeason?.episode_count || 0} episoder set
       </p>
 
-      {/* EPISODE GRID – **PERFEKT FADE FØRST → SCALE SENERE** */}
-      <motion.div 
+      {/* EPISODE GRID */}
+      <motion.div
         key={`season-${activeSeason}`}
         className="grid grid-cols-6 gap-2 mb-4"
         initial={{ opacity: 0 }}
@@ -136,13 +157,10 @@ export default function EpisodeTracker({
               <motion.div
                 key={ep.episode_number}
                 initial={{ opacity: 0 }}
-                animate={{ 
-                  opacity: 1,
-                  scale: 1 
-                }}
-                transition={{ 
-                  opacity: { duration: 0.6 },      // LANGT fade først
-                  scale: { duration: 0.3, delay: 0.2 }  // KORT scale EFTER fade
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{
+                  opacity: { duration: 0.6 },
+                  scale: { duration: 0.3, delay: 0.2 }
                 }}
                 className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all active:scale-95 aspect-video border ${
                   isWatched

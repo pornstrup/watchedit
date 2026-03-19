@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 type Status = 'want' | 'watching' | 'done'
 
@@ -11,11 +11,25 @@ const glassStyle = {
   border: '1px solid rgba(255, 255, 255, 0.12)',
 }
 
-export default function StatusButtons({ itemId, initialStatus }: { itemId: string, initialStatus: Status }) {
+export default function StatusButtons({
+  itemId,
+  initialStatus,
+  onStatusChange,
+}: {
+  itemId: string
+  initialStatus: Status
+  onStatusChange?: (status: string) => void
+}) {
   const [status, setStatus] = useState<Status>(initialStatus)
+
+  // Synkroniser hvis ekstern status ændres (fx fra EpisodeTracker)
+  useEffect(() => {
+    setStatus(initialStatus)
+  }, [initialStatus])
 
   const updateStatus = async (newStatus: Status) => {
     setStatus(newStatus)
+    onStatusChange?.(newStatus)
     await fetch('/api/watchlist/status', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },

@@ -13,6 +13,7 @@ export async function GET() {
     .from('watchlist_items')
     .select('*')
     .eq('owner_id', user.id)
+    .is('deleted_at', null)
     .order('added_at', { ascending: false })
 
   if (error) {
@@ -24,25 +25,16 @@ export async function GET() {
       const type = item.media_type === 'movie' ? 'movie' : 'tv'
       const res = await fetch(
         `https://api.themoviedb.org/3/${type}/${item.tmdb_id}?language=en-US`,
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.TMDB_API_KEY}`,
-          },
-        }
+        { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` } }
       )
       const tmdb = await res.json()
 
-      // **PROGRESS FOR TV-SERIER**
       let progress = null
       if (item.media_type === 'tv' && item.status === 'watching') {
         try {
           const tvRes = await fetch(
             `https://api.themoviedb.org/3/tv/${item.tmdb_id}?language=en-US`,
-            {
-              headers: {
-                Authorization: `Bearer ${process.env.TMDB_API_KEY}`,
-              },
-            }
+            { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` } }
           )
           const tvData = await tvRes.json()
           const totalEpisodes = tvData.number_of_episodes || 0
