@@ -123,9 +123,15 @@ export default function SearchPage() {
             <button
               key={String(t.value)}
               onClick={() => setSelectedType(selectedType === t.value ? null : t.value)}
-              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-                selectedType === t.value ? 'bg-white text-black' : 'bg-white/8 text-white/50 hover:bg-white/15'
-              }`}
+              className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+  selectedType === t.value ? 'bg-white text-black' : 'text-white/50 hover:text-white/70'
+}`}
+style={selectedType === t.value ? {} : {
+  background: 'rgba(255, 255, 255, 0.07)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255, 255, 255, 0.12)',
+}}
             >
               {t.label}
             </button>
@@ -138,9 +144,15 @@ export default function SearchPage() {
               <button
                 key={p.id}
                 onClick={() => setSelectedProvider(selectedProvider === p.id ? null : p.id)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
-                  selectedProvider === p.id ? 'bg-white text-black' : 'bg-white/8 text-white/50 hover:bg-white/15'
-                }`}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 flex-shrink-0 ${
+  selectedProvider === p.id ? 'bg-white text-black' : 'text-white/50 hover:text-white/70'
+}`}
+style={selectedProvider === p.id ? {} : {
+  background: 'rgba(255, 255, 255, 0.07)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255, 255, 255, 0.12)',
+}}
               >
                 <img src={p.logo} alt={p.name} className="w-4 h-4 rounded-sm" />
                 {p.name}
@@ -155,9 +167,15 @@ export default function SearchPage() {
               <button
                 key={g.id}
                 onClick={() => setSelectedGenre(selectedGenre === g.id ? null : g.id)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
-                  selectedGenre === g.id ? 'bg-white text-black' : 'bg-white/8 text-white/50 hover:bg-white/15'
-                }`}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 flex-shrink-0 ${
+  selectedGenre === g.id ? 'bg-white text-black' : 'text-white/50 hover:text-white/70'
+}`}
+style={selectedGenre === g.id ? {} : {
+  background: 'rgba(255, 255, 255, 0.07)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255, 255, 255, 0.12)',
+}}
               >
                 {g.name}
               </button>

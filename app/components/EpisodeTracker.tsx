@@ -90,11 +90,17 @@ export default function EpisodeTracker({
           <motion.button
             key={s.season_number}
             onClick={() => setActiveSeason(s.season_number)}
-            className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all ${
-              activeSeason === s.season_number
-                ? 'bg-white text-black shadow-lg'
-                : 'bg-white/8 text-white/50 hover:bg-white/20'
+            className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 ${
+            activeSeason === s.season_number
+            ? 'bg-white text-black'
+            : 'text-white/50 hover:text-white/70'
             }`}
+            style={activeSeason === s.season_number ? {} : {
+            background: 'rgba(255, 255, 255, 0.07)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >

@@ -83,10 +83,20 @@ export default async function TVPage({ params }: { params: Promise<{ id: string 
               <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-3">Hvor kan du se den</p>
               <div className="flex gap-3 flex-wrap">
                 {providers.map((p: any) => (
-                  <div key={p.provider_id} className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
-                    <img src={`https://image.tmdb.org/t/p/w45${p.logo_path}`} alt={p.provider_name} className="w-6 h-6 rounded-md" />
-                    <span className="text-white/70 text-sm font-medium">{p.provider_name}</span>
-                  </div>
+                  <div
+  key={p.provider_id}
+  className="flex items-center gap-2 rounded-xl px-3 py-2"
+  style={{
+    background: 'rgba(255, 255, 255, 0.07)',
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+  }}
+>
+  <img src={`https://image.tmdb.org/t/p/w45${p.logo_path}`} alt={p.provider_name} className="w-6 h-6 rounded-md" />
+  <span className="text-white/70 text-sm font-medium">{p.provider_name}</span>
+</div>
                 ))}
               </div>
             </div>

@@ -95,7 +95,13 @@ export default function ProfileClient({
       { value: stats.tvTotal, label: 'Serier' },
       { value: stats.episodesWatched, label: 'Episoder' },
     ].map((s, i) => (
-      <div key={i} className="flex-1 bg-white/5 border border-white/8 rounded-2xl px-4 py-3 flex flex-col gap-0.5">
+      <div key={i} className="flex-1 rounded-2xl px-4 py-3 flex flex-col gap-0.5" style={{
+  background: 'rgba(255, 255, 255, 0.07)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255, 255, 255, 0.12)',
+  boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+}}>
         <p className="text-white text-2xl font-bold">{s.value}</p>
         <p className="text-white/40 text-xs">{s.label}</p>
       </div>
@@ -111,15 +117,33 @@ export default function ProfileClient({
     transition={{ duration: 0.3, delay: 0.05 }}
     className="flex gap-3"
   >
-    <div className="flex-1 bg-white-40 border border-emerald-400/20 rounded-2xl px-4 py-3">
+    <div className="flex-1 rounded-2xl px-4 py-3" style={{
+  background: 'rgba(255, 255, 255, 0.07)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255, 255, 255, 0.12)',  // kun på "I gang" kortet
+  boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+}}>
       <p className="text-white-40 text-2xl font-bold">{stats.watching}</p>
       <p className="text-white-40 text-xs mt-0.5">I gang</p>
     </div>
-    <div className="flex-1 bg-white/5 border border-white/8 rounded-2xl px-4 py-3">
+    <div className="flex-1 rounded-2xl px-4 py-3" style={{
+  background: 'rgba(255, 255, 255, 0.07)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255, 255, 255, 0.12)',
+  boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+}}>
       <p className="text-white text-2xl font-bold">{stats.thisMonth}</p>
       <p className="text-white/40 text-xs mt-0.5">Denne måned</p>
     </div>
-    <div className="flex-1 bg-white/5 border border-white/8 rounded-2xl px-4 py-3">
+    <div className="flex-1 rounded-2xl px-4 py-3" style={{
+  background: 'rgba(255, 255, 255, 0.07)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255, 255, 255, 0.12)',
+  boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+}}>
       <p className="text-white text-2xl font-bold">{stats.done}</p>
       <p className="text-white/40 text-xs mt-0.5">Færdige</p>
     </div>
