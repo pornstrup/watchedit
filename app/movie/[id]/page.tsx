@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import StatusButtons from '../../components/StatusButtons'
 import PageTransition from '../../components/PageTransition'
 import BackButton from '@/app/components/BackButton'
+import StickyHeader from '../../components/StickyHeader'
 import RemoveFromList from '@/app/components/RemoveFromList'
 
 export default async function MoviePage({ params }: { params: Promise<{ id: string }> }) {
@@ -42,6 +43,7 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
 
   return (
     <main className="min-h-screen bg-black pb-24">
+        <StickyHeader title={movie.title} />
       <PageTransition>
         <div className="relative h-72 overflow-hidden">
           {backdrop && (

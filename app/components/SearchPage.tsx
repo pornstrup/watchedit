@@ -21,6 +21,13 @@ const TYPES = [
   { value: 'tv', label: 'Serier' },
 ]
 
+const glassStyle = {
+  background: 'rgba(255, 255, 255, 0.07)',
+  backdropFilter: 'blur(20px)',
+  WebkitBackdropFilter: 'blur(20px)',
+  border: '1px solid rgba(255, 255, 255, 0.12)',
+}
+
 export default function SearchPage() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Result[]>([])
@@ -35,6 +42,15 @@ export default function SearchPage() {
   const [existingIds, setExistingIds] = useState<number[]>([])
   const [added, setAdded] = useState<number[]>([])
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // Auto-fokus søgefelt
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      inputRef.current?.focus()
+    }, 100)
+    return () => clearTimeout(timer)
+  }, [])
 
   useEffect(() => {
     Promise.all([
@@ -110,6 +126,7 @@ export default function SearchPage() {
       <h1 className="text-white text-2xl font-bold mb-5">Søg</h1>
 
       <input
+        ref={inputRef}
         type="text"
         value={query}
         onChange={(e) => search(e.target.value)}
@@ -124,14 +141,9 @@ export default function SearchPage() {
               key={String(t.value)}
               onClick={() => setSelectedType(selectedType === t.value ? null : t.value)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
-  selectedType === t.value ? 'bg-white text-black' : 'text-white/50 hover:text-white/70'
-}`}
-style={selectedType === t.value ? {} : {
-  background: 'rgba(255, 255, 255, 0.07)',
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
-  border: '1px solid rgba(255, 255, 255, 0.12)',
-}}
+                selectedType === t.value ? 'bg-white text-black' : 'text-white/50 hover:text-white/70'
+              }`}
+              style={selectedType === t.value ? {} : glassStyle}
             >
               {t.label}
             </button>
@@ -145,14 +157,9 @@ style={selectedType === t.value ? {} : {
                 key={p.id}
                 onClick={() => setSelectedProvider(selectedProvider === p.id ? null : p.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 flex-shrink-0 ${
-  selectedProvider === p.id ? 'bg-white text-black' : 'text-white/50 hover:text-white/70'
-}`}
-style={selectedProvider === p.id ? {} : {
-  background: 'rgba(255, 255, 255, 0.07)',
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
-  border: '1px solid rgba(255, 255, 255, 0.12)',
-}}
+                  selectedProvider === p.id ? 'bg-white text-black' : 'text-white/50 hover:text-white/70'
+                }`}
+                style={selectedProvider === p.id ? {} : glassStyle}
               >
                 <img src={p.logo} alt={p.name} className="w-4 h-4 rounded-sm" />
                 {p.name}
@@ -168,14 +175,9 @@ style={selectedProvider === p.id ? {} : {
                 key={g.id}
                 onClick={() => setSelectedGenre(selectedGenre === g.id ? null : g.id)}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 flex-shrink-0 ${
-  selectedGenre === g.id ? 'bg-white text-black' : 'text-white/50 hover:text-white/70'
-}`}
-style={selectedGenre === g.id ? {} : {
-  background: 'rgba(255, 255, 255, 0.07)',
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
-  border: '1px solid rgba(255, 255, 255, 0.12)',
-}}
+                  selectedGenre === g.id ? 'bg-white text-black' : 'text-white/50 hover:text-white/70'
+                }`}
+                style={selectedGenre === g.id ? {} : glassStyle}
               >
                 {g.name}
               </button>
@@ -226,21 +228,25 @@ style={selectedGenre === g.id ? {} : {
                 className="flex items-center gap-4 bg-white/5 border border-white/8 rounded-2xl p-3 no-underline"
               >
                 {item.poster ? (
-                  <img src={item.poster} alt={item.title} className="w-12 h-16 rounded-xl object-cover flex-shrink-0" />
+                  <img
+                    src={item.poster}
+                    alt={item.title}
+                    className="w-12 h-16 rounded-xl object-cover flex-shrink-0"
+                  />
                 ) : (
                   <div className="w-12 h-16 rounded-xl bg-white/10 flex-shrink-0" />
                 )}
                 <div className="flex-1 min-w-0">
-                  <p className="text-white font-semibold text-base truncate">{item.title}</p>
-                  <p className="text-white/40 text-sm">
+                  <p className="text-white font-semibold text-sm truncate">{item.title}</p>
+                  <p className="text-white/40 text-xs mt-0.5">
                     {item.media_type === 'tv' ? 'Serie' : 'Film'}{item.year && ` · ${item.year}`}
                   </p>
                 </div>
                 <button
                   onClick={(e) => !isAdded(item.tmdb_id) && addToList(item, e)}
-                  className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all ${
                     isAdded(item.tmdb_id)
-                      ? 'bg-emerald-400/20 text-emerald-400'
+                      ? 'bg-emerald-500/20 text-emerald-400'
                       : 'bg-white/10 text-white/60 hover:bg-white/20'
                   }`}
                 >
@@ -249,11 +255,9 @@ style={selectedGenre === g.id ? {} : {
               </motion.a>
             ))}
           </motion.div>
-        ) : (
-          <p key="empty" className="text-white/40 text-sm text-center py-8">
-            {showResults ? `Ingen resultater for "${query}"` : 'Ingen resultater'}
-          </p>
-        )}
+        ) : showResults ? (
+          <p className="text-white/30 text-sm text-center py-8">Ingen resultater for "{query}"</p>
+        ) : null}
       </AnimatePresence>
     </div>
   )

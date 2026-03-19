@@ -11,9 +11,16 @@ export default function WatchlistProvider({ userName }: { userName: string }) {
     setRefreshKey(k => k + 1)
   }, [])
 
+  const firstName = userName?.split(' ')[0] || 'der'
+
   return (
     <div className="w-full max-w-md flex flex-col gap-12">
-      <Search onAdd={refresh} />
+      <div className="flex flex-col gap-6">
+        <h1 className="text-white text-3xl font-bold tracking-tight">
+  Min liste
+</h1>
+        <Search onAdd={refresh} />
+      </div>
       <Watchlist key={refreshKey} />
     </div>
   )

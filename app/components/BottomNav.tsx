@@ -6,6 +6,13 @@ import { Tv2, Search, User } from 'lucide-react'
 export default function BottomNav() {
   const pathname = usePathname()
 
+  // Skjul navbar på detailsider
+  const isDetailPage = 
+  pathname.startsWith('/movie/') || 
+  pathname.startsWith('/tv/') ||
+  pathname === '/login'
+  if (isDetailPage) return null
+
   const items = [
     { href: '/', icon: Tv2, label: 'Min liste' },
     // { href: '/discover', icon: Compass, label: 'Opdag' },
