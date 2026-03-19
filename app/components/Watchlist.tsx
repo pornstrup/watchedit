@@ -49,9 +49,6 @@ function PosterCard({
 
   return (
     <motion.div
-      layout
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.2 }}
       className={`relative group ${className || ''}`}
@@ -246,7 +243,12 @@ export default function Watchlist({ onRemove }: { onRemove?: () => void }) {
   const doneItems = items.filter(i => i.status === 'done')
 
   return (
-    <div className="flex flex-col gap-10">
+    <motion.div
+      className="flex flex-col gap-10"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.35, ease: 'easeOut' }}
+    >
 
       {/* I GANG */}
       <AnimatePresence>
@@ -256,7 +258,7 @@ export default function Watchlist({ onRemove }: { onRemove?: () => void }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
           >
             <p className="text-emerald-400/80 text-xs uppercase tracking-widest font-semibold mb-4">
               I gang ({watchingItems.length})
@@ -286,7 +288,7 @@ export default function Watchlist({ onRemove }: { onRemove?: () => void }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
           >
             <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-4">
               Vil se ({wantItems.length})
@@ -316,7 +318,7 @@ export default function Watchlist({ onRemove }: { onRemove?: () => void }) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
+            transition={{ duration: 0.35, ease: 'easeOut' }}
           >
             <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-4">
               Set ({doneItems.length})
@@ -338,6 +340,6 @@ export default function Watchlist({ onRemove }: { onRemove?: () => void }) {
         )}
       </AnimatePresence>
 
-    </div>
+    </motion.div>
   )
 }
