@@ -56,7 +56,7 @@ export default function Watchlist() {
   return (
     <div className="flex flex-col gap-10">
 
-      {/* I GANG – horisontalt scroll */}
+      {/* I GANG – horisontalt scroll .*/}
       {watchingItems.length > 0 && (
         <section>
           <p className="text-emerald-400/80 text-xs uppercase tracking-widest font-semibold mb-4">
