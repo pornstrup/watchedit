@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
@@ -33,8 +34,8 @@ export async function POST(request: Request) {
   const { name } = await request.json()
   if (!name?.trim()) return NextResponse.json({ error: 'Navn mangler' }, { status: 400 })
 
-  // Opret gruppe
-  const { data: group, error: groupError } = await supabase
+  // Brug admin client til inserts så RLS ikke blokerer
+  const { data: group, error: groupError } = await supabaseAdmin
     .from('groups')
     .insert({ name: name.trim(), created_by: user.id })
     .select()
@@ -42,8 +43,7 @@ export async function POST(request: Request) {
 
   if (groupError) return NextResponse.json({ error: groupError.message }, { status: 500 })
 
-  // Tilføj opretter som member
-  const { error: memberError } = await supabase
+  const { error: memberError } = await supabaseAdmin
     .from('group_members')
     .insert({ group_id: group.id, user_id: user.id, role: 'owner' })
 

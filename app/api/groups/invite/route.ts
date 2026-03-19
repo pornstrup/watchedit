@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
@@ -8,21 +9,19 @@ export async function POST(request: Request) {
 
   const { group_id } = await request.json()
 
-  // Slet gamle ubrugte invites til denne gruppe
-  await supabase
+  await supabaseAdmin
     .from('group_invites')
     .delete()
     .eq('group_id', group_id)
     .eq('created_by', user.id)
     .is('used_at', null)
 
-  // Opret nyt invite (token genereres af Supabase default)
-  const { data: invite, error } = await supabase
+  const { data: invite, error } = await supabaseAdmin
     .from('group_invites')
     .insert({
       group_id,
       created_by: user.id,
-      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 dage
+      expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
     })
     .select()
     .single()
