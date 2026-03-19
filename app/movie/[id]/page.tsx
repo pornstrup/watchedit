@@ -3,8 +3,10 @@ import { redirect } from 'next/navigation'
 import StatusButtons from '../../components/StatusButtons'
 import PageTransition from '../../components/PageTransition'
 import BackButton from '@/app/components/BackButton'
-import StickyHeader from '../../components/StickyHeader'
 import RemoveFromList from '@/app/components/RemoveFromList'
+import StickyHeader from '@/app/components/StickyHeader'
+import DynamicGlow from '@/app/components/DynamicGlow'
+import ExpandableText from '@/app/components/ExpandableText'
 
 export default async function MoviePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -31,6 +33,7 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
     .eq('owner_id', user.id)
     .eq('tmdb_id', id)
     .eq('media_type', 'movie')
+    .is('deleted_at', null)
     .single()
 
   const poster = movie.poster_path
@@ -42,8 +45,9 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
     : null
 
   return (
-    <main className="min-h-screen bg-black pb-24">
-        <StickyHeader title={movie.title} />
+    <main className="min-h-screen bg-black pb-24 relative">
+      <DynamicGlow posterUrl={poster} />
+      <StickyHeader title={movie.title} />
       <PageTransition>
         <div className="relative h-72 overflow-hidden">
           {backdrop && (
@@ -78,30 +82,30 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
               <div className="flex gap-3 flex-wrap">
                 {providers.map((p: any) => (
                   <div
-  key={p.provider_id}
-  className="flex items-center gap-2 rounded-xl px-3 py-2"
-  style={{
-    background: 'rgba(255, 255, 255, 0.07)',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-    border: '1px solid rgba(255, 255, 255, 0.12)',
-    boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.08)',
-  }}
->
-  <img src={`https://image.tmdb.org/t/p/w45${p.logo_path}`} alt={p.provider_name} className="w-6 h-6 rounded-md" />
-  <span className="text-white/70 text-sm font-medium">{p.provider_name}</span>
-</div>
+                    key={p.provider_id}
+                    className="flex items-center gap-2 rounded-xl px-3 py-2"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.07)',
+                      backdropFilter: 'blur(20px)',
+                      WebkitBackdropFilter: 'blur(20px)',
+                      border: '1px solid rgba(255, 255, 255, 0.12)',
+                      boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.08)',
+                    }}
+                  >
+                    <img src={`https://image.tmdb.org/t/p/w45${p.logo_path}`} alt={p.provider_name} className="w-6 h-6 rounded-md" />
+                    <span className="text-white/70 text-sm font-medium">{p.provider_name}</span>
+                  </div>
                 ))}
               </div>
             </div>
           )}
 
-          {movie.overview && (
-            <div className="mb-6">
-              <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-2">Handling</p>
-              <p className="text-white/60 text-sm leading-relaxed">{movie.overview}</p>
-            </div>
-          )}
+        {movie.overview && (
+  <div className="mb-6">
+    <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-2">Handling</p>
+    <ExpandableText text={movie.overview} />
+  </div>
+)}
 
           {item && (
             <div className="mb-6">

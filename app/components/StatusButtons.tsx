@@ -28,6 +28,7 @@ export default function StatusButtons({
   }, [initialStatus])
 
   const updateStatus = async (newStatus: Status) => {
+  if (navigator.vibrate) navigator.vibrate(8)
     setStatus(newStatus)
     onStatusChange?.(newStatus)
     await fetch('/api/watchlist/status', {

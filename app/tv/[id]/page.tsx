@@ -5,6 +5,8 @@ import PageTransition from '../../components/PageTransition'
 import BackButton from '../../components/BackButton'
 import RemoveFromList from '../../components/RemoveFromList'
 import StickyHeader from '../../components/StickyHeader'
+import DynamicGlow from '../../components/DynamicGlow'
+
 
 export default async function TVPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -50,7 +52,8 @@ export default async function TVPage({ params }: { params: Promise<{ id: string 
   const seasons = show.seasons?.filter((s: any) => s.season_number > 0) || []
 
   return (
-    <main className="min-h-screen bg-black pb-24">
+    <main className="min-h-screen bg-black pb-24 relative">
+      <DynamicGlow posterUrl={poster} />
       <StickyHeader title={show.name} />
       <PageTransition>
         <div className="relative h-72 overflow-hidden">

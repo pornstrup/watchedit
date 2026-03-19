@@ -103,6 +103,7 @@ export default function SearchPage() {
   const addToList = async (item: Result, e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
+     if (navigator.vibrate) navigator.vibrate(8)
     const res = await fetch('/api/watchlist', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

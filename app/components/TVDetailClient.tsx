@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import StatusButtons from './StatusButtons'
+import ExpandableText from './ExpandableText'
 import EpisodeTracker from './EpisodeTracker'
 
 type Season = { season_number: number; episode_count: number; name: string }
@@ -66,11 +67,11 @@ export default function TVDetailClient({
 
       {/* HANDLING */}
       {overview && (
-        <div className="mb-6">
-          <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-2">Handling</p>
-          <p className="text-white/60 text-sm leading-relaxed">{overview}</p>
-        </div>
-      )}
+  <div className="mb-6">
+    <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-2">Handling</p>
+    <ExpandableText text={overview} />
+  </div>
+)}
 
       {/* EPISODER */}
       {seasons.length > 0 && (

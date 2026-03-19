@@ -208,6 +208,7 @@ export default function Watchlist({ onRemove }: { onRemove?: () => void }) {
   }, [])
 
   const removeItem = async (id: string, tmdbId: number, mediaType: string) => {
+    if (navigator.vibrate) navigator.vibrate(8)
     setItems(prev => prev.filter(i => i.id !== id))
     await fetch('/api/watchlist', {
       method: 'DELETE',
