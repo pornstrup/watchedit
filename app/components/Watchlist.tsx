@@ -17,71 +17,6 @@ type WatchlistItem = {
   }
 }
 
-const item = {
-  hidden: { opacity: 0, y: 12 },
-  show: { opacity: 1, y: 0 },
-}
-
-const WatchlistItems = ({ items }: { items: WatchlistItem[] }) => (
-  <motion.div
-    className="flex flex-col gap-2"
-    variants={{ show: { transition: { staggerChildren: 0.06 } } }}
-    initial="hidden"
-    animate="show"
-  >
-    {items.map(item_ => (
-      <motion.a
-        key={item_.id}
-        href={`/${item_.media_type === 'movie' ? 'movie' : 'tv'}/${item_.tmdb_id}`}
-        variants={item}
-        transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
-        whileTap={{ scale: 0.97 }}
-        className="flex items-center gap-4 rounded-2xl p-3 hover:bg-white/5 transition-colors no-underline"
-      >
-        {item_.poster ? (
-          <img
-            src={item_.poster}
-            alt={item_.title}
-            className="w-14 h-20 rounded-xl object-cover flex-shrink-0 shadow-lg"
-          />
-        ) : (
-          <div className="w-14 h-20 rounded-xl bg-white/8 flex-shrink-0" />
-        )}
-        <div className="flex-1 min-w-0">
-          <p className="text-white font-semibold text-base leading-tight mb-1 truncate">{item_.title}</p>
-          <p className="text-white/40 text-sm">
-            {item_.media_type === 'tv' ? 'Serie' : 'Film'}{item_.year && ` · ${item_.year}`}
-          </p>
-          
-          {/* **PROCENT-CIRKEL** */}
-          {item_.media_type === 'tv' && item_.progress && item_.status === 'watching' && (
-            <div className="mt-1 flex items-center gap-2">
-              <div className="flex gap-0.5">
-                {Array.from({ length: 5 }).map((_, i) => {
-                  const percentage = (item_.progress!.watched_episodes || 0) / item_.progress!.total_episodes
-                  const filledDots = Math.ceil(percentage * 5)
-                  return (
-                    <span
-                      key={i}
-                      className={`w-2 h-2 rounded-full transition-all ${
-                        i < filledDots ? 'bg-emerald-400 scale-110' : 'bg-white/20'
-                      }`}
-                    />
-                  )
-                })}
-              </div>
-              <span className="text-emerald-400/80 text-xs font-medium">
-                {Math.round(((item_.progress!.watched_episodes || 0) / item_.progress!.total_episodes) * 100)}%
-              </span>
-            </div>
-          )}
-        </div>
-        <div className="text-white/20 text-xl flex-shrink-0">›</div>
-      </motion.a>
-    ))}
-  </motion.div>
-)
-
 export default function Watchlist() {
   const [items, setItems] = useState<WatchlistItem[]>([])
   const [loading, setLoading] = useState(true)
@@ -96,45 +31,160 @@ export default function Watchlist() {
   }, [])
 
   if (loading) return (
-    <p className="text-white/40 text-sm text-center py-8">Henter din liste...</p>
+    <div className="flex flex-col gap-8">
+      <div className="flex gap-3 overflow-x-auto pb-2">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="flex-shrink-0 w-36 h-52 rounded-2xl bg-white/5 animate-pulse" />
+        ))}
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-48 rounded-2xl bg-white/5 animate-pulse" />
+        ))}
+      </div>
+    </div>
   )
 
   if (items.length === 0) return (
     <p className="text-white/40 text-sm text-center py-8">Din liste er tom – søg efter noget at se!</p>
   )
 
-  const wantItems = items.filter(item => item.status === 'want')
-  const watchingItems = items.filter(item => item.status === 'watching')
-  const doneItems = items.filter(item => item.status === 'done')
+  const watchingItems = items.filter(i => i.status === 'watching')
+  const wantItems = items.filter(i => i.status === 'want')
+  const doneItems = items.filter(i => i.status === 'done')
 
   return (
-    <div className="w-full flex flex-col space-y-8">
-      {wantItems.length > 0 && (
-        <section>
-          <h3 className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-4">
-            Vil se ({wantItems.length})
-          </h3>
-          <WatchlistItems items={wantItems} />
-        </section>
-      )}
+    <div className="flex flex-col gap-10">
 
+      {/* I GANG – horisontalt scroll */}
       {watchingItems.length > 0 && (
         <section>
-          <h3 className="text-emerald-400/80 text-xs uppercase tracking-widest font-semibold mb-4">
+          <p className="text-emerald-400/80 text-xs uppercase tracking-widest font-semibold mb-4">
             I gang ({watchingItems.length})
-          </h3>
-          <WatchlistItems items={watchingItems} />
+          </p>
+          <div className="flex gap-3 overflow-x-auto scrollbar-none pb-2 -mx-6 px-6">
+            {watchingItems.map((item, i) => (
+              <motion.a
+                key={item.id}
+                href={`/${item.media_type === 'movie' ? 'movie' : 'tv'}/${item.tmdb_id}`}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, delay: i * 0.06 }}
+                whileTap={{ scale: 0.96 }}
+                className="flex-shrink-0 no-underline"
+              >
+                <div className="relative w-36 h-52 rounded-2xl overflow-hidden">
+                  {item.poster ? (
+                    <img
+                      src={item.poster}
+                      alt={item.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-white/10" />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-3">
+                    <p className="text-white text-xs font-semibold leading-tight truncate">{item.title}</p>
+                    {item.progress && (
+                      <div className="mt-1.5">
+                        <div className="w-full h-0.5 bg-white/20 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-emerald-400 rounded-full"
+                            style={{ width: `${Math.round((item.progress.watched_episodes / item.progress.total_episodes) * 100)}%` }}
+                          />
+                        </div>
+                        <p className="text-white/50 text-xs mt-1">
+                          {Math.round((item.progress.watched_episodes / item.progress.total_episodes) * 100)}%
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </motion.a>
+            ))}
+          </div>
         </section>
       )}
 
-      {doneItems.length > 0 && (
+      {/* VIL SE – 2-kolonne grid */}
+      {wantItems.length > 0 && (
         <section>
-          <h3 className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-4">
-            Set ({doneItems.length})
-          </h3>
-          <WatchlistItems items={doneItems} />
+          <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-4">
+            Vil se ({wantItems.length})
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {wantItems.map((item, i) => (
+              <motion.a
+                key={item.id}
+                href={`/${item.media_type === 'movie' ? 'movie' : 'tv'}/${item.tmdb_id}`}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, delay: i * 0.04 }}
+                whileTap={{ scale: 0.96 }}
+                className="no-underline"
+              >
+                <div className="relative rounded-2xl overflow-hidden aspect-[2/3]">
+                  {item.poster ? (
+                    <img
+                      src={item.poster}
+                      alt={item.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-white/10 flex items-center justify-center">
+                      <p className="text-white/30 text-xs text-center px-2">{item.title}</p>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-3">
+                    <p className="text-white text-xs font-semibold leading-tight truncate">{item.title}</p>
+                    <p className="text-white/50 text-xs">{item.media_type === 'tv' ? 'Serie' : 'Film'}{item.year && ` · ${item.year}`}</p>
+                  </div>
+                </div>
+              </motion.a>
+            ))}
+          </div>
         </section>
       )}
+
+      {/* SET – 3-kolonne grid */}
+      {doneItems.length > 0 && (
+        <section>
+          <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-4">
+            Set ({doneItems.length})
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            {doneItems.map((item, i) => (
+              <motion.a
+                key={item.id}
+                href={`/${item.media_type === 'movie' ? 'movie' : 'tv'}/${item.tmdb_id}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2, delay: i * 0.03 }}
+                whileTap={{ scale: 0.96 }}
+                className="no-underline"
+              >
+                <div className="relative rounded-xl overflow-hidden aspect-[2/3]">
+                  {item.poster ? (
+                    <img
+                      src={item.poster}
+                      alt={item.title}
+                      className="w-full h-full object-cover opacity-60"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-white/10" />
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-white/60 text-lg">✓</span>
+                  </div>
+                </div>
+              </motion.a>
+            ))}
+          </div>
+        </section>
+      )}
+
     </div>
   )
 }

@@ -32,22 +32,24 @@ export default function SearchPage() {
   const [selectedType, setSelectedType] = useState<string | null>(null)
   const [selectedGenre, setSelectedGenre] = useState<number | null>(null)
   const [selectedProvider, setSelectedProvider] = useState<number | null>(null)
+  const [existingIds, setExistingIds] = useState<number[]>([])
+  const [added, setAdded] = useState<number[]>([])
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Hent genres + providers ved load
   useEffect(() => {
     Promise.all([
       fetch('/api/tmdb/genres').then(r => r.json()),
       fetch('/api/tmdb/providers').then(r => r.json()),
-    ]).then(([g, p]) => {
+      fetch('/api/watchlist/list').then(r => r.json()),
+    ]).then(([g, p, w]) => {
       setGenres(g.genres || [])
       setProviders(p.providers || [])
+      setExistingIds((w.items || []).map((i: any) => i.tmdb_id))
     })
   }, [])
 
-  // Hent discover resultater når filtre ændres
   useEffect(() => {
-    if (query.length >= 2) return // Søge-mode, skip discover
+    if (query.length >= 2) return
     setDiscoverLoading(true)
     const params = new URLSearchParams()
     if (selectedType) params.set('type', selectedType)
@@ -78,22 +80,35 @@ export default function SearchPage() {
     }, 300)
   }
 
-  // Re-søg når filtre ændres i søge-mode
   useEffect(() => {
     if (query.length >= 2) search(query)
   }, [selectedType, selectedGenre])
 
+  const addToList = async (item: Result, e: React.MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    const res = await fetch('/api/watchlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tmdb_id: item.tmdb_id, media_type: item.media_type })
+    })
+    if (res.ok) {
+      setAdded(prev => [...prev, item.tmdb_id])
+      setExistingIds(prev => [...prev, item.tmdb_id])
+    }
+  }
+
+  const isAdded = (tmdb_id: number) => added.includes(tmdb_id) || existingIds.includes(tmdb_id)
+
   const showResults = query.length >= 2
   const displayItems = showResults ? results : discoverResults
   const isLoading = showResults ? loading : discoverLoading
-
   const clearFilters = selectedType || selectedGenre || selectedProvider
 
   return (
     <div className="w-full">
       <h1 className="text-white text-2xl font-bold mb-5">Søg</h1>
 
-      {/* SØGEFELT */}
       <input
         type="text"
         value={query}
@@ -102,19 +117,14 @@ export default function SearchPage() {
         className="w-full bg-white/10 text-white placeholder-white/40 rounded-2xl px-5 py-4 text-base outline-none border border-white/10 focus:border-white/30 transition-all mb-4"
       />
 
-      {/* FILTRE */}
       <div className="flex flex-col gap-3 mb-6">
-
-        {/* Type */}
         <div className="flex gap-2">
           {TYPES.map(t => (
             <button
               key={String(t.value)}
               onClick={() => setSelectedType(selectedType === t.value ? null : t.value)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
-                selectedType === t.value
-                  ? 'bg-white text-black'
-                  : 'bg-white/8 text-white/50 hover:bg-white/15'
+                selectedType === t.value ? 'bg-white text-black' : 'bg-white/8 text-white/50 hover:bg-white/15'
               }`}
             >
               {t.label}
@@ -122,7 +132,6 @@ export default function SearchPage() {
           ))}
         </div>
 
-        {/* Platforme med logoer */}
         {providers.length > 0 && (
           <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
             {providers.map(p => (
@@ -130,9 +139,7 @@ export default function SearchPage() {
                 key={p.id}
                 onClick={() => setSelectedProvider(selectedProvider === p.id ? null : p.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
-                  selectedProvider === p.id
-                    ? 'bg-white text-black'
-                    : 'bg-white/8 text-white/50 hover:bg-white/15'
+                  selectedProvider === p.id ? 'bg-white text-black' : 'bg-white/8 text-white/50 hover:bg-white/15'
                 }`}
               >
                 <img src={p.logo} alt={p.name} className="w-4 h-4 rounded-sm" />
@@ -142,7 +149,6 @@ export default function SearchPage() {
           </div>
         )}
 
-        {/* Genres */}
         {genres.length > 0 && (
           <div className="flex gap-2 overflow-x-auto scrollbar-none pb-1">
             {genres.map(g => (
@@ -150,9 +156,7 @@ export default function SearchPage() {
                 key={g.id}
                 onClick={() => setSelectedGenre(selectedGenre === g.id ? null : g.id)}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all flex-shrink-0 ${
-                  selectedGenre === g.id
-                    ? 'bg-white text-black'
-                    : 'bg-white/8 text-white/50 hover:bg-white/15'
+                  selectedGenre === g.id ? 'bg-white text-black' : 'bg-white/8 text-white/50 hover:bg-white/15'
                 }`}
               >
                 {g.name}
@@ -161,14 +165,9 @@ export default function SearchPage() {
           </div>
         )}
 
-        {/* Ryd filtre */}
         {clearFilters && (
           <button
-            onClick={() => {
-              setSelectedType(null)
-              setSelectedGenre(null)
-              setSelectedProvider(null)
-            }}
+            onClick={() => { setSelectedType(null); setSelectedGenre(null); setSelectedProvider(null) }}
             className="text-white/40 text-xs self-start hover:text-white/70 transition-colors"
           >
             Ryd filtre ×
@@ -176,14 +175,12 @@ export default function SearchPage() {
         )}
       </div>
 
-      {/* LABEL */}
       {!showResults && (
         <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-3">
           {selectedProvider || selectedGenre ? 'Resultater' : 'Populært i Danmark'}
         </p>
       )}
 
-      {/* RESULTATER */}
       <AnimatePresence mode="wait">
         {isLoading ? (
           <div key="skeleton" className="flex flex-col gap-2">
@@ -211,11 +208,7 @@ export default function SearchPage() {
                 className="flex items-center gap-4 bg-white/5 border border-white/8 rounded-2xl p-3 no-underline"
               >
                 {item.poster ? (
-                  <img
-                    src={item.poster}
-                    alt={item.title}
-                    className="w-12 h-16 rounded-xl object-cover flex-shrink-0"
-                  />
+                  <img src={item.poster} alt={item.title} className="w-12 h-16 rounded-xl object-cover flex-shrink-0" />
                 ) : (
                   <div className="w-12 h-16 rounded-xl bg-white/10 flex-shrink-0" />
                 )}
@@ -225,7 +218,16 @@ export default function SearchPage() {
                     {item.media_type === 'tv' ? 'Serie' : 'Film'}{item.year && ` · ${item.year}`}
                   </p>
                 </div>
-                <div className="text-white/20 text-xl flex-shrink-0">›</div>
+                <button
+                  onClick={(e) => !isAdded(item.tmdb_id) && addToList(item, e)}
+                  className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all ${
+                    isAdded(item.tmdb_id)
+                      ? 'bg-emerald-400/20 text-emerald-400'
+                      : 'bg-white/10 text-white/60 hover:bg-white/20'
+                  }`}
+                >
+                  {isAdded(item.tmdb_id) ? '✓' : '+'}
+                </button>
               </motion.a>
             ))}
           </motion.div>

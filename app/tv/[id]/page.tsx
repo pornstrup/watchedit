@@ -4,6 +4,7 @@ import StatusButtons from '../../components/StatusButtons'
 import EpisodeTracker from '../../components/EpisodeTracker'
 import PageTransition from '../../components/PageTransition'
 import BackButton from '../../components/BackButton'
+import RemoveFromList from '../../components/RemoveFromList'
 
 export default async function TVPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -49,78 +50,74 @@ export default async function TVPage({ params }: { params: Promise<{ id: string 
 
   return (
     <main className="min-h-screen bg-black pb-24">
-    <PageTransition>  {/* ← NY */}
-      {/* HERO */}
-      <div className="relative h-72 overflow-hidden">
-        {backdrop && (
-          <img src={backdrop} alt={show.name} className="w-full h-full object-cover opacity-40" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black" />
-        <BackButton />
-        </div>
-
-      {/* INDHOLD */}
-      <div className="px-6 -mt-16 relative">
-        <div className="flex gap-4 mb-6">
-          {poster && (
-            <img src={poster} alt={show.name} className="w-24 rounded-xl shadow-2xl flex-shrink-0" />
+      <PageTransition>
+        <div className="relative h-72 overflow-hidden">
+          {backdrop && (
+            <img src={backdrop} alt={show.name} className="w-full h-full object-cover opacity-40" />
           )}
-          <div className="flex flex-col justify-end pb-1">
-            <p className="text-white/40 text-xs mb-1">Serie · {show.first_air_date?.split('-')[0]}</p>
-            <h1 className="text-white text-xl font-bold leading-tight">{show.name}</h1>
-            <p className="text-white/40 text-xs mt-1">{show.number_of_seasons} sæsoner · {show.number_of_episodes} episoder</p>
-          </div>
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black" />
+          <BackButton />
         </div>
 
-        {/* STATUS */}
-        {item && (
-          <div className="mb-6">
-            <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-3">Status</p>
-            <StatusButtons itemId={item.id} initialStatus={item.status as 'want' | 'watching' | 'done'} />
-          </div>
-        )}
-
-        {/* STREAMING */}
-        {providers.length > 0 && (
-          <div className="mb-6">
-            <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-3">Hvor kan du se den</p>
-            <div className="flex gap-3 flex-wrap">
-              {providers.map((p: any) => (
-                <div key={p.provider_id} className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
-                  <img
-                    src={`https://image.tmdb.org/t/p/w45${p.logo_path}`}
-                    alt={p.provider_name}
-                    className="w-6 h-6 rounded-md"
-                  />
-                  <span className="text-white/70 text-sm font-medium">{p.provider_name}</span>
-                </div>
-              ))}
+        <div className="px-6 -mt-16 relative">
+          <div className="flex gap-4 mb-6">
+            {poster && (
+              <img src={poster} alt={show.name} className="w-24 rounded-xl shadow-2xl flex-shrink-0" />
+            )}
+            <div className="flex flex-col justify-end pb-1">
+              <p className="text-white/40 text-xs mb-1">Serie · {show.first_air_date?.split('-')[0]}</p>
+              <h1 className="text-white text-xl font-bold leading-tight">{show.name}</h1>
+              <p className="text-white/40 text-xs mt-1">{show.number_of_seasons} sæsoner · {show.number_of_episodes} episoder</p>
             </div>
           </div>
-        )}
-        {/* BESKRIVELSE */}
-        {show.overview && (
-          <div className="mb-6">
-            <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-2">Handling</p>
-            <p className="text-white/60 text-sm leading-relaxed">{show.overview}</p>
-          </div>
-        )}
-        {/* EPISODER */}
-        {item && seasons.length > 0 && (
-          <div className="mb-6">
-            <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-3">Episoder</p>
-            <EpisodeTracker
-              itemId={item.id}
-              seasons={seasons}
-              progress={episodeProgress || []}
-              showId={id}
-            />
-          </div>
-        )}
 
-        
-      </div>
-      </PageTransition>  {/* ← NY */}  
+          {item && (
+            <div className="mb-6">
+              <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-3">Status</p>
+              <StatusButtons itemId={item.id} initialStatus={item.status as 'want' | 'watching' | 'done'} />
+            </div>
+          )}
+
+          {providers.length > 0 && (
+            <div className="mb-6">
+              <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-3">Hvor kan du se den</p>
+              <div className="flex gap-3 flex-wrap">
+                {providers.map((p: any) => (
+                  <div key={p.provider_id} className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
+                    <img src={`https://image.tmdb.org/t/p/w45${p.logo_path}`} alt={p.provider_name} className="w-6 h-6 rounded-md" />
+                    <span className="text-white/70 text-sm font-medium">{p.provider_name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {show.overview && (
+            <div className="mb-6">
+              <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-2">Handling</p>
+              <p className="text-white/60 text-sm leading-relaxed">{show.overview}</p>
+            </div>
+          )}
+
+          {item && seasons.length > 0 && (
+            <div className="mb-6">
+              <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-3">Episoder</p>
+              <EpisodeTracker
+                itemId={item.id}
+                seasons={seasons}
+                progress={episodeProgress || []}
+                showId={id}
+              />
+            </div>
+          )}
+
+          {item && (
+            <div className="mb-6">
+              <RemoveFromList tmdbId={Number(id)} mediaType="tv" />
+            </div>
+          )}
+        </div>
+      </PageTransition>
     </main>
   )
 }

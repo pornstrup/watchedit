@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import StatusButtons from '../../components/StatusButtons'
 import PageTransition from '../../components/PageTransition'
 import BackButton from '@/app/components/BackButton'
+import RemoveFromList from '@/app/components/RemoveFromList'
 
 export default async function MoviePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -42,16 +43,14 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
   return (
     <main className="min-h-screen bg-black pb-24">
       <PageTransition>
-        {/* HERO */}
         <div className="relative h-72 overflow-hidden">
           {backdrop && (
             <img src={backdrop} alt={movie.title} className="w-full h-full object-cover opacity-40" />
           )}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black" />
-            <BackButton />
-            </div>
+          <BackButton />
+        </div>
 
-        {/* INDHOLD */}
         <div className="px-6 -mt-16 relative">
           <div className="flex gap-4 mb-6">
             {poster && (
@@ -64,7 +63,6 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
             </div>
           </div>
 
-          {/* STATUS */}
           {item && (
             <div className="mb-6">
               <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-3">Status</p>
@@ -72,18 +70,13 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
             </div>
           )}
 
-          {/* STREAMING */}
           {providers.length > 0 && (
             <div className="mb-6">
               <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-3">Hvor kan du se den</p>
               <div className="flex gap-3 flex-wrap">
                 {providers.map((p: any) => (
                   <div key={p.provider_id} className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-2">
-                    <img
-                      src={`https://image.tmdb.org/t/p/w45${p.logo_path}`}
-                      alt={p.provider_name}
-                      className="w-6 h-6 rounded-md"
-                    />
+                    <img src={`https://image.tmdb.org/t/p/w45${p.logo_path}`} alt={p.provider_name} className="w-6 h-6 rounded-md" />
                     <span className="text-white/70 text-sm font-medium">{p.provider_name}</span>
                   </div>
                 ))}
@@ -91,11 +84,16 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
             </div>
           )}
 
-          {/* BESKRIVELSE */}
           {movie.overview && (
             <div className="mb-6">
               <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-2">Handling</p>
               <p className="text-white/60 text-sm leading-relaxed">{movie.overview}</p>
+            </div>
+          )}
+
+          {item && (
+            <div className="mb-6">
+              <RemoveFromList tmdbId={Number(id)} mediaType="movie" />
             </div>
           )}
         </div>
