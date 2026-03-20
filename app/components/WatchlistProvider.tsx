@@ -337,7 +337,7 @@ export default function WatchlistProvider({ userName }: { userName: string }) {
           </motion.div>
         )}
 
-        <Search key={refreshKey} onAdd={refresh} />
+        <Search key={refreshKey} onAdd={refresh} groupId={activeGroupId} />
       </div>
 
       {/* INDHOLD */}

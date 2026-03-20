@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 
 export async function POST(request: Request) {
@@ -7,20 +8,25 @@ export async function POST(request: Request) {
   if (authError || !user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
   const body = await request.json()
-  const { tmdb_id, media_type } = body
+  const { tmdb_id, media_type, group_id } = body
 
   // Tjek om der findes et soft-deleted item
-  const { data: existing } = await supabase
+  let existingQuery = supabaseAdmin
     .from('watchlist_items')
     .select('*')
-    .eq('owner_id', user.id)
     .eq('tmdb_id', tmdb_id)
     .eq('media_type', media_type)
     .not('deleted_at', 'is', null)
-    .single()
+
+  if (group_id) {
+    existingQuery = existingQuery.eq('group_id', group_id)
+  } else {
+    existingQuery = existingQuery.eq('owner_id', user.id).is('group_id', null)
+  }
+
+  const { data: existing } = await existingQuery.single()
 
   if (existing) {
-    // Tjek om der er episode progress
     const { count } = await supabase
       .from('episode_progress')
       .select('*', { count: 'exact', head: true })
@@ -28,7 +34,7 @@ export async function POST(request: Request) {
 
     const status = (count && count > 0) ? 'watching' : 'want'
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('watchlist_items')
       .update({ deleted_at: null, status })
       .eq('id', existing.id)
@@ -39,20 +45,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ data })
   }
 
-  // Opret nyt item
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('watchlist_items')
     .insert({
       owner_id: user.id,
       tmdb_id,
       media_type,
       status: 'want',
-      visibility: 'private'
+      visibility: 'private',
+      group_id: group_id || null,
     })
     .select()
     .single()
 
-  if (error) return NextResponse.json({ error: error.message, details: error }, { status: 500 })
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ data })
 }
 
@@ -61,15 +67,21 @@ export async function DELETE(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
-  const { tmdb_id, media_type } = await request.json()
+  const { tmdb_id, media_type, group_id } = await request.json()
 
-  const { error } = await supabase
+  let deleteQuery = supabaseAdmin
     .from('watchlist_items')
     .update({ deleted_at: new Date().toISOString() })
-    .eq('owner_id', user.id)
     .eq('tmdb_id', tmdb_id)
     .eq('media_type', media_type)
 
+  if (group_id) {
+    deleteQuery = deleteQuery.eq('group_id', group_id)
+  } else {
+    deleteQuery = deleteQuery.eq('owner_id', user.id).is('group_id', null)
+  }
+
+  const { error } = await deleteQuery
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })
 }

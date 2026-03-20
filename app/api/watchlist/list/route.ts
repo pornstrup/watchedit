@@ -1,23 +1,36 @@
 import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 
-export async function GET() {
+export async function GET(request: Request) {
   const supabase = await createClient()
-
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
-  }
+  if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
-  const { data: items, error } = await supabase
-    .from('watchlist_items')
-    .select('*')
-    .eq('owner_id', user.id)
-    .is('deleted_at', null)
-    .order('added_at', { ascending: false })
+  const { searchParams } = new URL(request.url)
+  const groupId = searchParams.get('group_id')
 
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  let items: any[]
+
+  if (groupId) {
+    const { data, error } = await supabaseAdmin
+      .from('watchlist_items')
+      .select('*')
+      .eq('group_id', groupId)
+      .is('deleted_at', null)
+      .order('added_at', { ascending: false })
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    items = data || []
+  } else {
+    const { data, error } = await supabase
+      .from('watchlist_items')
+      .select('*')
+      .eq('owner_id', user.id)
+      .is('group_id', null)
+      .is('deleted_at', null)
+      .order('added_at', { ascending: false })
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    items = data || []
   }
 
   const enriched = await Promise.all(
@@ -38,17 +51,12 @@ export async function GET() {
           )
           const tvData = await tvRes.json()
           const totalEpisodes = tvData.number_of_episodes || 0
-
           const { count: watchedCount } = await supabase
             .from('episode_progress')
             .select('*', { count: 'exact', head: true })
             .eq('watchlist_item_id', item.id)
-
           if (totalEpisodes > 0) {
-            progress = {
-              total_episodes: totalEpisodes,
-              watched_episodes: watchedCount || 0
-            }
+            progress = { total_episodes: totalEpisodes, watched_episodes: watchedCount || 0 }
           }
         } catch (err) {
           console.log('Progress error:', err)
@@ -58,9 +66,7 @@ export async function GET() {
       return {
         ...item,
         title: tmdb.title || tmdb.name,
-        poster: tmdb.poster_path
-          ? `https://image.tmdb.org/t/p/w300${tmdb.poster_path}`
-          : null,
+        poster: tmdb.poster_path ? `https://image.tmdb.org/t/p/w300${tmdb.poster_path}` : null,
         year: (tmdb.release_date || tmdb.first_air_date)?.split('-')[0],
         progress,
       }

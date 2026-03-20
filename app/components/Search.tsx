@@ -10,7 +10,7 @@ type Result = {
   poster: string | null
 }
 
-export default function Search({ onAdd }: { onAdd?: () => void }) {
+export default function Search({ onAdd, groupId }: { onAdd?: () => void; groupId?: string | null }) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Result[]>([])
   const [loading, setLoading] = useState(false)
@@ -19,15 +19,15 @@ export default function Search({ onAdd }: { onAdd?: () => void }) {
   const wrapperRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    fetch('/api/watchlist/list')
+    const url = groupId ? `/api/watchlist/list?group_id=${groupId}` : '/api/watchlist/list'
+    fetch(url)
       .then(res => res.json())
       .then(data => {
         const ids = (data.items || []).map((i: any) => i.tmdb_id)
         setExistingIds(ids)
       })
-  }, [])
+  }, [groupId])
 
-  // Luk liste ved klik udenfor
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
@@ -55,6 +55,7 @@ export default function Search({ onAdd }: { onAdd?: () => void }) {
       body: JSON.stringify({
         tmdb_id: item.tmdb_id,
         media_type: item.media_type,
+        group_id: groupId || null,
       })
     })
 
@@ -62,9 +63,6 @@ export default function Search({ onAdd }: { onAdd?: () => void }) {
       setAdded(prev => [...prev, item.tmdb_id])
       setExistingIds(prev => [...prev, item.tmdb_id])
       onAdd?.()
-      setTimeout(() => {
-        setResults([])
-      }, 325)
     }
   }
 
@@ -94,11 +92,7 @@ export default function Search({ onAdd }: { onAdd?: () => void }) {
               }`}
             >
               {item.poster ? (
-                <img
-                  src={item.poster}
-                  alt={item.title}
-                  className="w-10 h-14 rounded-lg object-cover flex-shrink-0"
-                />
+                <img src={item.poster} alt={item.title} className="w-10 h-14 rounded-lg object-cover flex-shrink-0" />
               ) : (
                 <div className="w-10 h-14 rounded-lg bg-white/10 flex-shrink-0" />
               )}
