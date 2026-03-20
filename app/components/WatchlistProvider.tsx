@@ -360,7 +360,7 @@ export default function WatchlistProvider({ userName }: { userName: string }) {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <GroupView groupId={activeGroupId} group={activeGroup!} onRefresh={refresh} />
+            <GroupView groupId={activeGroupId} group={activeGroup!} onRefresh={refresh} refreshKey={refreshKey} />
           </motion.div>
         )}
       </AnimatePresence>
