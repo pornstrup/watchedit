@@ -171,7 +171,7 @@ export default function EpisodeTracker({
       {/* EPISODE GRID */}
       <motion.div
         key={`season-${activeSeason}`}
-        className="grid grid-cols-6 gap-2 mb-4"
+        className="grid grid-cols-3 gap-2 mb-4"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.6 }}
@@ -180,7 +180,7 @@ export default function EpisodeTracker({
           Array.from({ length: 24 }).map((_, i) => (
             <div
               key={`skeleton-${i}`}
-              className="relative rounded-2xl overflow-hidden aspect-video border border-white/8 bg-gradient-to-r from-white/5 to-white/10 animate-pulse"
+              className="relative rounded-2xl overflow-hidden aspect-[2/3] border border-white/8 bg-gradient-to-r from-white/5 to-white/10 animate-pulse"
             />
           ))
         ) : (
@@ -195,7 +195,7 @@ export default function EpisodeTracker({
                   opacity: { duration: 0.6 },
                   scale: { duration: 0.3, delay: 0.2 }
                 }}
-                className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all active:scale-95 aspect-video border ${
+                className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all active:scale-95 aspect-[2/3] border ${
                   isWatched
                     ? 'border-white/20 opacity-40'
                     : 'border-white/8 hover:border-white/20'
