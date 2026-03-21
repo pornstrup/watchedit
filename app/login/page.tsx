@@ -5,11 +5,12 @@ import { createClient } from '@/lib/supabase/client'
 export default function LoginPage() {
   const supabase = createClient()
 
-  const signInWithGoogle = async () => {
+const signInWithGoogle = async () => {
+  const redirectParam = new URLSearchParams(window.location.search).get('redirect') || '/'
   await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=${encodeURIComponent(redirectParam)}`
     }
   })
 }
