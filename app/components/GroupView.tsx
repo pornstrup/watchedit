@@ -804,8 +804,7 @@ export default function GroupView({
         schema: 'public',
         table: 'group_watchlist_items',
         filter: `group_id=eq.${groupId}`
-      }, (payload) => {
-        console.log('Realtime event:', payload)
+      }, () => {
         fetch(`/api/groups/${groupId}/watchlist`)
           .then(r => r.json())
           .then(d => setItems(d.items || []))
