@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 
 export default async function JoinPage({
   params,
@@ -18,7 +19,7 @@ const { token } = await params
   }
 
   // Find invite
- const { data: invite, error: inviteError } = await supabase
+ const { data: invite, error: inviteError } = await supabaseAdmin
     .from('group_invites')
     .select('*')
     .eq('token', token)
