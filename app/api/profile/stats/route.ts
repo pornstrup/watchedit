@@ -6,10 +6,11 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
-  const { data: items } = await supabase
-    .from('watchlist_items')
-    .select('*')
-    .eq('owner_id', user.id)
+const { data: items } = await supabase
+  .from('watchlist_items')
+  .select('*')
+  .eq('owner_id', user.id)
+  .is('group_id', null)
 
   if (!items) return NextResponse.json({ stats: null })
 

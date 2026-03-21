@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useCallback, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import Search from './Search'
 import Watchlist from './Watchlist'
@@ -202,8 +203,21 @@ function NewGroupSheet({ onClose, onCreated }: { onClose: () => void; onCreated:
 export default function WatchlistProvider({ userName }: { userName: string }) {
   const [refreshKey, setRefreshKey] = useState(0)
   const [groups, setGroups] = useState<Group[]>([])
-  const [activeGroupId, setActiveGroupId] = useState<string | null>(null)
+  const router = useRouter()
+const searchParams = useSearchParams()
+const [activeGroupId, setActiveGroupId] = useState<string | null>(
+  searchParams.get('group')
+)
   const [loadingGroups, setLoadingGroups] = useState(true)
+
+const switchGroup = (id: string | null) => {
+  setActiveGroupId(id)
+  if (id) {
+    router.replace(`/?group=${id}`, { scroll: false })
+  } else {
+    router.replace('/', { scroll: false })
+  }
+}
   const [showNewGroupSheet, setShowNewGroupSheet] = useState(false)
 
   const refresh = useCallback(() => {
@@ -220,9 +234,9 @@ export default function WatchlistProvider({ userName }: { userName: string }) {
   }, [refreshKey])
 
   const handleGroupCreated = (group: Group) => {
-    setGroups(prev => [...prev, group])
-    setActiveGroupId(group.id)
-  }
+  setGroups(prev => [...prev, group])
+  switchGroup(group.id)
+}
 
   const activeGroup = groups.find(g => g.id === activeGroupId) ?? null
   const title = activeGroup ? activeGroup.name : 'Min liste'
@@ -279,7 +293,7 @@ export default function WatchlistProvider({ userName }: { userName: string }) {
             >
               {/* MIN LISTE */}
               <button
-                onClick={() => setActiveGroupId(null)}
+                onClick={() => switchGroup(null)}
                 className="relative flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-colors duration-200 outline-none focus:outline-none"
                 style={{ color: activeGroupId === null ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.4)' }}
               >
@@ -303,7 +317,7 @@ export default function WatchlistProvider({ userName }: { userName: string }) {
               {groups.map(group => (
                 <button
                   key={group.id}
-                  onClick={() => setActiveGroupId(group.id)}
+                  onClick={() => switchGroup(group.id)}
                   className="relative flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-colors duration-200 outline-none focus:outline-none"
                   style={{ color: activeGroupId === group.id ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.4)' }}
                 >
@@ -360,7 +374,9 @@ export default function WatchlistProvider({ userName }: { userName: string }) {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <GroupView groupId={activeGroupId} group={activeGroup!} onRefresh={refresh} refreshKey={refreshKey} />
+            {activeGroup && (
+  <GroupView groupId={activeGroupId} group={activeGroup} onRefresh={refresh} refreshKey={refreshKey} />
+)}
           </motion.div>
         )}
       </AnimatePresence>

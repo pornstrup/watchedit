@@ -3,7 +3,15 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-export default function RemoveFromList({ tmdbId, mediaType }: { tmdbId: number, mediaType: string }) {
+export default function RemoveFromList({
+  tmdbId,
+  mediaType,
+  groupId,
+}: {
+  tmdbId: number
+  mediaType: string
+  groupId?: string
+}) {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
@@ -12,9 +20,13 @@ export default function RemoveFromList({ tmdbId, mediaType }: { tmdbId: number, 
     await fetch('/api/watchlist', {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tmdb_id: tmdbId, media_type: mediaType })
+      body: JSON.stringify({
+        tmdb_id: tmdbId,
+        media_type: mediaType,
+        group_id: groupId || null,
+      })
     })
-    router.push('/')
+    router.back()
   }
 
   return (

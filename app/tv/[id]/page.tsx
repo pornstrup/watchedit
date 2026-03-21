@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import TVDetailClient from '../../components/TVDetailClient'
 import PageTransition from '../../components/PageTransition'
@@ -7,9 +8,15 @@ import RemoveFromList from '../../components/RemoveFromList'
 import StickyHeader from '../../components/StickyHeader'
 import DynamicGlow from '../../components/DynamicGlow'
 
-
-export default async function TVPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function TVPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ ctx?: string }>
+}) {
   const { id } = await params
+  const { ctx } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -27,14 +34,29 @@ export default async function TVPage({ params }: { params: Promise<{ id: string 
   const providersData = await providersRes.json()
   const providers = providersData.results?.DK?.flatrate || []
 
-  const { data: item } = await supabase
-    .from('watchlist_items')
-    .select('*')
-    .eq('owner_id', user.id)
-    .eq('tmdb_id', id)
-    .eq('media_type', 'tv')
-    .is('deleted_at', null)
-    .single()
+  let item = null
+  if (ctx) {
+    const { data } = await supabaseAdmin
+      .from('watchlist_items')
+      .select('*')
+      .eq('tmdb_id', id)
+      .eq('media_type', 'tv')
+      .eq('group_id', ctx)
+      .is('deleted_at', null)
+      .single()
+    item = data
+  } else {
+    const { data } = await supabase
+      .from('watchlist_items')
+      .select('*')
+      .eq('owner_id', user.id)
+      .eq('tmdb_id', id)
+      .eq('media_type', 'tv')
+      .is('group_id', null)
+      .is('deleted_at', null)
+      .single()
+    item = data
+  }
 
   const { data: episodeProgress } = await supabase
     .from('episode_progress')
@@ -90,7 +112,7 @@ export default async function TVPage({ params }: { params: Promise<{ id: string 
 
           {item && (
             <div className="mb-6">
-              <RemoveFromList tmdbId={Number(id)} mediaType="tv" />
+              <RemoveFromList tmdbId={Number(id)} mediaType="tv" groupId={ctx} />
             </div>
           )}
         </div>
