@@ -270,7 +270,7 @@ useEffect(() => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3, delay: 0.2 }}
-              onClick={() => setShowNewGroupSheet(true)}
+              onClick={() => { setShowNewGroupSheet(true); window.dispatchEvent(new Event('sheet-opened')) }}
               className="text-white/30 text-sm font-medium hover:text-white/60 transition-colors outline-none focus:outline-none"
             >
               + Gruppe
@@ -345,7 +345,7 @@ useEffect(() => {
 
             {/* + OPRET NY GRUPPE */}
             <button
-              onClick={() => setShowNewGroupSheet(true)}
+              onClick={() => { setShowNewGroupSheet(true); window.dispatchEvent(new Event('sheet-opened')) }}
               className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-white/30 hover:text-white/60 transition-colors outline-none focus:outline-none"
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -389,7 +389,7 @@ useEffect(() => {
       <AnimatePresence>
         {showNewGroupSheet && (
           <NewGroupSheet
-            onClose={() => setShowNewGroupSheet(false)}
+            onClose={() => { setShowNewGroupSheet(false); window.dispatchEvent(new Event('sheet-closed')) }}
             onCreated={handleGroupCreated}
           />
         )}

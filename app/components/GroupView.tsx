@@ -843,7 +843,7 @@ export default function GroupView({
         {/* SETTINGS KNAP */}
         <div className="flex justify-end -mt-6 mb-2">
           <button
-            onClick={() => setShowSettings(true)}
+            onClick={() => { setShowSettings(true); window.dispatchEvent(new Event('sheet-opened')) }}
             className="w-9 h-9 flex items-center justify-center rounded-xl text-white/30 hover:text-white/60 transition-colors"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
@@ -958,14 +958,14 @@ export default function GroupView({
                 <div className="flex items-center gap-3">
                   {inspiration.length > 10 && (
                     <button
-                      onClick={() => setShowAllInspiration(true)}
+                      onClick={() => { setShowAllInspiration(true); window.dispatchEvent(new Event('sheet-opened')) }}
                       className="text-white/25 text-xs"
                     >
                       Se alle →
                     </button>
                   )}
                   <button
-                    onClick={() => setShowHiddenInspiration(true)}
+                    onClick={() => { setShowHiddenInspiration(true); window.dispatchEvent(new Event('sheet-opened')) }}
                     className="text-white/20 text-xs"
                   >
                     Vis skjulte →
@@ -1021,7 +1021,7 @@ export default function GroupView({
           <GroupSettingsSheet
             group={{ ...group, name: currentGroupName }}
             currentUserId={currentUserId}
-            onClose={() => setShowSettings(false)}
+            onClose={() => { setShowSettings(false); window.dispatchEvent(new Event('sheet-closed')) }}
             onLeave={handleLeave}
             onRename={handleRename}
           />
@@ -1033,7 +1033,7 @@ export default function GroupView({
           <AllInspirationSheet
             groupId={groupId}
             items={inspiration}
-            onClose={() => setShowAllInspiration(false)}
+            onClose={() => { setShowAllInspiration(false); window.dispatchEvent(new Event('sheet-closed')) }}
             onAddToWantSee={(item) => { addInspirationToWantSee(item); setShowAllInspiration(false) }}
             onHide={(item) => { hideInspiration(item); }}
           />
@@ -1044,7 +1044,7 @@ export default function GroupView({
         {showHiddenInspiration && (
           <HiddenInspirationSheet
             groupId={groupId}
-            onClose={() => setShowHiddenInspiration(false)}
+            onClose={() => { setShowHiddenInspiration(false); window.dispatchEvent(new Event('sheet-closed')) }}
             onRestore={async () => {
               const inspirationData = await fetch(`/api/groups/${groupId}/inspiration`).then(r => r.json())
               setInspiration(inspirationData.items || [])
