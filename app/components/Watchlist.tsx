@@ -28,14 +28,12 @@ function PosterCard({
   onRemove,
   onStatusChange,
   className,
-  inScrollContainer,
 }: {
   item: WatchlistItem
   groups: Group[]
   onRemove: (id: string, tmdbId: number, mediaType: string) => void
   onStatusChange?: (id: string, status: string) => void
   className?: string
-  inScrollContainer?: boolean
 }) {
   const [pressing, setPressing] = useState(false)
   const [showOverlay, setShowOverlay] = useState(false)
@@ -45,27 +43,49 @@ function PosterCard({
   const cardRef = useRef<HTMLDivElement>(null)
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-const startPress = (e: React.TouchEvent | React.MouseEvent) => {
-    e.stopPropagation()
-    e.preventDefault()
-    pressTimer.current = setTimeout(() => {
-      if (cardRef.current) {
-        const rect = cardRef.current.getBoundingClientRect()
-        const screenWidth = window.innerWidth
-        const popupWidth = 220
-        let left = rect.left
-        if (left + popupWidth > screenWidth - 16) left = screenWidth - popupWidth - 16
-        if (left < 16) left = 16
-        const popupHeight = 280
-        const spaceBelow = window.innerHeight - rect.bottom
-        if (spaceBelow > popupHeight + 16) {
-          setPopupPos({ top: rect.bottom + 8, left })
-        } else {
-          setPopupPos({ bottom: window.innerHeight - rect.top + 8, left })
+  useEffect(() => {
+    const el = cardRef.current
+    if (!el) return
+    const handleTouchStart = (e: TouchEvent) => {
+      e.preventDefault()
+      pressTimer.current = setTimeout(() => {
+        if (cardRef.current) {
+          const rect = cardRef.current.getBoundingClientRect()
+          const screenWidth = window.innerWidth
+          const popupWidth = 220
+          let left = rect.left
+          if (left + popupWidth > screenWidth - 16) left = screenWidth - popupWidth - 16
+          if (left < 16) left = 16
+          const popupHeight = 280
+          const spaceBelow = window.innerHeight - rect.bottom
+          if (spaceBelow > popupHeight + 16) {
+            setPopupPos({ top: rect.bottom + 8, left })
+          } else {
+            setPopupPos({ bottom: window.innerHeight - rect.top + 8, left })
+          }
         }
-      }
+        setShowOverlay(true)
+        if (navigator.vibrate) navigator.vibrate(10)
+      }, 500)
+      setPressing(true)
+    }
+    const handleTouchEnd = () => {
+      if (pressTimer.current) clearTimeout(pressTimer.current)
+      setPressing(false)
+    }
+    el.addEventListener('touchstart', handleTouchStart, { passive: false })
+    el.addEventListener('touchend', handleTouchEnd)
+    el.addEventListener('touchcancel', handleTouchEnd)
+    return () => {
+      el.removeEventListener('touchstart', handleTouchStart)
+      el.removeEventListener('touchend', handleTouchEnd)
+      el.removeEventListener('touchcancel', handleTouchEnd)
+    }
+  }, [])
+
+  const startPress = (e: React.MouseEvent) => {
+    pressTimer.current = setTimeout(() => {
       setShowOverlay(true)
-      if (navigator.vibrate) navigator.vibrate(10)
     }, 500)
     setPressing(true)
   }
@@ -102,12 +122,8 @@ const startPress = (e: React.TouchEvent | React.MouseEvent) => {
         onMouseDown={startPress}
         onMouseUp={cancelPress}
         onMouseLeave={cancelPress}
-        onTouchStart={startPress}
-        onTouchEnd={inScrollContainer ? undefined : cancelPress}
-        onTouchCancel={cancelPress}
-        animate={{ scale: pressing || showOverlay ? 0.96 : 1 }}
+        animate={{ scale: pressing && !showOverlay ? 0.95 : 1 }}
         transition={{ duration: 0.15 }}
-        whileTap={showOverlay ? {} : { scale: 0.96 }}
         className="block no-underline h-full"
       >
         <div className={`relative rounded-2xl overflow-hidden h-full ${item.status === 'done' ? 'opacity-70' : ''}`}>
@@ -184,7 +200,6 @@ const startPress = (e: React.TouchEvent | React.MouseEvent) => {
                 boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
               }}
             >
-              {/* PREVIEW */}
               <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                 {item.poster && (
                   <img src={item.poster} alt={item.title} className="w-8 rounded-lg object-cover flex-shrink-0" style={{ aspectRatio: '2/3' }} />
@@ -195,7 +210,6 @@ const startPress = (e: React.TouchEvent | React.MouseEvent) => {
                 </div>
               </div>
 
-              {/* STATUS */}
               {(['want', 'watching', 'done'] as const).map((s, i) => (
                 <button
                   key={s}
@@ -220,7 +234,6 @@ const startPress = (e: React.TouchEvent | React.MouseEvent) => {
                 </button>
               ))}
 
-              {/* DEL MED GRUPPE */}
               {groups.length > 0 && (
                 <>
                   <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }} />
@@ -252,7 +265,6 @@ const startPress = (e: React.TouchEvent | React.MouseEvent) => {
                 </>
               )}
 
-              {/* FJERN */}
               <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }} />
               <button
                 onClick={() => {
@@ -358,7 +370,6 @@ const updateStatus = (id: string, status: string) => {
                     onRemove={removeItem}
                     onStatusChange={updateStatus}
                     className="flex-shrink-0 w-36 h-52"
-                    inScrollContainer
                   />
                 ))}
               </AnimatePresence>

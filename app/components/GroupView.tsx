@@ -80,28 +80,51 @@ function GroupPosterCard({
   const [pressing, setPressing] = useState(false)
   const [showOverlay, setShowOverlay] = useState(false)
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const [popupPos, setPopupPos] = useState({ top: 0, left: 0 })
+  const [popupPos, setPopupPos] = useState<{ top?: number; bottom?: number; left: number }>({ bottom: 8, left: 0 })
   const cardRef = useRef<HTMLDivElement>(null)
 
-const startPress = (e: React.TouchEvent | React.MouseEvent) => {
-    e.stopPropagation()
-    e.preventDefault()
-    pressTimer.current = setTimeout(() => {
-      if (cardRef.current) {
-        const rect = cardRef.current.getBoundingClientRect()
-        const screenWidth = window.innerWidth
-        const popupWidth = 220
-        let left = rect.left
-        if (left + popupWidth > screenWidth - 16) left = screenWidth - popupWidth - 16
-        if (left < 16) left = 16
-        const popupHeight = 200
-        let top = rect.bottom + 8
-        if (top + popupHeight > window.innerHeight - 100) top = rect.top - popupHeight - 8
-        setPopupPos({ top, left })
-      }
-      setShowOverlay(true)
-      if (navigator.vibrate) navigator.vibrate(10)
-    }, 500)
+  useEffect(() => {
+    const el = cardRef.current
+    if (!el) return
+    const handleTouchStart = (e: TouchEvent) => {
+      e.preventDefault()
+      pressTimer.current = setTimeout(() => {
+        if (cardRef.current) {
+          const rect = cardRef.current.getBoundingClientRect()
+          const screenWidth = window.innerWidth
+          const popupWidth = 220
+          let left = rect.left
+          if (left + popupWidth > screenWidth - 16) left = screenWidth - popupWidth - 16
+          if (left < 16) left = 16
+          const popupHeight = 280
+          const spaceBelow = window.innerHeight - rect.bottom
+          if (spaceBelow > popupHeight + 16) {
+            setPopupPos({ top: rect.bottom + 8, left })
+          } else {
+            setPopupPos({ bottom: window.innerHeight - rect.top + 8, left })
+          }
+        }
+        setShowOverlay(true)
+        if (navigator.vibrate) navigator.vibrate(10)
+      }, 500)
+      setPressing(true)
+    }
+    const handleTouchEnd = () => {
+      if (pressTimer.current) clearTimeout(pressTimer.current)
+      setPressing(false)
+    }
+    el.addEventListener('touchstart', handleTouchStart, { passive: false })
+    el.addEventListener('touchend', handleTouchEnd)
+    el.addEventListener('touchcancel', handleTouchEnd)
+    return () => {
+      el.removeEventListener('touchstart', handleTouchStart)
+      el.removeEventListener('touchend', handleTouchEnd)
+      el.removeEventListener('touchcancel', handleTouchEnd)
+    }
+  }, [])
+
+  const startPress = (e: React.MouseEvent) => {
+    pressTimer.current = setTimeout(() => setShowOverlay(true), 500)
     setPressing(true)
   }
 
@@ -109,7 +132,6 @@ const startPress = (e: React.TouchEvent | React.MouseEvent) => {
     if (pressTimer.current) clearTimeout(pressTimer.current)
     setPressing(false)
   }
-
   const href = `/${item.media_type === 'movie' ? 'movie' : 'tv'}/${item.tmdb_id}?ctx=${groupId}`
 
   return (
@@ -125,9 +147,6 @@ const startPress = (e: React.TouchEvent | React.MouseEvent) => {
         onMouseDown={startPress}
         onMouseUp={cancelPress}
         onMouseLeave={cancelPress}
-        onTouchStart={startPress}
-        onTouchEnd={inScrollContainer ? undefined : cancelPress}
-        onTouchCancel={cancelPress}
         animate={{ scale: pressing && !showOverlay ? 0.95 : 1 }}
         transition={{ duration: 0.15 }}
         whileTap={showOverlay ? {} : { scale: 0.96 }}
@@ -278,28 +297,52 @@ function InspirationCard({
 }) {
   const [pressing, setPressing] = useState(false)
   const [showOverlay, setShowOverlay] = useState(false)
-  const [popupPos, setPopupPos] = useState({ top: 0, left: 0 })
+  const [popupPos, setPopupPos] = useState<{ top?: number; bottom?: number; left: number }>({ bottom: 8, left: 0 })
   const cardRef = useRef<HTMLDivElement>(null)
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const startPress = (e: React.TouchEvent | React.MouseEvent) => {
-    e.stopPropagation()
-    pressTimer.current = setTimeout(() => {
-      if (cardRef.current) {
-        const rect = cardRef.current.getBoundingClientRect()
-        const screenWidth = window.innerWidth
-        const popupWidth = 200
-        let left = rect.left
-        if (left + popupWidth > screenWidth - 16) left = screenWidth - popupWidth - 16
-        if (left < 16) left = 16
-        const popupHeight = 180
-        let top = rect.bottom + 8
-        if (top + popupHeight > window.innerHeight - 100) top = rect.top - popupHeight - 8
-        setPopupPos({ top, left })
-      }
-      setShowOverlay(true)
-      if (navigator.vibrate) navigator.vibrate(10)
-    }, 500)
+  useEffect(() => {
+    const el = cardRef.current
+    if (!el) return
+    const handleTouchStart = (e: TouchEvent) => {
+      e.preventDefault()
+      pressTimer.current = setTimeout(() => {
+        if (cardRef.current) {
+          const rect = cardRef.current.getBoundingClientRect()
+          const screenWidth = window.innerWidth
+          const popupWidth = 200
+          let left = rect.left
+          if (left + popupWidth > screenWidth - 16) left = screenWidth - popupWidth - 16
+          if (left < 16) left = 16
+          const popupHeight = 200
+          const spaceBelow = window.innerHeight - rect.bottom
+          if (spaceBelow > popupHeight + 16) {
+            setPopupPos({ top: rect.bottom + 8, left })
+          } else {
+            setPopupPos({ bottom: window.innerHeight - rect.top + 8, left })
+          }
+        }
+        setShowOverlay(true)
+        if (navigator.vibrate) navigator.vibrate(10)
+      }, 500)
+      setPressing(true)
+    }
+    const handleTouchEnd = () => {
+      if (pressTimer.current) clearTimeout(pressTimer.current)
+      setPressing(false)
+    }
+    el.addEventListener('touchstart', handleTouchStart, { passive: false })
+    el.addEventListener('touchend', handleTouchEnd)
+    el.addEventListener('touchcancel', handleTouchEnd)
+    return () => {
+      el.removeEventListener('touchstart', handleTouchStart)
+      el.removeEventListener('touchend', handleTouchEnd)
+      el.removeEventListener('touchcancel', handleTouchEnd)
+    }
+  }, [])
+
+  const startPress = (e: React.MouseEvent) => {
+    pressTimer.current = setTimeout(() => setShowOverlay(true), 500)
     setPressing(true)
   }
 
@@ -319,9 +362,6 @@ function InspirationCard({
         onMouseDown={startPress}
         onMouseUp={cancelPress}
         onMouseLeave={cancelPress}
-        onTouchStart={startPress}
-        onTouchEnd={inScrollContainer ? undefined : cancelPress}
-        onTouchCancel={cancelPress}
         animate={{ scale: pressing || showOverlay ? 0.96 : 1 }}
         transition={{ duration: 0.15 }}
         className="cursor-pointer"
@@ -364,6 +404,7 @@ function InspirationCard({
               className="fixed z-50 flex flex-col overflow-hidden rounded-2xl"
               style={{
                 top: popupPos.top,
+                bottom: popupPos.bottom,
                 left: popupPos.left,
                 width: 200,
                 background: 'rgba(30, 30, 32, 0.98)',
