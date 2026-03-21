@@ -194,8 +194,7 @@ function GroupPosterCard({
         </div>
       </motion.a>
 
-      <AnimatePresence>
-        {showOverlay && typeof document !== 'undefined' && createPortal(
+     {showOverlay && typeof document !== 'undefined' && createPortal(
           <>
             <motion.div
               initial={{ opacity: 0 }}
@@ -278,7 +277,6 @@ function GroupPosterCard({
           </>,
           document.body
         )}
-      </AnimatePresence>
     </motion.div>
   )
 }
@@ -382,8 +380,7 @@ const handleTouchStart = (_e: TouchEvent) => {
         </div>
       </motion.div>
 
-      <AnimatePresence>
-        {showOverlay && typeof document !== 'undefined' && createPortal(
+      {showOverlay && typeof document !== 'undefined' && createPortal(
           <>
             <motion.div
               initial={{ opacity: 0 }}
@@ -441,7 +438,6 @@ const handleTouchStart = (_e: TouchEvent) => {
           </>,
           document.body
         )}
-      </AnimatePresence>
     </motion.div>
   )
 }

@@ -168,8 +168,7 @@ function PosterCard({
         </div>
       </motion.a>
 
- <AnimatePresence>
-        {showOverlay && typeof document !== 'undefined' && createPortal(
+{showOverlay && typeof document !== 'undefined' && createPortal(
           <>
             <motion.div
               initial={{ opacity: 0 }}
@@ -279,7 +278,6 @@ function PosterCard({
           </>,
           document.body
         )}
-      </AnimatePresence>
     </motion.div>
   )
 }
