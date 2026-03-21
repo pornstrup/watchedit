@@ -45,8 +45,9 @@ function PosterCard({
   const cardRef = useRef<HTMLDivElement>(null)
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const startPress = (e: React.TouchEvent | React.MouseEvent) => {
+const startPress = (e: React.TouchEvent | React.MouseEvent) => {
     e.stopPropagation()
+    e.preventDefault()
     pressTimer.current = setTimeout(() => {
       if (cardRef.current) {
         const rect = cardRef.current.getBoundingClientRect()

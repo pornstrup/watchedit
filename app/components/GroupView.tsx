@@ -83,8 +83,9 @@ function GroupPosterCard({
   const [popupPos, setPopupPos] = useState({ top: 0, left: 0 })
   const cardRef = useRef<HTMLDivElement>(null)
 
-  const startPress = (e: React.TouchEvent | React.MouseEvent) => {
+const startPress = (e: React.TouchEvent | React.MouseEvent) => {
     e.stopPropagation()
+    e.preventDefault()
     pressTimer.current = setTimeout(() => {
       if (cardRef.current) {
         const rect = cardRef.current.getBoundingClientRect()
