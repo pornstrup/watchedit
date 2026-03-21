@@ -21,7 +21,7 @@ export async function GET() {
     .map((i: any) => ({
       tmdb_id: i.id,
       media_type: i.media_type,
-      title: i.title || i.name,
+      title: i.original_title || i.original_name || i.title || i.name,
       year: (i.release_date || i.first_air_date)?.split('-')[0],
       poster: i.poster_path ? `https://image.tmdb.org/t/p/w300${i.poster_path}` : null,
       genre_ids: i.genre_ids || [],
