@@ -77,6 +77,7 @@ export default async function TVPage({
     : null
 
   const seasons = show.seasons?.filter((s: any) => s.season_number > 0) || []
+  const nextEpisode = show.next_episode_to_air || null
 
   return (
     <main className="min-h-screen bg-black pb-24 relative">
@@ -100,6 +101,13 @@ export default async function TVPage({
               <p className="text-white/40 text-xs mb-1">Serie · {show.first_air_date?.split('-')[0]}</p>
               <h1 className="text-white text-xl font-bold leading-tight">{show.name}</h1>
               <p className="text-white/40 text-xs mt-1">{show.number_of_seasons} sæsoner · {show.number_of_episodes} episoder</p>
+              {nextEpisode?.air_date && (() => {
+                const days = Math.round((new Date(nextEpisode.air_date).getTime() - Date.now()) / 86400000)
+                const label = days === 0 ? 'i dag' : days === 1 ? 'i morgen' : days > 0 ? `${new Date(nextEpisode.air_date).toLocaleDateString('da-DK', { weekday: 'long', day: 'numeric', month: 'long' })}` : null
+                return label ? (
+                  <p className="text-white/40 text-xs mt-0.5">→ S{nextEpisode.season_number} E{nextEpisode.episode_number} · {label}</p>
+                ) : null
+              })()}
             </div>
           </div>
 
