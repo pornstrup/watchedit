@@ -6,11 +6,14 @@ export default async function JoinPage({
 }: {
   params: Promise<{ token: string }>
 }) {
-  const { token } = await params
+const { token } = await params
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  console.log('JOIN DEBUG:', { token, userId: user?.id })
+
   if (!user) {
+    console.log('JOIN DEBUG: ikke logget ind, redirecter til login')
     redirect(`/login?redirect=/join/${token}`)
   }
 
