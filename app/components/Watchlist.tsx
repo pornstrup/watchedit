@@ -28,12 +28,14 @@ function PosterCard({
   onRemove,
   onStatusChange,
   className,
+  inScrollContainer,
 }: {
   item: WatchlistItem
   groups: Group[]
   onRemove: (id: string, tmdbId: number, mediaType: string) => void
   onStatusChange?: (id: string, status: string) => void
   className?: string
+  inScrollContainer?: boolean
 }) {
   const [pressing, setPressing] = useState(false)
   const [showOverlay, setShowOverlay] = useState(false)
@@ -100,7 +102,7 @@ function PosterCard({
         onMouseUp={cancelPress}
         onMouseLeave={cancelPress}
         onTouchStart={startPress}
-        onTouchEnd={cancelPress}
+        onTouchEnd={inScrollContainer ? undefined : cancelPress}
         onTouchCancel={cancelPress}
         animate={{ scale: pressing || showOverlay ? 0.96 : 1 }}
         transition={{ duration: 0.15 }}
@@ -355,6 +357,7 @@ const updateStatus = (id: string, status: string) => {
                     onRemove={removeItem}
                     onStatusChange={updateStatus}
                     className="flex-shrink-0 w-36 h-52"
+                    inScrollContainer
                   />
                 ))}
               </AnimatePresence>

@@ -68,12 +68,14 @@ function GroupPosterCard({
   onRemove,
   onStatusChange,
   className,
+  inScrollContainer,
 }: {
   item: GroupItem
   groupId: string
   onRemove: (id: string, tmdbId: number, mediaType: string) => void
   onStatusChange?: (id: string, status: string) => void
   className?: string
+  inScrollContainer?: boolean
 }) {
   const [pressing, setPressing] = useState(false)
   const [showOverlay, setShowOverlay] = useState(false)
@@ -123,7 +125,7 @@ function GroupPosterCard({
         onMouseUp={cancelPress}
         onMouseLeave={cancelPress}
         onTouchStart={startPress}
-        onTouchEnd={cancelPress}
+        onTouchEnd={inScrollContainer ? undefined : cancelPress}
         onTouchCancel={cancelPress}
         animate={{ scale: pressing && !showOverlay ? 0.95 : 1 }}
         transition={{ duration: 0.15 }}
@@ -265,11 +267,13 @@ function InspirationCard({
   groupId,
   onAddToWantSee,
   onHide,
+  inScrollContainer,
 }: {
   item: InspirationItem
   groupId: string
   onAddToWantSee: (item: InspirationItem) => void
   onHide: (item: InspirationItem) => void
+  inScrollContainer?: boolean
 }) {
   const [pressing, setPressing] = useState(false)
   const [showOverlay, setShowOverlay] = useState(false)
@@ -315,7 +319,7 @@ function InspirationCard({
         onMouseUp={cancelPress}
         onMouseLeave={cancelPress}
         onTouchStart={startPress}
-        onTouchEnd={cancelPress}
+        onTouchEnd={inScrollContainer ? undefined : cancelPress}
         onTouchCancel={cancelPress}
         animate={{ scale: pressing || showOverlay ? 0.96 : 1 }}
         transition={{ duration: 0.15 }}
@@ -912,15 +916,16 @@ export default function GroupView({
             <div className="flex gap-3 overflow-x-auto scrollbar-none pb-2 -mx-6 px-6">
               <AnimatePresence>
                 {watchingItems.map(item => (
-                  <GroupPosterCard
-                    key={item.id}
-                    item={item}
-                    groupId={groupId}
-                    onRemove={removeItem}
-                    onStatusChange={updateStatus}
-                    className="flex-shrink-0 w-36 h-52"
-                  />
-                ))}
+                    <GroupPosterCard
+                      key={item.id}
+                      item={item}
+                      groupId={groupId}
+                      onRemove={removeItem}
+                      onStatusChange={updateStatus}
+                      className="flex-shrink-0 w-36 h-52"
+                      inScrollContainer
+                    />
+                  ))}
               </AnimatePresence>
             </div>
           </section>
@@ -983,6 +988,7 @@ export default function GroupView({
                       groupId={groupId}
                       onAddToWantSee={addInspirationToWantSee}
                       onHide={hideInspiration}
+                      inScrollContainer
                     />
                   ))}
                 </AnimatePresence>
