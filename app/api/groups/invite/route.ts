@@ -9,12 +9,27 @@ export async function POST(request: Request) {
 
   const { group_id } = await request.json()
 
+  // Tjek om der allerede er et gyldigt token
+  const { data: existing } = await supabaseAdmin
+    .from('group_invites')
+    .select()
+    .eq('group_id', group_id)
+    .eq('created_by', user.id)
+    .is('used_at', null)
+    .gt('expires_at', new Date().toISOString())
+    .single()
+
+  if (existing) {
+    const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/join/${existing.token}`
+    return NextResponse.json({ url: inviteUrl, token: existing.token })
+  }
+
+  // Slet udløbne og lav nyt
   await supabaseAdmin
     .from('group_invites')
     .delete()
     .eq('group_id', group_id)
     .eq('created_by', user.id)
-    .is('used_at', null)
 
   const { data: invite, error } = await supabaseAdmin
     .from('group_invites')
@@ -29,6 +44,5 @@ export async function POST(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL}/join/${invite.token}`
-
   return NextResponse.json({ url: inviteUrl, token: invite.token })
 }
