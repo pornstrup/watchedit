@@ -37,7 +37,7 @@ function PosterCard({
 }) {
   const [pressing, setPressing] = useState(false)
   const [showOverlay, setShowOverlay] = useState(false)
-  const [popupPos, setPopupPos] = useState({ top: 0, left: 0 })
+  const [popupPos, setPopupPos] = useState<{ top?: number; bottom?: number; left: number }>({ bottom: 8, left: 0 })
   const [sharingTo, setSharingTo] = useState<string | null>(null)
   const [sharedGroups, setSharedGroups] = useState<string[]>([])
   const cardRef = useRef<HTMLDivElement>(null)
@@ -53,10 +53,13 @@ function PosterCard({
         let left = rect.left
         if (left + popupWidth > screenWidth - 16) left = screenWidth - popupWidth - 16
         if (left < 16) left = 16
-        const popupHeight = 260
-        let top = rect.bottom + 8
-        if (top + popupHeight > window.innerHeight - 100) top = rect.top - popupHeight - 8
-        setPopupPos({ top, left })
+        const popupHeight = 280
+        const spaceBelow = window.innerHeight - rect.bottom
+        if (spaceBelow > popupHeight + 16) {
+          setPopupPos({ top: rect.bottom + 8, left })
+        } else {
+          setPopupPos({ bottom: window.innerHeight - rect.top + 8, left })
+        }
       }
       setShowOverlay(true)
       if (navigator.vibrate) navigator.vibrate(10)
@@ -168,6 +171,7 @@ function PosterCard({
               className="fixed z-50 flex flex-col overflow-hidden rounded-2xl"
               style={{
                 top: popupPos.top,
+                bottom: popupPos.bottom,
                 left: popupPos.left,
                 width: 220,
                 background: 'rgba(30, 30, 32, 0.98)',
