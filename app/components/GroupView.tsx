@@ -78,9 +78,23 @@ function GroupPosterCard({
   const [pressing, setPressing] = useState(false)
   const [showOverlay, setShowOverlay] = useState(false)
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [popupPos, setPopupPos] = useState({ top: 0, left: 0 })
+  const cardRef = useRef<HTMLDivElement>(null)
 
   const startPress = () => {
     pressTimer.current = setTimeout(() => {
+      if (cardRef.current) {
+        const rect = cardRef.current.getBoundingClientRect()
+        const screenWidth = window.innerWidth
+        const popupWidth = 220
+        let left = rect.left
+        if (left + popupWidth > screenWidth - 16) left = screenWidth - popupWidth - 16
+        if (left < 16) left = 16
+        const popupHeight = 200
+        let top = rect.bottom + 8
+        if (top + popupHeight > window.innerHeight - 100) top = rect.top - popupHeight - 8
+        setPopupPos({ top, left })
+      }
       setShowOverlay(true)
       if (navigator.vibrate) navigator.vibrate(10)
     }, 500)
@@ -96,6 +110,7 @@ function GroupPosterCard({
 
   return (
     <motion.div
+      ref={cardRef}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.2 }}
       className={`relative group ${className || ''}`}
@@ -164,17 +179,41 @@ function GroupPosterCard({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
               className="fixed inset-0 z-40"
+              style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
               onClick={() => setShowOverlay(false)}
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-              className="absolute top-2 right-2 z-50 flex flex-col gap-1"
+              exit={{ opacity: 0, scale: 0.85 }}
+              transition={{ type: 'spring', damping: 20, stiffness: 400 }}
+              className="fixed z-50 flex flex-col overflow-hidden rounded-2xl"
+              style={{
+                top: popupPos.top,
+                left: popupPos.left,
+                width: 220,
+                background: 'rgba(30, 30, 32, 0.98)',
+                backdropFilter: 'blur(40px)',
+                WebkitBackdropFilter: 'blur(40px)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+              }}
             >
-              {(['want', 'watching', 'done'] as const).map((s) => (
+              {/* PREVIEW */}
+              <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                {item.poster && (
+                  <img src={item.poster} alt={item.title} className="w-8 rounded-lg object-cover flex-shrink-0" style={{ aspectRatio: '2/3' }} />
+                )}
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <p className="text-white text-xs font-semibold truncate">{item.title}</p>
+                  <p className="text-white/30 text-xs">{item.media_type === 'tv' ? 'Serie' : 'Film'}{item.year && ` · ${item.year}`}</p>
+                </div>
+              </div>
+
+              {/* STATUS KNAPPER */}
+              {(['want', 'watching', 'done'] as const).map((s, i) => (
                 <button
                   key={s}
                   onClick={async () => {
@@ -186,47 +225,31 @@ function GroupPosterCard({
                     onStatusChange?.(item.id, s)
                     setShowOverlay(false)
                   }}
-                  className={`flex items-center px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap ${item.status === s ? 'text-white' : 'text-white/50'}`}
+                  className="flex items-center justify-between px-4 py-3 text-sm transition-colors"
                   style={{
-                    background: item.status === s ? 'rgba(255, 255, 255, 0.15)' : 'rgba(20, 20, 20, 0.95)',
-                    backdropFilter: 'blur(20px)',
-                    WebkitBackdropFilter: 'blur(20px)',
-                    border: item.status === s ? '1px solid rgba(255, 255, 255, 0.2)' : '1px solid rgba(255, 255, 255, 0.08)',
+                    borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                    color: item.status === s ? 'white' : 'rgba(255,255,255,0.5)',
+                    fontWeight: item.status === s ? 600 : 400,
                   }}
                 >
                   {s === 'want' ? 'Vil se' : s === 'watching' ? 'I gang' : 'Set'}
+                  {item.status === s && <span className="text-emerald-400 text-xs">✓</span>}
                 </button>
               ))}
 
-              <div className="h-px bg-white/10 my-0.5" />
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }} />
 
+              {/* FJERN */}
               <button
                 onClick={() => {
                   onRemove(item.id, item.tmdb_id, item.media_type)
                   setShowOverlay(false)
                 }}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-red-400 text-xs font-semibold whitespace-nowrap"
-                style={{
-                  background: 'rgba(20, 20, 20, 0.95)',
-                  backdropFilter: 'blur(20px)',
-                  WebkitBackdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(255, 59, 48, 0.2)',
-                }}
+                className="flex items-center justify-between px-4 py-3 text-sm"
+                style={{ color: 'rgba(255, 59, 48, 0.9)' }}
               >
                 Fjern fra liste
-              </button>
-
-              <button
-                onClick={() => setShowOverlay(false)}
-                className="flex items-center justify-center px-3 py-2 rounded-xl text-white/50 text-xs font-medium"
-                style={{
-                  background: 'rgba(20, 20, 20, 0.95)',
-                  backdropFilter: 'blur(20px)',
-                  WebkitBackdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                }}
-              >
-                Annuller
+                <span className="text-base">×</span>
               </button>
             </motion.div>
           </>
@@ -375,7 +398,177 @@ function InspirationCard({
     </motion.div>
   )
 }
+function AllInspirationSheet({
+  groupId,
+  items,
+  onClose,
+  onAddToWantSee,
+  onHide,
+}: {
+  groupId: string
+  items: InspirationItem[]
+  onClose: () => void
+  onAddToWantSee: (item: InspirationItem) => void
+  onHide: (item: InspirationItem) => void
+}) {
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-40 bg-black/60"
+        style={{ backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
+        onClick={onClose}
+      />
+      <motion.div
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', damping: 26, stiffness: 300 }}
+        className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-3xl"
+        style={{
+          background: 'rgba(18, 18, 18, 0.98)',
+          backdropFilter: 'blur(60px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(60px) saturate(180%)',
+          border: '1px solid rgba(255, 255, 255, 0.14)',
+          boxShadow: '0 -8px 40px rgba(0,0,0,0.5)',
+          borderBottom: 'none',
+          maxHeight: '85vh',
+        }}
+      >
+        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mt-4 mb-4 flex-shrink-0" />
+        <div className="flex items-center justify-between px-6 mb-4 flex-shrink-0">
+          <p className="text-white font-semibold text-base">Al inspiration ({items.length})</p>
+          <button onClick={onClose} className="text-white/40 text-sm">Luk</button>
+        </div>
+        <div className="overflow-y-auto flex-1 px-6 pb-10">
+          <div className="grid grid-cols-3 gap-3">
+            {items.map(item => (
+              <InspirationCard
+                key={`${item.tmdb_id}-${item.media_type}`}
+                item={item}
+                groupId={groupId}
+                onAddToWantSee={(i) => { onAddToWantSee(i); }}
+                onHide={(i) => { onHide(i); }}
+              />
+            ))}
+          </div>
+        </div>
+      </motion.div>
+    </>
+  )
+}
 
+function HiddenInspirationSheet({
+  groupId,
+  onClose,
+  onRestore,
+}: {
+  groupId: string
+  onClose: () => void
+  onRestore: () => void
+}) {
+  const [items, setItems] = useState<{ tmdb_id: number; media_type: string; title: string; poster: string | null; year?: string }[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetch(`/api/groups/${groupId}/inspiration/hidden`)
+      .then(r => r.json())
+      .then(d => {
+        setItems(d.items || [])
+        setLoading(false)
+      })
+  }, [groupId])
+
+  const restore = async (item: { tmdb_id: number; media_type: string }) => {
+    await fetch(`/api/groups/${groupId}/inspiration/hidden`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tmdb_id: item.tmdb_id, media_type: item.media_type })
+    })
+    setItems(prev => prev.filter(i => !(i.tmdb_id === item.tmdb_id && i.media_type === item.media_type)))
+    onRestore()
+  }
+
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-40 bg-black/60"
+        style={{ backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
+        onClick={onClose}
+      />
+      <motion.div
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', damping: 26, stiffness: 300 }}
+        className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-3xl"
+        style={{
+          background: 'rgba(18, 18, 18, 0.98)',
+          backdropFilter: 'blur(60px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(60px) saturate(180%)',
+          border: '1px solid rgba(255, 255, 255, 0.14)',
+          boxShadow: '0 -8px 40px rgba(0,0,0,0.5)',
+          borderBottom: 'none',
+          maxHeight: '85vh',
+        }}
+      >
+        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mt-4 mb-4 flex-shrink-0" />
+        <div className="flex items-center justify-between px-6 mb-4 flex-shrink-0">
+          <p className="text-white font-semibold text-base">Skjulte ({items.length})</p>
+          <button onClick={onClose} className="text-white/40 text-sm">Luk</button>
+        </div>
+
+        <div className="overflow-y-auto flex-1 px-6 pb-10">
+          {loading ? (
+            <div className="grid grid-cols-3 gap-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="aspect-[2/3] rounded-xl bg-white/5 animate-pulse" />
+              ))}
+            </div>
+          ) : items.length === 0 ? (
+            <p className="text-white/30 text-sm text-center py-8">Ingen skjulte titler</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {items.map(item => (
+                <div
+                  key={`${item.tmdb_id}-${item.media_type}`}
+                  className="flex items-center gap-3 px-4 py-3 rounded-2xl"
+                  style={{
+                    background: 'rgba(255, 255, 255, 0.05)',
+                    border: '1px solid rgba(255, 255, 255, 0.08)',
+                  }}
+                >
+                  {item.poster && (
+                    <img src={item.poster} alt={item.title} className="w-10 rounded-lg object-cover flex-shrink-0" style={{ aspectRatio: '2/3' }} />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-medium truncate">{item.title}</p>
+                    <p className="text-white/40 text-xs">{item.media_type === 'tv' ? 'Serie' : 'Film'}{item.year && ` · ${item.year}`}</p>
+                  </div>
+                  <button
+                    onClick={() => restore(item)}
+                    className="text-white/50 text-xs px-3 py-1.5 rounded-xl flex-shrink-0"
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.07)',
+                      border: '1px solid rgba(255, 255, 255, 0.1)',
+                    }}
+                  >
+                    Vis igen
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </motion.div>
+    </>
+  )
+}
 function GroupSettingsSheet({
   group,
   onClose,
@@ -519,6 +712,8 @@ export default function GroupView({
   const [inspiration, setInspiration] = useState<InspirationItem[]>([])
   const [loading, setLoading] = useState(true)
   const [showSettings, setShowSettings] = useState(false)
+  const [showAllInspiration, setShowAllInspiration] = useState(false)
+  const [showHiddenInspiration, setShowHiddenInspiration] = useState(false)
   const [currentGroupName, setCurrentGroupName] = useState(group.name)
 
   useEffect(() => {
@@ -738,9 +933,22 @@ export default function GroupView({
                 <p className="text-white/25 text-xs uppercase tracking-widest font-semibold">
                   Inspiration ({inspiration.length})
                 </p>
-                {inspiration.length > 10 && (
-                  <button className="text-white/25 text-xs">Se alle →</button>
-                )}
+                <div className="flex items-center gap-3">
+                  {inspiration.length > 10 && (
+                    <button
+                      onClick={() => setShowAllInspiration(true)}
+                      className="text-white/25 text-xs"
+                    >
+                      Se alle →
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setShowHiddenInspiration(true)}
+                    className="text-white/20 text-xs"
+                  >
+                    Vis skjulte →
+                  </button>
+                </div>
               </div>
               <div className="flex gap-3 overflow-x-auto scrollbar-none pb-2 -mx-6 px-6">
                 <AnimatePresence>
@@ -786,13 +994,38 @@ export default function GroupView({
         )}
       </motion.div>
 
-      <AnimatePresence>
+   <AnimatePresence>
         {showSettings && (
           <GroupSettingsSheet
             group={{ ...group, name: currentGroupName }}
             onClose={() => setShowSettings(false)}
             onLeave={handleLeave}
             onRename={handleRename}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showAllInspiration && (
+          <AllInspirationSheet
+            groupId={groupId}
+            items={inspiration}
+            onClose={() => setShowAllInspiration(false)}
+            onAddToWantSee={(item) => { addInspirationToWantSee(item); setShowAllInspiration(false) }}
+            onHide={(item) => { hideInspiration(item); }}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showHiddenInspiration && (
+          <HiddenInspirationSheet
+            groupId={groupId}
+            onClose={() => setShowHiddenInspiration(false)}
+            onRestore={async () => {
+              const inspirationData = await fetch(`/api/groups/${groupId}/inspiration`).then(r => r.json())
+              setInspiration(inspirationData.items || [])
+            }}
           />
         )}
       </AnimatePresence>

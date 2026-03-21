@@ -30,10 +30,24 @@ function PosterCard({
 }) {
   const [pressing, setPressing] = useState(false)
   const [showOverlay, setShowOverlay] = useState(false)
+  const [popupPos, setPopupPos] = useState({ top: 0, left: 0 })
+  const cardRef = useRef<HTMLDivElement>(null)
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const startPress = () => {
     pressTimer.current = setTimeout(() => {
+      if (cardRef.current) {
+        const rect = cardRef.current.getBoundingClientRect()
+        const screenWidth = window.innerWidth
+        const popupWidth = 220
+        let left = rect.left
+        if (left + popupWidth > screenWidth - 16) left = screenWidth - popupWidth - 16
+        if (left < 16) left = 16
+        const popupHeight = 200
+        let top = rect.bottom + 8
+        if (top + popupHeight > window.innerHeight - 100) top = rect.top - popupHeight - 8
+        setPopupPos({ top, left })
+      }
       setShowOverlay(true)
       if (navigator.vibrate) navigator.vibrate(10)
     }, 500)
@@ -49,6 +63,7 @@ function PosterCard({
 
   return (
     <motion.div
+      ref={cardRef}
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.2 }}
       className={`relative group ${className || ''}`}
@@ -62,14 +77,19 @@ function PosterCard({
         onTouchStart={startPress}
         onTouchEnd={cancelPress}
         onTouchCancel={cancelPress}
-        animate={{ scale: pressing && !showOverlay ? 0.95 : 1 }}
+        animate={{ scale: pressing || showOverlay ? 0.96 : 1 }}
         transition={{ duration: 0.15 }}
         whileTap={showOverlay ? {} : { scale: 0.96 }}
         className="block no-underline h-full"
       >
         <div className={`relative rounded-2xl overflow-hidden h-full ${item.status === 'done' ? 'opacity-70' : ''}`}>
           {item.poster ? (
-            <img src={item.poster} alt={item.title} className="w-full h-full object-cover" />
+            <img
+              src={item.poster}
+              alt={item.title}
+              className="w-full h-full object-cover"
+              style={{ animation: 'fadeIn 0.3s ease-out' }}
+            />
           ) : (
             <div className="w-full h-full bg-white/10 flex items-center justify-center">
               <p className="text-white/30 text-xs text-center px-2">{item.title}</p>
@@ -113,17 +133,41 @@ function PosterCard({
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
               className="fixed inset-0 z-40"
+              style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
               onClick={() => setShowOverlay(false)}
             />
             <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-              className="absolute top-2 right-2 z-50 flex flex-col gap-1"
+              exit={{ opacity: 0, scale: 0.85 }}
+              transition={{ type: 'spring', damping: 20, stiffness: 400 }}
+              className="fixed z-50 flex flex-col overflow-hidden rounded-2xl"
+              style={{
+                top: popupPos.top,
+                left: popupPos.left,
+                width: 220,
+                background: 'rgba(30, 30, 32, 0.98)',
+                backdropFilter: 'blur(40px)',
+                WebkitBackdropFilter: 'blur(40px)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+              }}
             >
-              {(['want', 'watching', 'done'] as const).map((s) => (
+              {/* PREVIEW */}
+              <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                {item.poster && (
+                  <img src={item.poster} alt={item.title} className="w-8 rounded-lg object-cover flex-shrink-0" style={{ aspectRatio: '2/3' }} />
+                )}
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <p className="text-white text-xs font-semibold truncate">{item.title}</p>
+                  <p className="text-white/30 text-xs">{item.media_type === 'tv' ? 'Serie' : 'Film'}{item.year && ` · ${item.year}`}</p>
+                </div>
+              </div>
+
+              {/* STATUS KNAPPER */}
+              {(['want', 'watching', 'done'] as const).map((s, i) => (
                 <button
                   key={s}
                   onClick={async () => {
@@ -135,53 +179,31 @@ function PosterCard({
                     onStatusChange?.(item.id, s)
                     setShowOverlay(false)
                   }}
-                  className={`flex items-center px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap ${
-                    item.status === s ? 'text-white' : 'text-white/50'
-                  }`}
+                  className="flex items-center justify-between px-4 py-3 text-sm transition-colors"
                   style={{
-                    background: item.status === s
-                      ? 'rgba(255, 255, 255, 0.15)'
-                      : 'rgba(20, 20, 20, 0.95)',
-                    backdropFilter: 'blur(20px)',
-                    WebkitBackdropFilter: 'blur(20px)',
-                    border: item.status === s
-                      ? '1px solid rgba(255, 255, 255, 0.2)'
-                      : '1px solid rgba(255, 255, 255, 0.08)',
+                    borderBottom: i < 2 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                    color: item.status === s ? 'white' : 'rgba(255,255,255,0.5)',
+                    fontWeight: item.status === s ? 600 : 400,
                   }}
                 >
                   {s === 'want' ? 'Vil se' : s === 'watching' ? 'I gang' : 'Set'}
+                  {item.status === s && <span className="text-emerald-400 text-xs">✓</span>}
                 </button>
               ))}
 
-              <div className="h-px bg-white/10 my-0.5" />
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }} />
 
+              {/* FJERN */}
               <button
                 onClick={() => {
                   onRemove(item.id, item.tmdb_id, item.media_type)
                   setShowOverlay(false)
                 }}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-red-400 text-xs font-semibold whitespace-nowrap"
-                style={{
-                  background: 'rgba(20, 20, 20, 0.95)',
-                  backdropFilter: 'blur(20px)',
-                  WebkitBackdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(255, 59, 48, 0.2)',
-                }}
+                className="flex items-center justify-between px-4 py-3 text-sm"
+                style={{ color: 'rgba(255, 59, 48, 0.9)' }}
               >
                 Fjern fra liste
-              </button>
-
-              <button
-                onClick={() => setShowOverlay(false)}
-                className="flex items-center justify-center px-3 py-2 rounded-xl text-white/50 text-xs font-medium"
-                style={{
-                  background: 'rgba(20, 20, 20, 0.95)',
-                  backdropFilter: 'blur(20px)',
-                  WebkitBackdropFilter: 'blur(20px)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                }}
-              >
-                Annuller
+                <span className="text-base">×</span>
               </button>
             </motion.div>
           </>
@@ -249,7 +271,6 @@ export default function Watchlist({ onRemove }: { onRemove?: () => void }) {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.35, ease: 'easeOut' }}
     >
-
       {/* I GANG */}
       <AnimatePresence>
         {watchingItems.length > 0 && (
@@ -339,7 +360,6 @@ export default function Watchlist({ onRemove }: { onRemove?: () => void }) {
           </motion.section>
         )}
       </AnimatePresence>
-
     </motion.div>
   )
 }
