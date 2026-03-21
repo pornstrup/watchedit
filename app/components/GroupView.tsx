@@ -106,20 +106,18 @@ function GroupPosterCard({
         }
         setShowOverlay(true)
         if (navigator.vibrate) navigator.vibrate(10)
-      }, 500)
+      }, 600)
       setPressing(true)
     }
     const handleTouchEnd = () => {
       if (pressTimer.current) clearTimeout(pressTimer.current)
       setPressing(false)
     }
-    el.addEventListener('touchstart', handleTouchStart, { passive: false })
+    el.addEventListener('touchstart', handleTouchStart, { passive: true })
     el.addEventListener('touchend', handleTouchEnd)
-    el.addEventListener('touchcancel', handleTouchEnd)
     return () => {
       el.removeEventListener('touchstart', handleTouchStart)
       el.removeEventListener('touchend', handleTouchEnd)
-      el.removeEventListener('touchcancel', handleTouchEnd)
     }
   }, [])
 
@@ -304,8 +302,7 @@ function InspirationCard({
   useEffect(() => {
     const el = cardRef.current
     if (!el) return
-    const handleTouchStart = (e: TouchEvent) => {
-      e.preventDefault()
+const handleTouchStart = (_e: TouchEvent) => {
       pressTimer.current = setTimeout(() => {
         if (cardRef.current) {
           const rect = cardRef.current.getBoundingClientRect()
@@ -324,7 +321,7 @@ function InspirationCard({
         }
         setShowOverlay(true)
         if (navigator.vibrate) navigator.vibrate(10)
-      }, 500)
+      }, 600)
       setPressing(true)
     }
     const handleTouchEnd = () => {
