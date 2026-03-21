@@ -1,37 +1,20 @@
 import { createClient } from '@/lib/supabase/server'
-import { supabaseAdmin } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 
-export async function GET(request: Request) {
+export async function GET() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
-  const { searchParams } = new URL(request.url)
-  const groupId = searchParams.get('group_id')
+  const { data: items, error } = await supabase
+    .from('watchlist_items')
+    .select('*')
+    .eq('owner_id', user.id)
+    .is('group_id', null)
+    .is('deleted_at', null)
+    .order('added_at', { ascending: false })
 
-  let items: any[]
-
-  if (groupId) {
-    const { data, error } = await supabaseAdmin
-      .from('watchlist_items')
-      .select('*')
-      .eq('group_id', groupId)
-      .is('deleted_at', null)
-      .order('added_at', { ascending: false })
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    items = data || []
-  } else {
-    const { data, error } = await supabase
-      .from('watchlist_items')
-      .select('*')
-      .eq('owner_id', user.id)
-      .is('group_id', null)
-      .is('deleted_at', null)
-      .order('added_at', { ascending: false })
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    items = data || []
-  }
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   const enriched = await Promise.all(
     items.map(async (item) => {

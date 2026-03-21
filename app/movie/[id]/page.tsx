@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { supabaseAdmin } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import StatusButtons from '../../components/StatusButtons'
 import PageTransition from '../../components/PageTransition'
@@ -8,8 +9,15 @@ import StickyHeader from '@/app/components/StickyHeader'
 import DynamicGlow from '@/app/components/DynamicGlow'
 import ExpandableText from '@/app/components/ExpandableText'
 
-export default async function MoviePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function MoviePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ ctx?: string }>
+}) {
   const { id } = await params
+  const { ctx } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -27,14 +35,29 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
   const providersData = await providersRes.json()
   const providers = providersData.results?.DK?.flatrate || []
 
-  const { data: item } = await supabase
-    .from('watchlist_items')
-    .select('*')
-    .eq('owner_id', user.id)
-    .eq('tmdb_id', id)
-    .eq('media_type', 'movie')
-    .is('deleted_at', null)
-    .single()
+  let item = null
+  if (ctx) {
+    const { data } = await supabaseAdmin
+      .from('group_watchlist_items')
+      .select('*')
+      .eq('tmdb_id', id)
+      .eq('media_type', 'movie')
+      .eq('group_id', ctx)
+      .is('deleted_at', null)
+      .single()
+    item = data
+  } else {
+    const { data } = await supabase
+      .from('watchlist_items')
+      .select('*')
+      .eq('owner_id', user.id)
+      .eq('tmdb_id', id)
+      .eq('media_type', 'movie')
+      .is('group_id', null)
+      .is('deleted_at', null)
+      .single()
+    item = data
+  }
 
   const poster = movie.poster_path
     ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
@@ -100,16 +123,16 @@ export default async function MoviePage({ params }: { params: Promise<{ id: stri
             </div>
           )}
 
-        {movie.overview && (
-  <div className="mb-6">
-    <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-2">Handling</p>
-    <ExpandableText text={movie.overview} />
-  </div>
-)}
+          {movie.overview && (
+            <div className="mb-6">
+              <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-2">Handling</p>
+              <ExpandableText text={movie.overview} />
+            </div>
+          )}
 
           {item && (
             <div className="mb-6">
-              <RemoveFromList tmdbId={Number(id)} mediaType="movie" />
+              <RemoveFromList tmdbId={Number(id)} mediaType="movie" groupId={ctx} />
             </div>
           )}
         </div>

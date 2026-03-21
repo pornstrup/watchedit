@@ -8,23 +8,18 @@ export async function POST(request: Request) {
   if (authError || !user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
   const body = await request.json()
-  const { tmdb_id, media_type, group_id } = body
+  const { tmdb_id, media_type } = body
 
   // Tjek om der findes et soft-deleted item
-  let existingQuery = supabaseAdmin
+  const { data: existing } = await supabase
     .from('watchlist_items')
     .select('*')
+    .eq('owner_id', user.id)
     .eq('tmdb_id', tmdb_id)
     .eq('media_type', media_type)
+    .is('group_id', null)
     .not('deleted_at', 'is', null)
-
-  if (group_id) {
-    existingQuery = existingQuery.eq('group_id', group_id)
-  } else {
-    existingQuery = existingQuery.eq('owner_id', user.id).is('group_id', null)
-  }
-
-  const { data: existing } = await existingQuery.single()
+    .single()
 
   if (existing) {
     const { count } = await supabase
@@ -34,7 +29,7 @@ export async function POST(request: Request) {
 
     const status = (count && count > 0) ? 'watching' : 'want'
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('watchlist_items')
       .update({ deleted_at: null, status })
       .eq('id', existing.id)
@@ -53,7 +48,6 @@ export async function POST(request: Request) {
       media_type,
       status: 'want',
       visibility: 'private',
-      group_id: group_id || null,
     })
     .select()
     .single()
@@ -67,21 +61,16 @@ export async function DELETE(request: Request) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
-  const { tmdb_id, media_type, group_id } = await request.json()
+  const { tmdb_id, media_type } = await request.json()
 
-  let deleteQuery = supabaseAdmin
+  const { error } = await supabase
     .from('watchlist_items')
     .update({ deleted_at: new Date().toISOString() })
+    .eq('owner_id', user.id)
     .eq('tmdb_id', tmdb_id)
     .eq('media_type', media_type)
+    .is('group_id', null)
 
-  if (group_id) {
-    deleteQuery = deleteQuery.eq('group_id', group_id)
-  } else {
-    deleteQuery = deleteQuery.eq('owner_id', user.id).is('group_id', null)
-  }
-
-  const { error } = await deleteQuery
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ success: true })
 }

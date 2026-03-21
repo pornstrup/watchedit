@@ -17,7 +17,7 @@ type Member = {
   role: string
 }
 
-type WatchlistItem = {
+type GroupItem = {
   id: string
   tmdb_id: number
   media_type: string
@@ -25,10 +25,22 @@ type WatchlistItem = {
   title: string
   poster: string | null
   year?: string
+  added_by: string
+  added_at: string
+  updated_at?: string
   progress?: {
     total_episodes: number
     watched_episodes: number
   }
+}
+
+type InspirationItem = {
+  tmdb_id: number
+  media_type: string
+  title: string
+  poster: string | null
+  year?: string
+  members: string[]
 }
 
 function Avatar({ url, name, size = 6 }: { url: string | null; name: string; size?: number }) {
@@ -57,7 +69,7 @@ function GroupPosterCard({
   onStatusChange,
   className,
 }: {
-  item: WatchlistItem
+  item: GroupItem
   groupId: string
   onRemove: (id: string, tmdbId: number, mediaType: string) => void
   onStatusChange?: (id: string, status: string) => void
@@ -104,14 +116,18 @@ function GroupPosterCard({
       >
         <div className={`relative rounded-2xl overflow-hidden h-full ${item.status === 'done' ? 'opacity-70' : ''}`}>
           {item.poster ? (
-            <img src={item.poster} alt={item.title} className="w-full h-full object-cover" />
+            <img 
+              src={item.poster} 
+              alt={item.title} 
+              className="w-full h-full object-cover"
+              style={{ animation: 'fadeIn 0.3s ease-out' }}
+            />
           ) : (
             <div className="w-full h-full bg-white/10 flex items-center justify-center">
               <p className="text-white/30 text-xs text-center px-2">{item.title}</p>
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-200" />
 
           {item.status === 'done' && (
             <div className="absolute inset-0 flex items-center justify-center">
@@ -162,17 +178,15 @@ function GroupPosterCard({
                 <button
                   key={s}
                   onClick={async () => {
-                    await fetch('/api/watchlist/status', {
+                    await fetch(`/api/groups/${groupId}/watchlist/status`, {
                       method: 'PATCH',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ id: item.id, status: s })
+                      body: JSON.stringify({ item_id: item.id, status: s })
                     })
                     onStatusChange?.(item.id, s)
                     setShowOverlay(false)
                   }}
-                  className={`flex items-center px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap ${
-                    item.status === s ? 'text-white' : 'text-white/50'
-                  }`}
+                  className={`flex items-center px-3 py-2 rounded-xl text-xs font-semibold whitespace-nowrap ${item.status === s ? 'text-white' : 'text-white/50'}`}
                   style={{
                     background: item.status === s ? 'rgba(255, 255, 255, 0.15)' : 'rgba(20, 20, 20, 0.95)',
                     backdropFilter: 'blur(20px)',
@@ -213,6 +227,146 @@ function GroupPosterCard({
                 }}
               >
                 Annuller
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
+function InspirationCard({
+  item,
+  groupId,
+  onAddToWantSee,
+  onHide,
+}: {
+  item: InspirationItem
+  groupId: string
+  onAddToWantSee: (item: InspirationItem) => void
+  onHide: (item: InspirationItem) => void
+}) {
+  const [pressing, setPressing] = useState(false)
+  const [showOverlay, setShowOverlay] = useState(false)
+  const [popupPos, setPopupPos] = useState({ top: 0, left: 0 })
+  const cardRef = useRef<HTMLDivElement>(null)
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const startPress = () => {
+    pressTimer.current = setTimeout(() => {
+      if (cardRef.current) {
+        const rect = cardRef.current.getBoundingClientRect()
+        const screenWidth = window.innerWidth
+        const popupWidth = 200
+        let left = rect.left
+        if (left + popupWidth > screenWidth - 16) left = screenWidth - popupWidth - 16
+        if (left < 16) left = 16
+        const popupHeight = 180
+        let top = rect.bottom + 8
+        if (top + popupHeight > window.innerHeight - 100) top = rect.top - popupHeight - 8
+        setPopupPos({ top, left })
+      }
+      setShowOverlay(true)
+      if (navigator.vibrate) navigator.vibrate(10)
+    }, 500)
+    setPressing(true)
+  }
+
+  const cancelPress = () => {
+    if (pressTimer.current) clearTimeout(pressTimer.current)
+    setPressing(false)
+  }
+
+  return (
+    <motion.div
+      ref={cardRef}
+      exit={{ opacity: 0, scale: 0.95 }}
+      transition={{ duration: 0.2 }}
+      className="relative flex-shrink-0 w-28"
+    >
+      <motion.div
+        onMouseDown={startPress}
+        onMouseUp={cancelPress}
+        onMouseLeave={cancelPress}
+        onTouchStart={startPress}
+        onTouchEnd={cancelPress}
+        onTouchCancel={cancelPress}
+        animate={{ scale: pressing || showOverlay ? 0.96 : 1 }}
+        transition={{ duration: 0.15 }}
+        className="cursor-pointer"
+      >
+        <div className="relative w-28 rounded-xl overflow-hidden aspect-[2/3]">
+          {item.poster ? (
+            <img 
+              src={item.poster} 
+              alt={item.title} 
+              className="w-full h-full object-cover opacity-70"
+              style={{ animation: 'fadeIn 0.3s ease-out' }}
+            />
+          ) : (
+            <div className="w-full h-full bg-white/10" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-2">
+            <p className="text-white/70 text-xs font-medium leading-tight truncate">{item.title}</p>
+          </div>
+        </div>
+      </motion.div>
+
+      <AnimatePresence>
+        {showOverlay && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="fixed inset-0 z-40"
+              style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+              onClick={() => setShowOverlay(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.85 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.85 }}
+              transition={{ type: 'spring', damping: 20, stiffness: 400 }}
+              className="fixed z-50 flex flex-col overflow-hidden rounded-2xl"
+              style={{
+                top: popupPos.top,
+                left: popupPos.left,
+                width: 200,
+                background: 'rgba(30, 30, 32, 0.98)',
+                backdropFilter: 'blur(40px)',
+                WebkitBackdropFilter: 'blur(40px)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
+              }}
+            >
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-white/8">
+                {item.poster && (
+                  <img src={item.poster} alt={item.title} className="w-8 rounded-lg object-cover flex-shrink-0" style={{ aspectRatio: '2/3' }} />
+                )}
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <p className="text-white text-xs font-semibold truncate">{item.title}</p>
+                  <p className="text-white/30 text-xs truncate">{item.members.join(', ')} har denne</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => { onAddToWantSee(item); setShowOverlay(false) }}
+                className="flex items-center justify-between px-4 py-3.5 text-sm font-medium text-white hover:bg-white/5 transition-colors border-b border-white/6"
+              >
+                Tilføj til Vil se
+                <span className="text-white/30 text-base">+</span>
+              </button>
+
+              <button
+                onClick={() => { onHide(item); setShowOverlay(false) }}
+                className="flex items-center justify-between px-4 py-3.5 text-sm font-medium text-white/50 hover:bg-white/5 transition-colors"
+              >
+                Skjul denne
+                <span className="text-white/20 text-base">✕</span>
               </button>
             </motion.div>
           </>
@@ -297,7 +451,6 @@ function GroupSettingsSheet({
         }}
       >
         <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-6" />
-
         <div className="flex flex-col gap-3">
           <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-1">{group.name}</p>
 
@@ -310,21 +463,13 @@ function GroupSettingsSheet({
                 onKeyDown={e => e.key === 'Enter' && saveRename()}
                 className="flex-1 bg-white/10 text-white rounded-xl px-4 py-3 text-sm outline-none border border-white/20"
               />
-              <button
-                onClick={saveRename}
-                className="px-4 py-3 rounded-xl bg-white text-black text-sm font-semibold"
-              >
-                Gem
-              </button>
+              <button onClick={saveRename} className="px-4 py-3 rounded-xl bg-white text-black text-sm font-semibold">Gem</button>
             </div>
           ) : (
             <button
               onClick={() => setRenaming(true)}
               className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-white text-sm font-medium text-left"
-              style={{
-                background: 'rgba(255, 255, 255, 0.07)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-              }}
+              style={{ background: 'rgba(255, 255, 255, 0.07)', border: '1px solid rgba(255, 255, 255, 0.1)' }}
             >
               <span className="text-lg">✏️</span> Omdøb gruppe
             </button>
@@ -348,10 +493,7 @@ function GroupSettingsSheet({
           <button
             onClick={leave}
             className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-red-400 text-sm font-medium text-left"
-            style={{
-              background: 'rgba(255, 59, 48, 0.08)',
-              border: '1px solid rgba(255, 59, 48, 0.2)',
-            }}
+            style={{ background: 'rgba(255, 59, 48, 0.08)', border: '1px solid rgba(255, 59, 48, 0.2)' }}
           >
             <span className="text-lg">🚪</span> Forlad gruppe
           </button>
@@ -373,7 +515,8 @@ export default function GroupView({
   refreshKey?: number
 }) {
   const [members, setMembers] = useState<Member[]>([])
-  const [items, setItems] = useState<WatchlistItem[]>([])
+  const [items, setItems] = useState<GroupItem[]>([])
+  const [inspiration, setInspiration] = useState<InspirationItem[]>([])
   const [loading, setLoading] = useState(true)
   const [showSettings, setShowSettings] = useState(false)
   const [currentGroupName, setCurrentGroupName] = useState(group.name)
@@ -382,10 +525,12 @@ export default function GroupView({
     setLoading(true)
     Promise.all([
       fetch(`/api/groups/${groupId}/members`).then(r => r.json()),
-      fetch(`/api/watchlist/list?group_id=${groupId}`).then(r => r.json()),
-    ]).then(([membersData, itemsData]) => {
+      fetch(`/api/groups/${groupId}/watchlist`).then(r => r.json()),
+      fetch(`/api/groups/${groupId}/inspiration`).then(r => r.json()),
+    ]).then(([membersData, itemsData, inspirationData]) => {
       setMembers(membersData.members || [])
       setItems(itemsData.items || [])
+      setInspiration(inspirationData.items || [])
       setLoading(false)
     })
   }, [groupId, refreshKey])
@@ -393,20 +538,59 @@ export default function GroupView({
   const removeItem = async (id: string, tmdbId: number, mediaType: string) => {
     if (navigator.vibrate) navigator.vibrate(8)
     setItems(prev => prev.filter(i => i.id !== id))
-    await fetch('/api/watchlist', {
+    await fetch(`/api/groups/${groupId}/watchlist`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tmdb_id: tmdbId, media_type: mediaType, group_id: groupId })
+      body: JSON.stringify({ tmdb_id: tmdbId, media_type: mediaType })
     })
+    const inspirationRes = await fetch(`/api/groups/${groupId}/inspiration`)
+    const inspirationData = await inspirationRes.json()
+    setInspiration(inspirationData.items || [])
   }
 
   const updateStatus = (id: string, status: string) => {
     setItems(prev => prev.map(i => i.id === id ? { ...i, status } : i))
   }
 
+  const addInspirationToWantSee = async (item: InspirationItem) => {
+    const res = await fetch(`/api/groups/${groupId}/watchlist`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tmdb_id: item.tmdb_id, media_type: item.media_type })
+    })
+    const data = await res.json()
+    setInspiration(prev => prev.filter(i => !(i.tmdb_id === item.tmdb_id && i.media_type === item.media_type)))
+    if (data.data) {
+      setItems(prev => [...prev, {
+        ...data.data,
+        title: item.title,
+        poster: item.poster,
+        year: item.year,
+      }])
+    }
+  }
+
+  const hideInspiration = async (item: InspirationItem) => {
+    await fetch(`/api/groups/${groupId}/inspiration`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tmdb_id: item.tmdb_id, media_type: item.media_type })
+    })
+    setInspiration(prev => prev.filter(i => !(i.tmdb_id === item.tmdb_id && i.media_type === item.media_type)))
+  }
+
   const watchingItems = items.filter(i => i.status === 'watching')
   const wantItems = items.filter(i => i.status === 'want')
   const doneItems = items.filter(i => i.status === 'done')
+
+  const doneByMonth = doneItems.reduce((acc, item) => {
+    const date = new Date(item.updated_at || item.added_at)
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+    const label = date.toLocaleDateString('da-DK', { month: 'long', year: 'numeric' })
+    if (!acc[key]) acc[key] = { label, items: [] }
+    acc[key].items.push(item)
+    return acc
+  }, {} as Record<string, { label: string; items: GroupItem[] }>)
 
   const handleLeave = () => {
     setShowSettings(false)
@@ -418,9 +602,12 @@ export default function GroupView({
     onRefresh()
   }
 
+  const featuredItem = watchingItems[0] || wantItems[0] || null
+  const featuredAction = watchingItems.length > 0 ? 'Fortsæt' : 'Start'
+
   if (loading) return (
     <div className="flex flex-col gap-6">
-      <div className="h-32 rounded-3xl bg-white/5 animate-pulse" />
+      <div className="h-40 rounded-3xl bg-white/5 animate-pulse" />
       <div className="grid grid-cols-2 gap-3">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="h-48 rounded-2xl bg-white/5 animate-pulse" />
@@ -463,36 +650,35 @@ export default function GroupView({
         )}
 
         {/* HVAD SER I I AFTEN */}
-        {wantItems.length > 0 && (
+        {featuredItem ? (
           <div className="relative rounded-3xl overflow-hidden" style={{ minHeight: 160 }}>
-            {wantItems[0].poster && (
+            {featuredItem.poster && (
               <img
-                src={wantItems[0].poster}
-                alt={wantItems[0].title}
+                src={featuredItem.poster}
+                alt={featuredItem.title}
                 className="absolute inset-0 w-full h-full object-cover opacity-40"
                 style={{ filter: 'blur(12px)', transform: 'scale(1.1)' }}
               />
             )}
             <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
             <div className="relative p-6 flex flex-col gap-4">
-              <p className="text-white/50 text-xs uppercase tracking-widest font-semibold">Hvad ser I i aften?</p>
-              <h2 className="text-white text-2xl font-bold leading-tight">{wantItems[0].title}</h2>
+              <p className="text-white/50 text-xs uppercase tracking-widest font-semibold">
+                {watchingItems.length > 0 ? 'Fortsæt med' : 'Hvad ser I i aften?'}
+              </p>
+              <h2 className="text-white text-2xl font-bold leading-tight">{featuredItem.title}</h2>
               <div className="flex gap-2">
                 <a
-                  href={`/${wantItems[0].media_type === 'movie' ? 'movie' : 'tv'}/${wantItems[0].tmdb_id}?ctx=${groupId}`}
+                  href={`/${featuredItem.media_type === 'movie' ? 'movie' : 'tv'}/${featuredItem.tmdb_id}?ctx=${groupId}`}
                   className="px-5 py-2.5 rounded-xl text-black text-sm font-semibold no-underline"
                   style={{ background: 'white' }}
                 >
-                  Se nu
+                  {featuredAction} →
                 </a>
               </div>
             </div>
           </div>
-        )}
-
-        {/* INGEN ITEMS ENDNU */}
-        {items.length === 0 && (
-          <div className="flex flex-col items-center gap-3 py-12 text-center">
+        ) : (
+          <div className="flex flex-col items-center gap-3 py-8 text-center">
             <p className="text-white text-lg font-semibold">Ingen titler endnu</p>
             <p className="text-white/30 text-sm">Søg efter film og serier og tilføj dem til {currentGroupName}</p>
           </div>
@@ -544,25 +730,57 @@ export default function GroupView({
           </section>
         )}
 
+        {/* INSPIRATION */}
+        {inspiration.length > 0 && (
+          <section>
+            <div className="pt-6" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-white/25 text-xs uppercase tracking-widest font-semibold">
+                  Inspiration ({inspiration.length})
+                </p>
+                {inspiration.length > 10 && (
+                  <button className="text-white/25 text-xs">Se alle →</button>
+                )}
+              </div>
+              <div className="flex gap-3 overflow-x-auto scrollbar-none pb-2 -mx-6 px-6">
+                <AnimatePresence>
+                  {inspiration.slice(0, 10).map(item => (
+                    <InspirationCard
+                      key={`${item.tmdb_id}-${item.media_type}`}
+                      item={item}
+                      groupId={groupId}
+                      onAddToWantSee={addInspirationToWantSee}
+                      onHide={hideInspiration}
+                    />
+                  ))}
+                </AnimatePresence>
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* SET */}
         {doneItems.length > 0 && (
           <section>
-            <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-4">
-              Set ({doneItems.length})
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              <AnimatePresence>
-                {doneItems.map(item => (
-                  <GroupPosterCard
-                    key={item.id}
-                    item={item}
-                    groupId={groupId}
-                    onRemove={removeItem}
-                    onStatusChange={updateStatus}
-                    className="aspect-[2/3]"
-                  />
-                ))}
-              </AnimatePresence>
+            <div className="pt-6" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+              <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-4">
+                Set ({doneItems.length})
+              </p>
+              <div className="flex flex-col gap-4">
+                {Object.entries(doneByMonth)
+                  .sort(([a], [b]) => b.localeCompare(a))
+                  .map(([key, { label, items: monthItems }], index) => (
+                    <MonthSection
+                      key={key}
+                      label={label}
+                      items={monthItems}
+                      groupId={groupId}
+                      defaultOpen={index === 0}
+                      onStatusChange={updateStatus}
+                      onRemove={removeItem}
+                    />
+                  ))}
+              </div>
             </div>
           </section>
         )}
@@ -579,5 +797,60 @@ export default function GroupView({
         )}
       </AnimatePresence>
     </>
+  )
+}
+
+function MonthSection({
+  label,
+  items,
+  groupId,
+  defaultOpen,
+  onStatusChange,
+  onRemove,
+}: {
+  label: string
+  items: GroupItem[]
+  groupId: string
+  defaultOpen: boolean
+  onStatusChange: (id: string, status: string) => void
+  onRemove: (id: string, tmdbId: number, mediaType: string) => void
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center justify-between w-full mb-3"
+      >
+        <p className="text-white/50 text-sm font-medium capitalize">{label}</p>
+        <div className="flex items-center gap-2">
+          <span className="text-white/30 text-xs">{items.length}</span>
+          <span className="text-white/30 text-xs">{open ? '↑' : '↓'}</span>
+        </div>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="grid grid-cols-3 gap-2"
+          >
+            {items.map(item => (
+              <GroupPosterCard
+                key={item.id}
+                item={item}
+                groupId={groupId}
+                onRemove={onRemove}
+                onStatusChange={onStatusChange}
+                className="aspect-[2/3]"
+              />
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   )
 }

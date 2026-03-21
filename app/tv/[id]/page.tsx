@@ -37,7 +37,7 @@ export default async function TVPage({
   let item = null
   if (ctx) {
     const { data } = await supabaseAdmin
-      .from('watchlist_items')
+      .from('group_watchlist_items')
       .select('*')
       .eq('tmdb_id', id)
       .eq('media_type', 'tv')
