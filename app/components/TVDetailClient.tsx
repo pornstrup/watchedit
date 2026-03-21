@@ -17,6 +17,7 @@ export default function TVDetailClient({
   initialStatus,
   providers,
   overview,
+  ctx,
 }: {
   item: { id: string }
   seasons: Season[]
@@ -25,6 +26,7 @@ export default function TVDetailClient({
   initialStatus: string
   providers: Provider[]
   overview: string
+  ctx?: string
 }) {
   const [status, setStatus] = useState(initialStatus)
 
@@ -37,6 +39,7 @@ export default function TVDetailClient({
           itemId={item.id}
           initialStatus={status as 'want' | 'watching' | 'done'}
           onStatusChange={setStatus}
+          ctx={ctx}
         />
       </div>
 
@@ -67,11 +70,11 @@ export default function TVDetailClient({
 
       {/* HANDLING */}
       {overview && (
-  <div className="mb-6">
-    <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-2">Handling</p>
-    <ExpandableText text={overview} />
-  </div>
-)}
+        <div className="mb-6">
+          <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-2">Handling</p>
+          <ExpandableText text={overview} />
+        </div>
+      )}
 
       {/* EPISODER */}
       {seasons.length > 0 && (
@@ -84,6 +87,7 @@ export default function TVDetailClient({
             showId={showId}
             currentStatus={status}
             onStatusChange={setStatus}
+            ctx={ctx}
           />
         </div>
       )}

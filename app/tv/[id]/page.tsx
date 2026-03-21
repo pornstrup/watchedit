@@ -58,10 +58,15 @@ export default async function TVPage({
     item = data
   }
 
-  const { data: episodeProgress } = await supabase
-    .from('episode_progress')
-    .select('*')
-    .eq('watchlist_item_id', item?.id || '')
+  const { data: episodeProgress } = ctx
+    ? await supabaseAdmin
+        .from('group_episode_progress')
+        .select('season_number, episode_number')
+        .eq('group_watchlist_item_id', item?.id || '')
+    : await supabase
+        .from('episode_progress')
+        .select('*')
+        .eq('watchlist_item_id', item?.id || '')
 
   const poster = show.poster_path
     ? `https://image.tmdb.org/t/p/w500${show.poster_path}`
@@ -107,6 +112,7 @@ export default async function TVPage({
               initialStatus={item.status}
               providers={providers}
               overview={show.overview}
+              ctx={ctx}
             />
           )}
 

@@ -15,10 +15,12 @@ export default function StatusButtons({
   itemId,
   initialStatus,
   onStatusChange,
+  ctx,
 }: {
   itemId: string
   initialStatus: Status
   onStatusChange?: (status: string) => void
+  ctx?: string
 }) {
   const [status, setStatus] = useState<Status>(initialStatus)
 
@@ -27,15 +29,23 @@ export default function StatusButtons({
     setStatus(initialStatus)
   }, [initialStatus])
 
-  const updateStatus = async (newStatus: Status) => {
-  if (navigator.vibrate) navigator.vibrate(8)
+const updateStatus = async (newStatus: Status) => {
+    if (navigator.vibrate) navigator.vibrate(8)
     setStatus(newStatus)
     onStatusChange?.(newStatus)
-    await fetch('/api/watchlist/status', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: itemId, status: newStatus })
-    })
+    if (ctx) {
+      await fetch(`/api/groups/${ctx}/watchlist/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item_id: itemId, status: newStatus })
+      })
+    } else {
+      await fetch('/api/watchlist/status', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: itemId, status: newStatus })
+      })
+    }
   }
 
   return (

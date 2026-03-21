@@ -29,6 +29,7 @@ export default function EpisodeTracker({
   showId,
   currentStatus,
   onStatusChange,
+  ctx,
 }: {
   itemId: string
   seasons: Season[]
@@ -36,6 +37,7 @@ export default function EpisodeTracker({
   showId: string
   currentStatus: string
   onStatusChange?: (status: string) => void
+  ctx?: string
 }) {
   const [activeSeason, setActiveSeason] = useState(seasons[0]?.season_number || 1)
   const [episodes, setEpisodes] = useState<Episode[]>([])
@@ -60,20 +62,34 @@ export default function EpisodeTracker({
     }
     setWatched(newWatched)
 
-    await fetch('/api/watchlist/episode', {
-      method: isWatched ? 'DELETE' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ watchlist_item_id: itemId, season_number: season, episode_number: episode })
-    })
-
-    // Auto-sæt til "I gang" hvis status er "want"
-    if (!isWatched && currentStatus === 'want') {
-      await fetch('/api/watchlist/status', {
-        method: 'PATCH',
+    if (ctx) {
+      await fetch(`/api/groups/${ctx}/episode`, {
+        method: isWatched ? 'DELETE' : 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: itemId, status: 'watching' })
+        body: JSON.stringify({ group_watchlist_item_id: itemId, season_number: season, episode_number: episode })
       })
-      onStatusChange?.('watching')
+      if (!isWatched && currentStatus === 'want') {
+        await fetch(`/api/groups/${ctx}/watchlist/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ item_id: itemId, status: 'watching' })
+        })
+        onStatusChange?.('watching')
+      }
+    } else {
+      await fetch('/api/watchlist/episode', {
+        method: isWatched ? 'DELETE' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ watchlist_item_id: itemId, season_number: season, episode_number: episode })
+      })
+      if (!isWatched && currentStatus === 'want') {
+        await fetch('/api/watchlist/status', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: itemId, status: 'watching' })
+        })
+        onStatusChange?.('watching')
+      }
     }
   }
 
@@ -84,19 +100,36 @@ export default function EpisodeTracker({
     }
     setWatched(newWatched)
 
-    await fetch('/api/watchlist/episode/season', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ watchlist_item_id: itemId, season_number: season, episode_count: episodeCount })
-    })
-
-    if (currentStatus === 'want') {
-      await fetch('/api/watchlist/status', {
-        method: 'PATCH',
+    if (ctx) {
+      for (let ep = 1; ep <= episodeCount; ep++) {
+        await fetch(`/api/groups/${ctx}/episode`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ group_watchlist_item_id: itemId, season_number: season, episode_number: ep })
+        })
+      }
+      if (currentStatus === 'want') {
+        await fetch(`/api/groups/${ctx}/watchlist/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ item_id: itemId, status: 'watching' })
+        })
+        onStatusChange?.('watching')
+      }
+    } else {
+      await fetch('/api/watchlist/episode/season', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: itemId, status: 'watching' })
+        body: JSON.stringify({ watchlist_item_id: itemId, season_number: season, episode_count: episodeCount })
       })
-      onStatusChange?.('watching')
+      if (currentStatus === 'want') {
+        await fetch('/api/watchlist/status', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: itemId, status: 'watching' })
+        })
+        onStatusChange?.('watching')
+      }
     }
   }
 
