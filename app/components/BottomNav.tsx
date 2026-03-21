@@ -1,14 +1,16 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { Tv2, Search, User } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { AnimatePresence } from 'framer-motion'
 import SearchSheet from './SearchSheet'
+import ProfileSheet from './ProfileSheet'
 
 export default function BottomNav() {
   const pathname = usePathname()
   const [searchOpen, setSearchOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
 
   const isDetailPage =
     pathname.startsWith('/movie/') ||
@@ -16,7 +18,6 @@ export default function BottomNav() {
     pathname === '/login'
   if (isDetailPage) return null
 
-  // Udled aktiv gruppe fra URL
   const groupId = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search).get('group')
     : null
@@ -69,21 +70,21 @@ export default function BottomNav() {
           </button>
 
           {/* PROFIL */}
-          <a
-            href="/profile"
+          <button
+            onClick={() => setProfileOpen(true)}
             aria-label="Profil"
             className="relative flex items-center justify-center w-12 h-12 rounded-full transition-all duration-200"
             style={{
-              background: pathname === '/profile' ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
-              boxShadow: pathname === '/profile' ? 'inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 8px rgba(0,0,0,0.3)' : 'none',
+              background: profileOpen ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
+              boxShadow: profileOpen ? 'inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 8px rgba(0,0,0,0.3)' : 'none',
             }}
           >
             <User
               size={22}
-              strokeWidth={pathname === '/profile' ? 2 : 1.5}
-              color={pathname === '/profile' ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.35)'}
+              strokeWidth={profileOpen ? 2 : 1.5}
+              color={profileOpen ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.35)'}
             />
-          </a>
+          </button>
         </div>
       </nav>
 
@@ -93,6 +94,12 @@ export default function BottomNav() {
             onClose={() => setSearchOpen(false)}
             initialGroupId={groupId}
           />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {profileOpen && (
+          <ProfileSheet onClose={() => setProfileOpen(false)} />
         )}
       </AnimatePresence>
     </>

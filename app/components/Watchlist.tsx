@@ -17,13 +17,20 @@ type WatchlistItem = {
   }
 }
 
+type Group = {
+  id: string
+  name: string
+}
+
 function PosterCard({
   item,
+  groups,
   onRemove,
   onStatusChange,
   className,
 }: {
   item: WatchlistItem
+  groups: Group[]
   onRemove: (id: string, tmdbId: number, mediaType: string) => void
   onStatusChange?: (id: string, status: string) => void
   className?: string
@@ -31,6 +38,8 @@ function PosterCard({
   const [pressing, setPressing] = useState(false)
   const [showOverlay, setShowOverlay] = useState(false)
   const [popupPos, setPopupPos] = useState({ top: 0, left: 0 })
+  const [sharingTo, setSharingTo] = useState<string | null>(null)
+  const [sharedGroups, setSharedGroups] = useState<string[]>([])
   const cardRef = useRef<HTMLDivElement>(null)
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -43,7 +52,7 @@ function PosterCard({
         let left = rect.left
         if (left + popupWidth > screenWidth - 16) left = screenWidth - popupWidth - 16
         if (left < 16) left = 16
-        const popupHeight = 200
+        const popupHeight = 260
         let top = rect.bottom + 8
         if (top + popupHeight > window.innerHeight - 100) top = rect.top - popupHeight - 8
         setPopupPos({ top, left })
@@ -57,6 +66,18 @@ function PosterCard({
   const cancelPress = () => {
     if (pressTimer.current) clearTimeout(pressTimer.current)
     setPressing(false)
+  }
+
+  const shareToGroup = async (groupId: string) => {
+    setSharingTo(groupId)
+    await fetch(`/api/groups/${groupId}/watchlist`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tmdb_id: item.tmdb_id, media_type: item.media_type })
+    })
+    setSharedGroups(prev => [...prev, groupId])
+    setSharingTo(null)
+    if (groups.length === 1) setShowOverlay(false)
   }
 
   const href = `/${item.media_type === 'movie' ? 'movie' : 'tv'}/${item.tmdb_id}`
@@ -166,7 +187,7 @@ function PosterCard({
                 </div>
               </div>
 
-              {/* STATUS KNAPPER */}
+              {/* STATUS */}
               {(['want', 'watching', 'done'] as const).map((s, i) => (
                 <button
                   key={s}
@@ -191,9 +212,40 @@ function PosterCard({
                 </button>
               ))}
 
-              <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }} />
+              {/* DEL MED GRUPPE */}
+              {groups.length > 0 && (
+                <>
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }} />
+                  {groups.length === 1 ? (
+                    <button
+                      onClick={() => shareToGroup(groups[0].id)}
+                      className="flex items-center justify-between px-4 py-3 text-sm transition-colors"
+                      style={{ color: sharedGroups.includes(groups[0].id) ? 'rgba(52,199,89,0.9)' : 'rgba(255,255,255,0.6)' }}
+                    >
+                      {sharedGroups.includes(groups[0].id) ? `Delt med ${groups[0].name} ✓` : `Del med ${groups[0].name}`}
+                      {sharingTo === groups[0].id && <span className="text-white/30 text-xs">...</span>}
+                    </button>
+                  ) : (
+                    groups.map((g, i) => (
+                      <button
+                        key={g.id}
+                        onClick={() => shareToGroup(g.id)}
+                        className="flex items-center justify-between px-4 py-3 text-sm transition-colors"
+                        style={{
+                          borderBottom: i < groups.length - 1 ? '1px solid rgba(255,255,255,0.06)' : 'none',
+                          color: sharedGroups.includes(g.id) ? 'rgba(52,199,89,0.9)' : 'rgba(255,255,255,0.6)',
+                        }}
+                      >
+                        {sharedGroups.includes(g.id) ? `${g.name} ✓` : `Del med ${g.name}`}
+                        {sharingTo === g.id && <span className="text-white/30 text-xs">...</span>}
+                      </button>
+                    ))
+                  )}
+                </>
+              )}
 
               {/* FJERN */}
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.08)' }} />
               <button
                 onClick={() => {
                   onRemove(item.id, item.tmdb_id, item.media_type)
@@ -215,15 +267,18 @@ function PosterCard({
 
 export default function Watchlist({ onRemove }: { onRemove?: () => void }) {
   const [items, setItems] = useState<WatchlistItem[]>([])
+  const [groups, setGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/api/watchlist/list')
-      .then(res => res.json())
-      .then(data => {
-        setItems(data.items || [])
-        setLoading(false)
-      })
+    Promise.all([
+      fetch('/api/watchlist/list').then(r => r.json()),
+      fetch('/api/groups').then(r => r.json()),
+    ]).then(([watchlistData, groupsData]) => {
+      setItems(watchlistData.items || [])
+      setGroups((groupsData.groups || []).filter(Boolean))
+      setLoading(false)
+    })
   }, [])
 
   const removeItem = async (id: string, tmdbId: number, mediaType: string) => {
@@ -290,6 +345,7 @@ export default function Watchlist({ onRemove }: { onRemove?: () => void }) {
                   <PosterCard
                     key={item.id}
                     item={item}
+                    groups={groups}
                     onRemove={removeItem}
                     onStatusChange={updateStatus}
                     className="flex-shrink-0 w-36 h-52"
@@ -320,6 +376,7 @@ export default function Watchlist({ onRemove }: { onRemove?: () => void }) {
                   <PosterCard
                     key={item.id}
                     item={item}
+                    groups={groups}
                     onRemove={removeItem}
                     onStatusChange={updateStatus}
                     className="aspect-[2/3]"
@@ -350,6 +407,7 @@ export default function Watchlist({ onRemove }: { onRemove?: () => void }) {
                   <PosterCard
                     key={item.id}
                     item={item}
+                    groups={groups}
                     onRemove={removeItem}
                     onStatusChange={updateStatus}
                     className="aspect-[2/3]"
