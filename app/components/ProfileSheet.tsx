@@ -54,17 +54,36 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
         {/* PROFIL */}
         {profile && (
           <div className="flex items-center gap-4 mb-8">
-            {profile.avatar ? (
-              <img
-                src={profile.avatar}
-                alt={profile.name}
-                className="w-14 h-14 rounded-full object-cover ring-2 ring-white/10"
-              />
-            ) : (
-              <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center ring-2 ring-white/10">
-                <span className="text-white text-xl font-bold">{profile.name?.[0]}</span>
+            <label className="relative cursor-pointer">
+              {profile.avatar ? (
+                <img
+                  src={profile.avatar}
+                  alt={profile.name}
+                  className="w-14 h-14 rounded-full object-cover ring-2 ring-white/10"
+                />
+              ) : (
+                <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center ring-2 ring-white/10">
+                  <span className="text-white text-xl font-bold">{profile.name?.[0]}</span>
+                </div>
+              )}
+              <div className="absolute inset-0 rounded-full bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 active:opacity-100 transition-opacity">
+                <span className="text-white text-xs">Skift</span>
               </div>
-            )}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  const form = new FormData()
+                  form.append('avatar', file)
+                  const res = await fetch('/api/profile/avatar', { method: 'POST', body: form })
+                  const data = await res.json()
+                  if (data.url) setProfile(prev => prev ? { ...prev, avatar: data.url } : prev)
+                }}
+              />
+            </label>
             <div className="flex flex-col gap-0.5 min-w-0">
               <p className="text-white font-semibold text-base truncate">{profile.name}</p>
               <p className="text-white/40 text-sm truncate">{profile.email}</p>
