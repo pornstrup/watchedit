@@ -43,13 +43,14 @@ export async function GET(
     (hidden || []).map(i => `${i.tmdb_id}-${i.media_type}`)
   )
 
-  // Hent alle medlemmers personlige lister
+ // Hent alle medlemmers personlige lister
   const { data: personalItems } = await supabaseAdmin
     .from('watchlist_items')
     .select('tmdb_id, media_type, owner_id')
     .in('owner_id', memberIds)
     .is('group_id', null)
     .is('deleted_at', null)
+    .in('status', ['watching', 'want'])
 
   if (!personalItems?.length) return NextResponse.json({ items: [] })
 

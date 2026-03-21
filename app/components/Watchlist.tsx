@@ -292,9 +292,10 @@ export default function Watchlist({ onRemove }: { onRemove?: () => void }) {
     onRemove?.()
   }
 
-  const updateStatus = (id: string, status: string) => {
-    setItems(prev => prev.map(i => i.id === id ? { ...i, status } : i))
-  }
+const updateStatus = (id: string, status: string) => {
+  setItems(prev => prev.map(i => i.id === id ? { ...i, status } : i))
+  window.dispatchEvent(new CustomEvent('personal-status-updated'))
+}
 
   if (loading) return (
     <div className="flex flex-col gap-8">

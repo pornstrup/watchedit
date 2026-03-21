@@ -740,7 +740,16 @@ export default function GroupView({
       setLoading(false)
     })
   }, [groupId, refreshKey])
-
+// Lyt på status-ændringer fra personlig liste og refresh inspiration
+  useEffect(() => {
+    const handler = () => {
+      fetch(`/api/groups/${groupId}/inspiration`)
+        .then(r => r.json())
+        .then(d => setInspiration(d.items || []))
+    }
+    window.addEventListener('personal-status-updated', handler)
+    return () => window.removeEventListener('personal-status-updated', handler)
+  }, [groupId])
   const removeItem = async (id: string, tmdbId: number, mediaType: string) => {
     if (navigator.vibrate) navigator.vibrate(8)
     setItems(prev => prev.filter(i => i.id !== id))
