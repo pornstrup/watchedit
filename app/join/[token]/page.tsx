@@ -18,7 +18,7 @@ const { token } = await params
   }
 
   // Find invite
-  const { data: invite } = await supabase
+ const { data: invite, error: inviteError } = await supabase
     .from('group_invites')
     .select('*')
     .eq('token', token)
@@ -26,7 +26,11 @@ const { token } = await params
     .gt('expires_at', new Date().toISOString())
     .single()
 
+  console.log('JOIN DEBUG invite query:', { invite, inviteError })
+
+ console.log('JOIN DEBUG invite result:', { invite, userId: user.id })
   if (!invite) {
+    console.log('JOIN DEBUG: invite ikke fundet')
     redirect('/?error=invite_invalid')
   }
 
