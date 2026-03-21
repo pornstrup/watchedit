@@ -36,7 +36,7 @@ const { token } = await params
   }
 
   // Tjek om allerede medlem
-  const { data: existing } = await supabase
+  const { data: existing } = await supabaseAdmin
     .from('group_members')
     .select('user_id')
     .eq('group_id', invite.group_id)
@@ -44,16 +44,18 @@ const { token } = await params
     .single()
 
   if (!existing) {
-    // Join gruppen
-    await supabase
+    const { error: memberError } = await supabaseAdmin
       .from('group_members')
       .insert({ group_id: invite.group_id, user_id: user.id, role: 'member' })
 
-    // Marker invite som brugt
-    await supabase
+    console.log('JOIN DEBUG member insert:', { memberError })
+
+    const { error: updateError } = await supabaseAdmin
       .from('group_invites')
       .update({ used_at: new Date().toISOString(), used_by: user.id })
       .eq('id', invite.id)
+
+    console.log('JOIN DEBUG invite update:', { updateError })
   }
 
   redirect(`/?joined=${invite.group_id}`)
