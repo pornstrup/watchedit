@@ -12,6 +12,8 @@ type WatchlistItem = {
   title: string
   poster: string | null
   year?: string
+  added_at?: string
+  updated_at?: string
   progress?: {
     total_episodes: number
     watched_episodes: number
@@ -281,6 +283,60 @@ function PosterCard({
     </motion.div>
   )
 }
+function PersonalMonthSection({
+  label,
+  items,
+  groups,
+  defaultOpen,
+  onRemove,
+  onStatusChange,
+}: {
+  label: string
+  items: WatchlistItem[]
+  groups: Group[]
+  defaultOpen: boolean
+  onRemove: (id: string, tmdbId: number, mediaType: string) => void
+  onStatusChange: (id: string, status: string) => void
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center justify-between w-full mb-3"
+      >
+        <p className="text-white/50 text-sm font-medium capitalize">{label}</p>
+        <div className="flex items-center gap-2">
+          <span className="text-white/30 text-xs">{items.length}</span>
+          <span className="text-white/30 text-xs">{open ? '↑' : '↓'}</span>
+        </div>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="grid grid-cols-3 gap-2"
+          >
+            {items.map(item => (
+              <PosterCard
+                key={item.id}
+                item={item}
+                groups={groups}
+                onRemove={onRemove}
+                onStatusChange={onStatusChange}
+                className="aspect-[2/3]"
+              />
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
 
 export default function Watchlist({ onRemove }: { onRemove?: () => void }) {
   const [items, setItems] = useState<WatchlistItem[]>([])
@@ -333,9 +389,18 @@ const updateStatus = (id: string, status: string) => {
     <p className="text-white/40 text-sm text-center py-8">Din liste er tom – søg efter noget at se!</p>
   )
 
-  const watchingItems = items.filter(i => i.status === 'watching')
+ const watchingItems = items.filter(i => i.status === 'watching')
   const wantItems = items.filter(i => i.status === 'want')
   const doneItems = items.filter(i => i.status === 'done')
+
+  const doneByMonth = doneItems.reduce((acc, item) => {
+    const date = new Date(item.updated_at || item.added_at || '')
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`
+    const label = date.toLocaleDateString('da-DK', { month: 'long', year: 'numeric' })
+    if (!acc[key]) acc[key] = { label, items: [] }
+    acc[key].items.push(item)
+    return acc
+  }, {} as Record<string, { label: string; items: WatchlistItem[] }>)
 
   return (
     <motion.div
@@ -405,8 +470,7 @@ const updateStatus = (id: string, status: string) => {
           </motion.section>
         )}
       </AnimatePresence>
-
-      {/* SET */}
+{/* SET */}
       <AnimatePresence>
         {doneItems.length > 0 && (
           <motion.section
@@ -419,19 +483,20 @@ const updateStatus = (id: string, status: string) => {
             <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-4">
               Set ({doneItems.length})
             </p>
-            <div className="grid grid-cols-3 gap-2">
-              <AnimatePresence>
-                {doneItems.map((item) => (
-                  <PosterCard
-                    key={item.id}
-                    item={item}
+            <div className="flex flex-col gap-4">
+              {Object.entries(doneByMonth)
+                .sort(([a], [b]) => b.localeCompare(a))
+                .map(([key, { label, items: monthItems }], index) => (
+                  <PersonalMonthSection
+                    key={key}
+                    label={label}
+                    items={monthItems}
                     groups={groups}
+                    defaultOpen={index === 0}
                     onRemove={removeItem}
                     onStatusChange={updateStatus}
-                    className="aspect-[2/3]"
                   />
                 ))}
-              </AnimatePresence>
             </div>
           </motion.section>
         )}
