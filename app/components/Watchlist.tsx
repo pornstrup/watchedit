@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 
 type WatchlistItem = {
@@ -167,8 +168,8 @@ function PosterCard({
         </div>
       </motion.a>
 
-      <AnimatePresence>
-        {showOverlay && (
+ <AnimatePresence>
+        {showOverlay && typeof document !== 'undefined' && createPortal(
           <>
             <motion.div
               initial={{ opacity: 0 }}
@@ -275,7 +276,8 @@ function PosterCard({
                 <span className="text-base">×</span>
               </button>
             </motion.div>
-          </>
+          </>,
+          document.body
         )}
       </AnimatePresence>
     </motion.div>

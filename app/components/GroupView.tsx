@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 
 type Group = {
@@ -194,7 +195,7 @@ function GroupPosterCard({
       </motion.a>
 
       <AnimatePresence>
-        {showOverlay && (
+        {showOverlay && typeof document !== 'undefined' && createPortal(
           <>
             <motion.div
               initial={{ opacity: 0 }}
@@ -213,6 +214,7 @@ function GroupPosterCard({
               className="fixed z-50 flex flex-col overflow-hidden rounded-2xl"
               style={{
                 top: popupPos.top,
+                bottom: popupPos.bottom,
                 left: popupPos.left,
                 width: 220,
                 background: 'rgba(30, 30, 32, 0.98)',
@@ -273,7 +275,8 @@ function GroupPosterCard({
                 <span className="text-base">×</span>
               </button>
             </motion.div>
-          </>
+          </>,
+          document.body
         )}
       </AnimatePresence>
     </motion.div>
@@ -328,13 +331,11 @@ const handleTouchStart = (_e: TouchEvent) => {
       if (pressTimer.current) clearTimeout(pressTimer.current)
       setPressing(false)
     }
-    el.addEventListener('touchstart', handleTouchStart, { passive: false })
+    el.addEventListener('touchstart', handleTouchStart, { passive: true })
     el.addEventListener('touchend', handleTouchEnd)
-    el.addEventListener('touchcancel', handleTouchEnd)
     return () => {
       el.removeEventListener('touchstart', handleTouchStart)
       el.removeEventListener('touchend', handleTouchEnd)
-      el.removeEventListener('touchcancel', handleTouchEnd)
     }
   }, [])
 
@@ -382,7 +383,7 @@ const handleTouchStart = (_e: TouchEvent) => {
       </motion.div>
 
       <AnimatePresence>
-        {showOverlay && (
+        {showOverlay && typeof document !== 'undefined' && createPortal(
           <>
             <motion.div
               initial={{ opacity: 0 }}
@@ -437,7 +438,8 @@ const handleTouchStart = (_e: TouchEvent) => {
                 <span className="text-white/20 text-base">✕</span>
               </button>
             </motion.div>
-          </>
+          </>,
+          document.body
         )}
       </AnimatePresence>
     </motion.div>
