@@ -6,9 +6,15 @@ export async function GET() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
+const { data: profile } = await supabase
+    .from('profiles')
+    .select('avatar_url, name')
+    .eq('id', user.id)
+    .single()
+
   return NextResponse.json({
-    name: user.user_metadata.full_name,
-    avatar: user.user_metadata.avatar_url,
+    name: profile?.name || user.user_metadata.full_name,
+    avatar: profile?.avatar_url || user.user_metadata.avatar_url,
     email: user.email,
   })
 }
