@@ -200,7 +200,7 @@ function NewGroupSheet({ onClose, onCreated }: { onClose: () => void; onCreated:
   )
 }
 
-export default function WatchlistProvider({ userName }: { userName: string }) {
+export default function WatchlistProvider({ userName, userId }: { userName: string; userId: string }) {
   const [refreshKey, setRefreshKey] = useState(0)
   const [groups, setGroups] = useState<Group[]>([])
   const router = useRouter()
@@ -379,8 +379,8 @@ useEffect(() => {
             transition={{ duration: 0.2 }}
           >
             {activeGroup && (
-  <GroupView groupId={activeGroupId} group={activeGroup} onRefresh={refresh} refreshKey={refreshKey} />
-)}
+              <GroupView groupId={activeGroupId} group={activeGroup} currentUserId={userId} onRefresh={refresh} refreshKey={refreshKey} />
+            )}
           </motion.div>
         )}
       </AnimatePresence>

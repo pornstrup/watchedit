@@ -571,11 +571,13 @@ function HiddenInspirationSheet({
 }
 function GroupSettingsSheet({
   group,
+  currentUserId,
   onClose,
   onLeave,
   onRename,
 }: {
   group: Group
+  currentUserId: string
   onClose: () => void
   onLeave: () => void
   onRename: (name: string) => void
@@ -613,8 +615,14 @@ function GroupSettingsSheet({
     setRenaming(false)
   }
 
+const isOwner = group.created_by === currentUserId
+
   const leave = async () => {
-    await fetch(`/api/groups/${group.id}/leave`, { method: 'DELETE' })
+    if (isOwner) {
+      await fetch(`/api/groups/${group.id}/delete`, { method: 'DELETE' })
+    } else {
+      await fetch(`/api/groups/${group.id}/leave`, { method: 'DELETE' })
+    }
     onLeave()
   }
 
@@ -683,12 +691,13 @@ function GroupSettingsSheet({
 
           <div className="h-px bg-white/10 my-1" />
 
-          <button
+         <button
             onClick={leave}
             className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-red-400 text-sm font-medium text-left"
             style={{ background: 'rgba(255, 59, 48, 0.08)', border: '1px solid rgba(255, 59, 48, 0.2)' }}
           >
-            <span className="text-lg">🚪</span> Forlad gruppe
+            <span className="text-lg">{isOwner ? '🗑️' : '🚪'}</span>
+            {isOwner ? 'Slet gruppe' : 'Forlad gruppe'}
           </button>
         </div>
       </motion.div>
@@ -699,11 +708,13 @@ function GroupSettingsSheet({
 export default function GroupView({
   groupId,
   group,
+  currentUserId,
   onRefresh,
   refreshKey,
 }: {
   groupId: string
   group: Group
+  currentUserId: string
   onRefresh: () => void
   refreshKey?: number
 }) {
@@ -998,6 +1009,7 @@ export default function GroupView({
         {showSettings && (
           <GroupSettingsSheet
             group={{ ...group, name: currentGroupName }}
+            currentUserId={currentUserId}
             onClose={() => setShowSettings(false)}
             onLeave={handleLeave}
             onRename={handleRename}
