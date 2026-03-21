@@ -6,13 +6,13 @@ export default function LoginPage() {
   const supabase = createClient()
 
   const signInWithGoogle = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`
-      }
-    })
-  }
+  await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback`
+    }
+  })
+}
 
   return (
     <main className="min-h-screen bg-black flex flex-col items-center justify-center px-8">
