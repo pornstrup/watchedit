@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { createClient } from '@/lib/supabase/client'
 
 type Group = {
   id: string
@@ -792,6 +793,28 @@ export default function GroupView({
     }
     window.addEventListener('personal-status-updated', handler)
     return () => window.removeEventListener('personal-status-updated', handler)
+  }, [groupId])
+
+  useEffect(() => {
+    const supabase = createClient()
+    const channel = supabase
+      .channel(`group-${groupId}`)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'group_watchlist_items',
+        filter: `group_id=eq.${groupId}`
+      }, () => {
+        fetch(`/api/groups/${groupId}/watchlist`)
+          .then(r => r.json())
+          .then(d => setItems(d.items || []))
+        fetch(`/api/groups/${groupId}/inspiration`)
+          .then(r => r.json())
+          .then(d => setInspiration(d.items || []))
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
   }, [groupId])
   const removeItem = async (id: string, tmdbId: number, mediaType: string) => {
     if (navigator.vibrate) navigator.vibrate(8)
