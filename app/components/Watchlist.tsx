@@ -31,12 +31,14 @@ function PosterCard({
   groups,
   onRemove,
   onStatusChange,
+  onMarkNext,
   className,
 }: {
   item: WatchlistItem
   groups: Group[]
   onRemove: (id: string, tmdbId: number, mediaType: string) => void
   onStatusChange?: (id: string, status: string) => void
+  onMarkNext?: () => void
   className?: string
 }) {
   const [pressing, setPressing] = useState(false)
@@ -218,6 +220,16 @@ function PosterCard({
                   <p className="text-white/50 text-xs">{item.media_type === 'tv' ? 'Serie' : 'Film'}{item.year && ` · ${item.year}`}</p>
                 </div>
               </div>
+
+              {onMarkNext && item.media_type === 'tv' && item.progress && (
+                <button
+                  onClick={() => { setShowOverlay(false); onMarkNext() }}
+                  className="flex items-center px-4 py-3 text-sm w-full"
+                  style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}
+                >
+                  <span className="text-white font-medium">Jeg har set afsnit {item.progress.watched_episodes + 1}</span>
+                </button>
+              )}
 
               {(['want', 'watching', 'done'] as const).map((s, i) => (
                 <button
@@ -434,6 +446,18 @@ const updateStatus = (id: string, status: string) => {
                     groups={groups}
                     onRemove={removeItem}
                     onStatusChange={updateStatus}
+                    onMarkNext={item.media_type === 'tv' ? () => {
+                      setItems(prev => prev.map(i =>
+                        i.id === item.id && i.progress
+                          ? { ...i, progress: { ...i.progress, watched_episodes: i.progress.watched_episodes + 1 } }
+                          : i
+                      ))
+                      fetch('/api/watchlist/mark-next', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ itemId: item.id, tmdbId: item.tmdb_id }),
+                      })
+                    } : undefined}
                     className="flex-shrink-0 w-40 h-60"
                   />
                 ))}
