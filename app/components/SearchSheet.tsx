@@ -379,28 +379,52 @@ export default function SearchSheet({
             </div>
           )}
 
-          {/* Søgefelt */}
-          <div
-            className="flex items-center gap-3 px-4 py-3.5 rounded-2xl"
-            style={{
-              background: 'rgba(255,255,255,0.07)',
-              border: '1px solid rgba(255,255,255,0.1)',
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2">
-              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-            </svg>
-            <input
-              ref={inputRef}
-              type="text"
-              value={query}
-              onChange={e => handleInput(e.target.value)}
-              placeholder="Søg efter film eller serie..."
-              className="flex-1 bg-transparent text-white text-sm outline-none placeholder:text-white/30"
-            />
-            {query.length > 0 && (
-              <button onClick={() => { setQuery(''); setResults([]) }} className="text-white/30 text-sm">✕</button>
-            )}
+          {/* Søgefelt + luk-knap */}
+          <div className="flex items-center gap-2">
+            <div
+              className="flex items-center gap-3 px-4 py-3.5 rounded-2xl flex-1"
+              style={{
+                background: 'rgba(255,255,255,0.07)',
+                border: '1px solid rgba(255,255,255,0.1)',
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+              <input
+                ref={inputRef}
+                type="text"
+                value={query}
+                onChange={e => handleInput(e.target.value)}
+                placeholder="Søg efter film eller serie..."
+                className="flex-1 bg-transparent text-white text-sm outline-none placeholder:text-white/30"
+              />
+              {query.length > 0 && (
+                <button
+                  onClick={() => { setQuery(''); setResults([]) }}
+                  className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ background: 'rgba(255,255,255,0.2)' }}
+                >
+                  <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+                    <path d="M1 1L7 7M7 1L1 7" stroke="rgba(255,255,255,0.8)" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              )}
+            </div>
+
+            {/* Luk søgning */}
+            <button
+              onClick={onClose}
+              className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{
+                background: 'rgba(255,255,255,0.07)',
+                border: '1px solid rgba(255,255,255,0.1)',
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M1 1L11 11M11 1L1 11" stroke="rgba(255,255,255,0.5)" strokeWidth="1.6" strokeLinecap="round"/>
+              </svg>
+            </button>
           </div>
         </div>
       </motion.div>
