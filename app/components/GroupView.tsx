@@ -162,7 +162,7 @@ function GroupPosterCard({
             />
           ) : (
             <div className="w-full h-full bg-white/10 flex items-center justify-center">
-              <p className="text-white/30 text-xs text-center px-2">{item.title}</p>
+              <p className="text-white/50 text-xs text-center px-2">{item.title}</p>
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
@@ -183,7 +183,7 @@ function GroupPosterCard({
                     style={{ width: `${Math.round((item.progress.watched_episodes / item.progress.total_episodes) * 100)}%` }}
                   />
                 </div>
-                <p className="text-white/50 text-xs mt-1">
+                <p className="text-white/65 text-xs mt-1">
                   {Math.round((item.progress.watched_episodes / item.progress.total_episodes) * 100)}%
                 </p>
               </div>
@@ -575,7 +575,7 @@ function HiddenInspirationSheet({
               ))}
             </div>
           ) : items.length === 0 ? (
-            <p className="text-white/30 text-sm text-center py-8">Ingen skjulte titler</p>
+            <p className="text-white/60 text-sm text-center py-8">Ingen skjulte titler</p>
           ) : (
             <div className="flex flex-col gap-2">
               {items.map(item => (
@@ -697,7 +697,7 @@ const isOwner = group.created_by === currentUserId
       >
         <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-6" />
         <div className="flex flex-col gap-3">
-          <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-1">{group.name}</p>
+          <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-1">{group.name}</p>
 
           {renaming ? (
             <div className="flex gap-2">
@@ -994,7 +994,7 @@ export default function GroupView({
         {/* VIL SE */}
         {wantItems.length > 0 && (
           <section>
-            <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-4">
+            <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-4">
               Vil se ({wantItems.length})
             </p>
             <div className="grid grid-cols-2 gap-3">
@@ -1061,7 +1061,7 @@ export default function GroupView({
         {doneItems.length > 0 && (
           <section>
             <div className="pt-6" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-              <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-4">
+              <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-4">
                 Set ({doneItems.length})
               </p>
               <div className="flex flex-col gap-4">
@@ -1147,7 +1147,7 @@ function MonthSection({
         onClick={() => setOpen(o => !o)}
         className="flex items-center justify-between w-full mb-3"
       >
-        <p className="text-white/50 text-sm font-medium capitalize">{label}</p>
+        <p className="text-white/70 text-sm font-medium capitalize">{label}</p>
         <div className="flex items-center gap-2">
           <span className="text-white/30 text-xs">{items.length}</span>
           <span className="text-white/30 text-xs">{open ? '↑' : '↓'}</span>

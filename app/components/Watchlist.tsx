@@ -158,13 +158,13 @@ function PosterCard({
                     style={{ width: `${Math.round((item.progress.watched_episodes / item.progress.total_episodes) * 100)}%` }}
                   />
                 </div>
-                <p className="text-white/50 text-xs mt-1">
+                <p className="text-white/65 text-xs mt-1">
                   {Math.round((item.progress.watched_episodes / item.progress.total_episodes) * 100)}%
                 </p>
               </div>
             )}
             {item.status !== 'watching' && (
-              <p className="text-white/50 text-xs">{item.media_type === 'tv' ? 'Serie' : 'Film'}{item.year && ` · ${item.year}`}</p>
+              <p className="text-white/65 text-xs">{item.media_type === 'tv' ? 'Serie' : 'Film'}{item.year && ` · ${item.year}`}</p>
             )}
           </div>
         </div>
@@ -205,7 +205,7 @@ function PosterCard({
                 )}
                 <div className="flex flex-col gap-0.5 min-w-0">
                   <p className="text-white text-xs font-semibold truncate">{item.title}</p>
-                  <p className="text-white/30 text-xs">{item.media_type === 'tv' ? 'Serie' : 'Film'}{item.year && ` · ${item.year}`}</p>
+                  <p className="text-white/50 text-xs">{item.media_type === 'tv' ? 'Serie' : 'Film'}{item.year && ` · ${item.year}`}</p>
                 </div>
               </div>
 
@@ -306,10 +306,10 @@ function PersonalMonthSection({
         onClick={() => setOpen(o => !o)}
         className="flex items-center justify-between w-full mb-3"
       >
-        <p className="text-white/50 text-sm font-medium capitalize">{label}</p>
+        <p className="text-white/70 text-sm font-medium capitalize">{label}</p>
         <div className="flex items-center gap-2">
-          <span className="text-white/30 text-xs">{items.length}</span>
-          <span className="text-white/30 text-xs">{open ? '↑' : '↓'}</span>
+          <span className="text-white/50 text-xs">{items.length}</span>
+          <span className="text-white/50 text-xs">{open ? '↑' : '↓'}</span>
         </div>
       </button>
       <AnimatePresence>
@@ -386,7 +386,7 @@ const updateStatus = (id: string, status: string) => {
   )
 
   if (items.length === 0) return (
-    <p className="text-white/40 text-sm text-center py-8">Din liste er tom – søg efter noget at se!</p>
+    <p className="text-white/65 text-sm text-center py-8">Din liste er tom – søg efter noget at se!</p>
   )
 
  const watchingItems = items.filter(i => i.status === 'watching')
@@ -450,7 +450,7 @@ const updateStatus = (id: string, status: string) => {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.35, ease: 'easeOut' }}
           >
-            <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-4">
+            <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-4">
               Vil se ({wantItems.length})
             </p>
             <div className="grid grid-cols-2 gap-3">
@@ -480,7 +480,7 @@ const updateStatus = (id: string, status: string) => {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.35, ease: 'easeOut' }}
           >
-            <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-4">
+            <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-4">
               Set ({doneItems.length})
             </p>
             <div className="flex flex-col gap-4">

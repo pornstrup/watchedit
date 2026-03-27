@@ -42,7 +42,7 @@ export default function BottomNav() {
         {!isHidden && (
           <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-end justify-center pb-8 pointer-events-none">
             <div
-              className="pointer-events-auto flex items-center gap-1 px-3 py-3 rounded-full"
+              className="pointer-events-auto flex items-center gap-1 px-2 py-2 rounded-[28px]"
               style={{
                 background: 'rgba(255, 255, 255, 0.07)',
                 backdropFilter: 'blur(40px) saturate(180%)',
@@ -55,51 +55,54 @@ export default function BottomNav() {
               <a
                 href="/"
                 aria-label="Min liste"
-                className="relative flex items-center justify-center w-12 h-12 rounded-full transition-all duration-200"
+                className="relative flex flex-col items-center gap-1 px-5 py-2 rounded-[20px] transition-all duration-200"
                 style={{
                   background: pathname === '/' ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
                   boxShadow: pathname === '/' ? 'inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 8px rgba(0,0,0,0.3)' : 'none',
                 }}
               >
                 <Tv2
-                  size={22}
+                  size={20}
                   strokeWidth={pathname === '/' ? 2 : 1.5}
-                  color={pathname === '/' ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.35)'}
+                  color={pathname === '/' ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.5)'}
                 />
+                <span style={{ color: pathname === '/' ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: 500, lineHeight: 1 }}>Min liste</span>
               </a>
 
               {/* SØG */}
               <button
                 onClick={() => setSearchOpen(true)}
                 aria-label="Søg"
-                className="relative flex items-center justify-center w-12 h-12 rounded-full transition-all duration-200"
+                className="relative flex flex-col items-center gap-1 px-5 py-2 rounded-[20px] transition-all duration-200"
                 style={{
                   background: searchOpen ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
                   boxShadow: searchOpen ? 'inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 8px rgba(0,0,0,0.3)' : 'none',
                 }}
               >
                 <Search
-                  size={22}
+                  size={20}
                   strokeWidth={searchOpen ? 2 : 1.5}
-                  color={searchOpen ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.35)'}
+                  color={searchOpen ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.5)'}
                 />
+                <span style={{ color: searchOpen ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: 500, lineHeight: 1 }}>Søg</span>
               </button>
 
               {/* PROFIL */}
               <button
                 onClick={() => setProfileOpen(true)}
                 aria-label="Profil"
-                className="relative flex items-center justify-center w-12 h-12 rounded-full transition-all duration-200"
+                className="relative flex flex-col items-center gap-1 px-5 py-2 rounded-[20px] transition-all duration-200"
                 style={{
                   background: profileOpen ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
                   boxShadow: profileOpen ? 'inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 8px rgba(0,0,0,0.3)' : 'none',
                 }}
               >
                 <User
-                  size={22}
+                  size={20}
                   strokeWidth={profileOpen ? 2 : 1.5}
-                  color={profileOpen ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.35)'}
+                  color={profileOpen ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.5)'}
                 />
+                <span style={{ color: profileOpen ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: 500, lineHeight: 1 }}>Profil</span>
               </button>
             </div>
           </nav>

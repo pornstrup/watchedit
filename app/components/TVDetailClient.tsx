@@ -34,7 +34,7 @@ export default function TVDetailClient({
     <>
       {/* STATUS */}
       <div className="mb-6">
-        <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-3">Status</p>
+        <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-3">Status</p>
         <StatusButtons
           itemId={item.id}
           initialStatus={status as 'want' | 'watching' | 'done'}
@@ -46,7 +46,7 @@ export default function TVDetailClient({
       {/* PLATFORMS */}
       {providers.length > 0 && (
         <div className="mb-6">
-          <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-3">Hvor kan du se den</p>
+          <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-3">Hvor kan du se den</p>
           <div className="flex gap-3 flex-wrap">
             {providers.map((p) => (
               <div
@@ -71,7 +71,7 @@ export default function TVDetailClient({
       {/* HANDLING */}
       {overview && (
         <div className="mb-6">
-          <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-2">Handling</p>
+          <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-2">Handling</p>
           <ExpandableText text={overview} />
         </div>
       )}
@@ -79,7 +79,7 @@ export default function TVDetailClient({
       {/* EPISODER */}
       {seasons.length > 0 && (
         <div className="mb-6">
-          <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-3">Episoder</p>
+          <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-3">Episoder</p>
           <EpisodeTracker
             itemId={item.id}
             seasons={seasons}

@@ -108,7 +108,7 @@ function NewGroupSheet({ onClose, onCreated }: { onClose: () => void; onCreated:
             >
               <div className="flex flex-col gap-1">
                 <h2 className="text-white text-2xl font-bold">Hvad kalder I det?</h2>
-                <p className="text-white/30 text-sm">Du kan altid ændre det senere</p>
+                <p className="text-white/55 text-sm">Du kan altid ændre det senere</p>
               </div>
 
               <input
@@ -147,7 +147,7 @@ function NewGroupSheet({ onClose, onCreated }: { onClose: () => void; onCreated:
             >
               <div className="flex flex-col gap-1">
                 <h2 className="text-white text-2xl font-bold">Inviter til {name}</h2>
-                <p className="text-white/30 text-sm">Del linket med dem du vil se sammen med</p>
+                <p className="text-white/55 text-sm">Del linket med dem du vil se sammen med</p>
               </div>
 
               <div
@@ -157,7 +157,7 @@ function NewGroupSheet({ onClose, onCreated }: { onClose: () => void; onCreated:
                   border: '1px solid rgba(255, 255, 255, 0.1)',
                 }}
               >
-                <p className="text-white/40 text-xs uppercase tracking-widest font-semibold">Invite-link</p>
+                <p className="text-white/60 text-xs uppercase tracking-widest font-semibold">Invite-link</p>
                 <p className="text-white/70 text-sm break-all leading-relaxed font-mono">{inviteUrl}</p>
               </div>
 
@@ -186,7 +186,7 @@ function NewGroupSheet({ onClose, onCreated }: { onClose: () => void; onCreated:
 
                 <button
                   onClick={onClose}
-                  className="text-white/30 text-sm text-center pt-1"
+                  className="text-white/55 text-sm text-center pt-1"
                 >
                   Luk
                 </button>
@@ -271,7 +271,7 @@ useEffect(() => {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.3, delay: 0.2 }}
               onClick={() => { setShowNewGroupSheet(true); window.dispatchEvent(new Event('sheet-opened')) }}
-              className="text-white/30 text-sm font-medium hover:text-white/60 transition-colors outline-none focus:outline-none"
+              className="text-white/55 text-sm font-medium hover:text-white/60 transition-colors outline-none focus:outline-none"
             >
               + Gruppe
             </motion.button>

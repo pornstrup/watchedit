@@ -142,7 +142,7 @@ export default function SearchPage() {
               key={String(t.value)}
               onClick={() => setSelectedType(selectedType === t.value ? null : t.value)}
               className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
-                selectedType === t.value ? 'bg-white text-black' : 'text-white/50 hover:text-white/70'
+                selectedType === t.value ? 'bg-white text-black' : 'text-white/65 hover:text-white/85'
               }`}
               style={selectedType === t.value ? {} : glassStyle}
             >
@@ -158,7 +158,7 @@ export default function SearchPage() {
                 key={p.id}
                 onClick={() => setSelectedProvider(selectedProvider === p.id ? null : p.id)}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 flex-shrink-0 ${
-                  selectedProvider === p.id ? 'bg-white text-black' : 'text-white/50 hover:text-white/70'
+                  selectedProvider === p.id ? 'bg-white text-black' : 'text-white/65 hover:text-white/85'
                 }`}
                 style={selectedProvider === p.id ? {} : glassStyle}
               >
@@ -176,7 +176,7 @@ export default function SearchPage() {
                 key={g.id}
                 onClick={() => setSelectedGenre(selectedGenre === g.id ? null : g.id)}
                 className={`px-3 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-all duration-200 flex-shrink-0 ${
-                  selectedGenre === g.id ? 'bg-white text-black' : 'text-white/50 hover:text-white/70'
+                  selectedGenre === g.id ? 'bg-white text-black' : 'text-white/65 hover:text-white/85'
                 }`}
                 style={selectedGenre === g.id ? {} : glassStyle}
               >
@@ -189,7 +189,7 @@ export default function SearchPage() {
         {clearFilters && (
           <button
             onClick={() => { setSelectedType(null); setSelectedGenre(null); setSelectedProvider(null) }}
-            className="text-white/40 text-xs self-start hover:text-white/70 transition-colors"
+            className="text-white/60 text-xs self-start hover:text-white/80 transition-colors"
           >
             Ryd filtre ×
           </button>
@@ -197,7 +197,7 @@ export default function SearchPage() {
       </div>
 
       {!showResults && (
-        <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-3">
+        <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-3">
           {selectedProvider || selectedGenre ? 'Resultater' : 'Populært i Danmark'}
         </p>
       )}

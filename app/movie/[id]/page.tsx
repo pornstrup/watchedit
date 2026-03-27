@@ -86,22 +86,22 @@ export default async function MoviePage({
               <img src={poster} alt={movie.title} className="w-24 rounded-xl shadow-2xl flex-shrink-0" />
             )}
             <div className="flex flex-col justify-end pb-1">
-              <p className="text-white/40 text-xs mb-1">Film · {movie.release_date?.split('-')[0]}</p>
+              <p className="text-white/60 text-xs mb-1">Film · {movie.release_date?.split('-')[0]}</p>
               <h1 className="text-white text-xl font-bold leading-tight">{movie.title}</h1>
-              <p className="text-white/40 text-xs mt-1">{movie.runtime} min</p>
+              <p className="text-white/60 text-xs mt-1">{movie.runtime} min</p>
             </div>
           </div>
 
           {item && (
             <div className="mb-6">
-              <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-3">Status</p>
+              <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-3">Status</p>
               <StatusButtons itemId={item.id} initialStatus={item.status as 'want' | 'watching' | 'done'} />
             </div>
           )}
 
           {providers.length > 0 && (
             <div className="mb-6">
-              <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-3">Hvor kan du se den</p>
+              <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-3">Hvor kan du se den</p>
               <div className="flex gap-3 flex-wrap">
                 {providers.map((p: any) => (
                   <div
@@ -125,7 +125,7 @@ export default async function MoviePage({
 
           {movie.overview && (
             <div className="mb-6">
-              <p className="text-white/40 text-xs uppercase tracking-widest font-semibold mb-2">Handling</p>
+              <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-2">Handling</p>
               <ExpandableText text={movie.overview} />
             </div>
           )}

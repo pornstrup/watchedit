@@ -92,7 +92,7 @@ export default function ProfileClient({
         <div>
           <h1 className="text-white text-2xl font-bold">{name}</h1>
           {memberSince && (
-            <p className="text-white/30 text-sm mt-1">Medlem siden {memberSince}</p>
+            <p className="text-white/50 text-sm mt-1">Medlem siden {memberSince}</p>
           )}
         </div>
       </div>
@@ -118,7 +118,7 @@ export default function ProfileClient({
           ].map((s, i) => (
             <div key={i} className="flex-1 rounded-2xl px-4 py-3 flex flex-col gap-0.5" style={glassStyle}>
               <p className="text-white text-2xl font-bold">{s.value}</p>
-              <p className="text-white/40 text-xs">{s.label}</p>
+              <p className="text-white/60 text-xs">{s.label}</p>
             </div>
           ))}
         </motion.div>
@@ -137,15 +137,15 @@ export default function ProfileClient({
             border: '1px solid rgba(52, 211, 153, 0.2)',
           }}>
             <p className="text-white text-2xl font-bold">{stats.watching}</p>
-            <p className="text-white/40 text-xs mt-0.5">I gang</p>
+            <p className="text-white/60 text-xs mt-0.5">I gang</p>
           </div>
           <div className="flex-1 rounded-2xl px-4 py-3" style={glassStyle}>
             <p className="text-white text-2xl font-bold">{stats.thisMonth}</p>
-            <p className="text-white/40 text-xs mt-0.5">Denne måned</p>
+            <p className="text-white/60 text-xs mt-0.5">Denne måned</p>
           </div>
           <div className="flex-1 rounded-2xl px-4 py-3" style={glassStyle}>
             <p className="text-white text-2xl font-bold">{stats.done}</p>
-            <p className="text-white/40 text-xs mt-0.5">Færdige</p>
+            <p className="text-white/60 text-xs mt-0.5">Færdige</p>
           </div>
         </motion.div>
       )}
@@ -158,7 +158,7 @@ export default function ProfileClient({
           transition={{ duration: 0.3, delay: 0.1 }}
           className="flex flex-col gap-3"
         >
-          <p className="text-white/40 text-xs uppercase tracking-widest font-semibold">Dine genrer</p>
+          <p className="text-white/60 text-xs uppercase tracking-widest font-semibold">Dine genrer</p>
           <div className="flex flex-wrap gap-2">
             {stats.topGenres.map((g, i) => (
               <span
@@ -168,7 +168,7 @@ export default function ProfileClient({
                     ? 'bg-white text-black'
                     : i === 1
                     ? 'bg-white/20 text-white'
-                    : 'text-white/50'
+                    : 'text-white/65'
                 }`}
                 style={i >= 1 ? glassStyle : {}}
               >
@@ -187,7 +187,7 @@ export default function ProfileClient({
           transition={{ duration: 0.3, delay: 0.15 }}
           className="flex flex-col gap-3"
         >
-          <p className="text-white/40 text-xs uppercase tracking-widest font-semibold">Senest tilføjet</p>
+          <p className="text-white/60 text-xs uppercase tracking-widest font-semibold">Senest tilføjet</p>
           <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
             {stats.recentItems.map(item => (
               <a

@@ -164,7 +164,7 @@ export default function EpisodeTracker({
       </div>
 
       {/* PROGRESS */}
-      <p className="text-white/30 text-xs mb-3">
+      <p className="text-white/60 text-xs mb-3">
         {watchedInSeason} af {currentSeason?.episode_count || 0} episoder set
       </p>
 

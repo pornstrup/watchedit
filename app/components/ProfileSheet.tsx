@@ -86,7 +86,7 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
             </label>
             <div className="flex flex-col gap-0.5 min-w-0">
               <p className="text-white font-semibold text-base truncate">{profile.name}</p>
-              <p className="text-white/40 text-sm truncate">{profile.email}</p>
+              <p className="text-white/60 text-sm truncate">{profile.email}</p>
             </div>
           </div>
         )}
@@ -100,7 +100,7 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
               border: '1px solid rgba(255, 255, 255, 0.08)',
             }}
           >
-            <span className="text-white/30 text-sm">Notifikationer</span>
+            <span className="text-white/50 text-sm">Notifikationer</span>
             <span className="text-white/20 text-xs">Kommer snart</span>
           </div>
 

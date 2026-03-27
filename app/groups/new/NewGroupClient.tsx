@@ -73,7 +73,7 @@ export default function NewGroupClient() {
           >
             <div className="flex flex-col gap-2 text-center">
               <h1 className="text-white text-3xl font-bold">Hvad kalder I det?</h1>
-              <p className="text-white/30 text-sm">Du kan altid ændre det senere</p>
+              <p className="text-white/55 text-sm">Du kan altid ændre det senere</p>
             </div>
 
             <input
@@ -100,7 +100,7 @@ export default function NewGroupClient() {
 
             <button
               onClick={() => window.history.back()}
-              className="text-white/30 text-sm text-center"
+              className="text-white/55 text-sm text-center"
             >
               Annuller
             </button>
@@ -119,7 +119,7 @@ export default function NewGroupClient() {
           >
             <div className="flex flex-col gap-2 text-center">
               <h1 className="text-white text-3xl font-bold">Inviter til {name}</h1>
-              <p className="text-white/30 text-sm">Del linket med dem du vil se sammen med</p>
+              <p className="text-white/55 text-sm">Del linket med dem du vil se sammen med</p>
             </div>
 
             {/* INVITE KORT */}
@@ -135,7 +135,7 @@ export default function NewGroupClient() {
                 border: '1px solid rgba(255, 255, 255, 0.12)',
               }}
             >
-              <p className="text-white/40 text-xs uppercase tracking-widest font-semibold">Invite-link</p>
+              <p className="text-white/60 text-xs uppercase tracking-widest font-semibold">Invite-link</p>
               <p className="text-white/70 text-sm break-all leading-relaxed font-mono">
                 {inviteUrl}
               </p>
@@ -169,7 +169,7 @@ export default function NewGroupClient() {
                 onClick={() => {
                   setStep('waiting')
                 }}
-                className="text-white/30 text-sm text-center pt-1"
+                className="text-white/55 text-sm text-center pt-1"
               >
                 Gå til gruppen →
               </button>
@@ -195,7 +195,7 @@ export default function NewGroupClient() {
               >
                 Venter på {name}...
               </motion.h1>
-              <p className="text-white/30 text-sm">Appen virker fuldt ud i mellemtiden</p>
+              <p className="text-white/55 text-sm">Appen virker fuldt ud i mellemtiden</p>
             </div>
 
             <motion.button

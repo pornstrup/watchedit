@@ -261,7 +261,7 @@ export default function SearchSheet({
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-white text-sm font-medium truncate">{item.title}</p>
-                    <p className="text-white/40 text-xs mt-0.5">
+                    <p className="text-white/60 text-xs mt-0.5">
                       {item.media_type === 'tv' ? 'Serie' : 'Film'}{item.year && ` · ${item.year}`}
                     </p>
                     {/* STREAMING PROVIDERS */}

@@ -19,7 +19,7 @@ export default function ExpandableText({ text }: { text: string }) {
       </div>
       <button
         onClick={() => setExpanded(!expanded)}
-        className="text-white/40 text-xs mt-1.5 hover:text-white/60 transition-colors"
+        className="text-white/60 text-xs mt-1.5 hover:text-white/80 transition-colors"
       >
         {expanded ? 'Vis mindre' : 'Læs mere'}
       </button>
