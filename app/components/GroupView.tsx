@@ -147,8 +147,11 @@ function GroupPosterCard({
         onMouseDown={startPress}
         onMouseUp={cancelPress}
         onMouseLeave={cancelPress}
-        animate={{ scale: pressing && !showOverlay ? 0.95 : 1 }}
-        transition={{ duration: 0.15 }}
+        animate={{
+          scale: showOverlay ? 1.05 : pressing && !showOverlay ? 0.95 : 1,
+          filter: showOverlay ? 'brightness(1.15)' : 'brightness(1)',
+        }}
+        transition={{ type: 'spring', damping: 20, stiffness: 300 }}
         whileTap={showOverlay ? {} : { scale: 0.96 }}
         className="block no-underline h-full"
       >
@@ -210,13 +213,14 @@ function GroupPosterCard({
               initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.85 }}
-              transition={{ type: 'spring', damping: 20, stiffness: 400 }}
+              transition={{ type: 'spring', damping: 22, stiffness: 380 }}
               className="fixed z-50 flex flex-col overflow-hidden rounded-2xl"
               style={{
                 top: popupPos.top,
                 bottom: popupPos.bottom,
                 left: popupPos.left,
                 width: 220,
+                transformOrigin: popupPos.top !== undefined ? 'top left' : 'bottom left',
                 background: 'rgba(30, 30, 32, 0.98)',
                 backdropFilter: 'blur(40px)',
                 WebkitBackdropFilter: 'blur(40px)',
@@ -896,6 +900,42 @@ export default function GroupView({
         ))}
       </div>
     </div>
+  )
+
+  if (items.length === 0) return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+      className="flex flex-col items-center justify-center py-20 gap-6"
+    >
+      <div
+        className="w-20 h-20 rounded-3xl flex items-center justify-center"
+        style={{
+          background: 'rgba(255, 255, 255, 0.06)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+        }}
+      >
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+      </div>
+      <div className="flex flex-col items-center gap-2 text-center">
+        <h2 className="text-white text-xl font-semibold">Ingen film endnu</h2>
+        <p className="text-white/55 text-sm leading-relaxed max-w-[220px]">Tilføj film og serier I vil se sammen med gruppen</p>
+      </div>
+      <button
+        onClick={() => window.dispatchEvent(new Event('open-search'))}
+        className="px-6 py-3 rounded-full text-black text-sm font-semibold"
+        style={{ background: 'white' }}
+      >
+        Tilføj noget
+      </button>
+    </motion.div>
   )
 
   return (

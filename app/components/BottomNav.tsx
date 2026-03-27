@@ -26,11 +26,14 @@ export default function BottomNav() {
   useEffect(() => {
     const show = () => setSheetOpen(true)
     const hide = () => setSheetOpen(false)
+    const openSearch = () => setSearchOpen(true)
     window.addEventListener('sheet-opened', show)
     window.addEventListener('sheet-closed', hide)
+    window.addEventListener('open-search', openSearch)
     return () => {
       window.removeEventListener('sheet-opened', show)
       window.removeEventListener('sheet-closed', hide)
+      window.removeEventListener('open-search', openSearch)
     }
   }, [])
 

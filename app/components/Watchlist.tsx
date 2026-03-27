@@ -122,8 +122,11 @@ function PosterCard({
         onMouseDown={startPress}
         onMouseUp={cancelPress}
         onMouseLeave={cancelPress}
-        animate={{ scale: pressing && !showOverlay ? 0.95 : 1 }}
-        transition={{ duration: 0.15 }}
+        animate={{
+          scale: showOverlay ? 1.05 : pressing && !showOverlay ? 0.95 : 1,
+          filter: showOverlay ? 'brightness(1.15)' : 'brightness(1)',
+        }}
+        transition={{ type: 'spring', damping: 20, stiffness: 300 }}
         className="block no-underline h-full"
       >
         <div className={`relative rounded-2xl overflow-hidden h-full ${item.status === 'done' ? 'opacity-70' : ''}`}>
@@ -185,13 +188,14 @@ function PosterCard({
               initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.85 }}
-              transition={{ type: 'spring', damping: 20, stiffness: 400 }}
+              transition={{ type: 'spring', damping: 22, stiffness: 380 }}
               className="fixed z-50 flex flex-col overflow-hidden rounded-2xl"
               style={{
                 top: popupPos.top,
                 bottom: popupPos.bottom,
                 left: popupPos.left,
                 width: 220,
+                transformOrigin: popupPos.top !== undefined ? 'top left' : 'bottom left',
                 background: 'rgba(30, 30, 32, 0.98)',
                 backdropFilter: 'blur(40px)',
                 WebkitBackdropFilter: 'blur(40px)',
@@ -385,10 +389,6 @@ const updateStatus = (id: string, status: string) => {
     </div>
   )
 
-  if (items.length === 0) return (
-    <p className="text-white/65 text-sm text-center py-8">Din liste er tom – søg efter noget at se!</p>
-  )
-
  const watchingItems = items.filter(i => i.status === 'watching')
   const wantItems = items.filter(i => i.status === 'want')
   const doneItems = items.filter(i => i.status === 'done')
@@ -437,6 +437,51 @@ const updateStatus = (id: string, status: string) => {
               </AnimatePresence>
             </div>
           </motion.section>
+        )}
+      </AnimatePresence>
+
+      {/* EMPTY STATE */}
+      <AnimatePresence>
+        {watchingItems.length === 0 && wantItems.length === 0 && (
+          <motion.div
+            key="empty"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+            className="flex flex-col items-center justify-center py-16 gap-6"
+          >
+            <div
+              className="w-20 h-20 rounded-3xl flex items-center justify-center"
+              style={{
+                background: 'rgba(255, 255, 255, 0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08)',
+              }}
+            >
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/>
+                <line x1="7" y1="2" x2="7" y2="22"/>
+                <line x1="17" y1="2" x2="17" y2="22"/>
+                <line x1="2" y1="12" x2="22" y2="12"/>
+                <line x1="2" y1="7" x2="7" y2="7"/>
+                <line x1="2" y1="17" x2="7" y2="17"/>
+                <line x1="17" y1="17" x2="22" y2="17"/>
+                <line x1="17" y1="7" x2="22" y2="7"/>
+              </svg>
+            </div>
+            <div className="flex flex-col items-center gap-2 text-center">
+              <h2 className="text-white text-xl font-semibold">Hvad skal du se næste?</h2>
+              <p className="text-white/55 text-sm leading-relaxed max-w-[220px]">Søg efter film og serier og tilføj dem til din liste</p>
+            </div>
+            <button
+              onClick={() => window.dispatchEvent(new Event('open-search'))}
+              className="px-6 py-3 rounded-full text-black text-sm font-semibold"
+              style={{ background: 'white' }}
+            >
+              Find noget at se
+            </button>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -492,7 +537,7 @@ const updateStatus = (id: string, status: string) => {
                     label={label}
                     items={monthItems}
                     groups={groups}
-                    defaultOpen={index === 0}
+                    defaultOpen={false}
                     onRemove={removeItem}
                     onStatusChange={updateStatus}
                   />
