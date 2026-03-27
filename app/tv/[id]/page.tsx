@@ -85,9 +85,9 @@ export default async function TVPage({
       <DynamicGlow posterUrl={poster} />
       <StickyHeader title={show.name} />
       <SlideTransition>
-        <div className="relative h-72 overflow-hidden">
+        <div className="relative h-[45vh] overflow-hidden">
           {backdrop && (
-            <Image src={backdrop} alt={show.name} fill className="object-cover opacity-40" sizes="100vw" priority />
+            <Image src={backdrop} alt={show.name} fill className="object-cover opacity-75" sizes="100vw" priority />
           )}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black" />
           <BackButton />
@@ -96,17 +96,22 @@ export default async function TVPage({
         <div className="px-6 -mt-16 relative">
           <div className="flex gap-4 mb-6">
             {poster && (
-              <Image src={poster} alt={show.name} width={96} height={144} className="rounded-xl shadow-2xl flex-shrink-0" />
+              <Image src={poster} alt={show.name} width={128} height={192} className="rounded-xl shadow-2xl flex-shrink-0" />
             )}
             <div className="flex flex-col justify-end pb-1">
-              <p className="text-white/60 text-xs mb-1">Serie · {show.first_air_date?.split('-')[0]}</p>
-              <h1 className="text-white text-xl font-bold leading-tight">{show.name}</h1>
-              <p className="text-white/60 text-xs mt-1">{show.number_of_seasons} sæsoner · {show.number_of_episodes} episoder</p>
+              <h1 className="text-white text-xl font-bold leading-tight mb-2">{show.name}</h1>
+              <div className="flex flex-wrap gap-2">
+                <span className="text-white/50 text-xs">{show.first_air_date?.split('-')[0]}</span>
+                <span className="text-white/50 text-xs">{show.number_of_seasons} sæsoner</span>
+                {show.genres?.slice(0, 2).map((g: { id: number; name: string }) => (
+                  <span key={g.id} className="text-white/50 text-xs">{g.name}</span>
+                ))}
+              </div>
               {nextEpisode?.air_date && (() => {
                 const days = Math.round((new Date(nextEpisode.air_date).getTime() - Date.now()) / 86400000)
                 const label = days === 0 ? 'i dag' : days === 1 ? 'i morgen' : days > 0 ? `${new Date(nextEpisode.air_date).toLocaleDateString('da-DK', { weekday: 'long', day: 'numeric', month: 'long' })}` : null
                 return label ? (
-                  <p className="text-white/60 text-xs mt-0.5">→ S{nextEpisode.season_number} E{nextEpisode.episode_number} · {label}</p>
+                  <p className="text-white/50 text-xs mt-1">→ S{nextEpisode.season_number} E{nextEpisode.episode_number} · {label}</p>
                 ) : null
               })()}
             </div>

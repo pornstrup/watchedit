@@ -73,9 +73,9 @@ export default async function MoviePage({
       <DynamicGlow posterUrl={poster} />
       <StickyHeader title={movie.title} />
       <SlideTransition>
-        <div className="relative h-72 overflow-hidden">
+        <div className="relative h-[45vh] overflow-hidden">
           {backdrop && (
-            <Image src={backdrop} alt={movie.title} fill className="object-cover opacity-40" sizes="100vw" priority />
+            <Image src={backdrop} alt={movie.title} fill className="object-cover opacity-75" sizes="100vw" priority />
           )}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black" />
           <BackButton />
@@ -84,25 +84,29 @@ export default async function MoviePage({
         <div className="px-6 -mt-16 relative">
           <div className="flex gap-4 mb-6">
             {poster && (
-              <Image src={poster} alt={movie.title} width={96} height={144} className="rounded-xl shadow-2xl flex-shrink-0" />
+              <Image src={poster} alt={movie.title} width={128} height={192} className="rounded-xl shadow-2xl flex-shrink-0" />
             )}
             <div className="flex flex-col justify-end pb-1">
-              <p className="text-white/60 text-xs mb-1">Film · {movie.release_date?.split('-')[0]}</p>
-              <h1 className="text-white text-xl font-bold leading-tight">{movie.title}</h1>
-              <p className="text-white/60 text-xs mt-1">{movie.runtime} min</p>
+              <h1 className="text-white text-xl font-bold leading-tight mb-2">{movie.title}</h1>
+              <div className="flex flex-wrap gap-2">
+                <span className="text-white/50 text-xs">{movie.release_date?.split('-')[0]}</span>
+                {movie.runtime > 0 && <span className="text-white/50 text-xs">{movie.runtime} min</span>}
+                {movie.genres?.slice(0, 2).map((g: { id: number; name: string }) => (
+                  <span key={g.id} className="text-white/50 text-xs">{g.name}</span>
+                ))}
+              </div>
             </div>
           </div>
 
           {item && (
             <div className="mb-6">
-              <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-3">Status</p>
               <StatusButtons itemId={item.id} initialStatus={item.status as 'want' | 'watching' | 'done'} />
             </div>
           )}
 
           {providers.length > 0 && (
             <div className="mb-6">
-              <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-3">Hvor kan du se den</p>
+              <p className="text-white/50 text-sm mb-3">Hvor kan du se den</p>
               <div className="flex gap-3 flex-wrap">
                 {providers.map((p: any) => (
                   <div
@@ -126,13 +130,12 @@ export default async function MoviePage({
 
           {movie.overview && (
             <div className="mb-6">
-              <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-2">Handling</p>
               <ExpandableText text={movie.overview} />
             </div>
           )}
 
           {item && (
-            <div className="mb-6">
+            <div className="mb-8 mt-2">
               <RemoveFromList tmdbId={Number(id)} mediaType="movie" groupId={ctx} />
             </div>
           )}
