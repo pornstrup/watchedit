@@ -24,13 +24,13 @@ export default async function MoviePage({
 
   const res = await fetch(
     `https://api.themoviedb.org/3/movie/${id}?language=en-US`,
-    { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` } }
+    { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 3600 } }
   )
   const movie = await res.json()
 
   const providersRes = await fetch(
     `https://api.themoviedb.org/3/movie/${id}/watch/providers`,
-    { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` } }
+    { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 86400 } }
   )
   const providersData = await providersRes.json()
   const providers = providersData.results?.DK?.flatrate || []

@@ -214,7 +214,7 @@ export default function SearchSheet({
               >
                 <a href={href} className="flex items-center gap-3 flex-1 min-w-0 no-underline">
                   {item.poster ? (
-                    <img src={item.poster} alt={item.title} className="w-10 h-14 rounded-lg object-cover flex-shrink-0" />
+                    <img src={item.poster} alt={item.title} className="w-10 h-14 rounded-lg object-cover flex-shrink-0" loading="lazy" decoding="async" />
                   ) : (
                     <div className="w-10 h-14 rounded-lg bg-white/10 flex-shrink-0" />
                   )}

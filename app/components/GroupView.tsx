@@ -157,10 +157,12 @@ function GroupPosterCard({
       >
         <div className={`relative rounded-2xl overflow-hidden h-full ${item.status === 'done' ? 'opacity-70' : ''}`}>
           {item.poster ? (
-            <img 
-              src={item.poster} 
-              alt={item.title} 
+            <img
+              src={item.poster}
+              alt={item.title}
               className="w-full h-full object-cover"
+              loading="lazy"
+              decoding="async"
               style={{ animation: 'fadeIn 0.3s ease-out' }}
             />
           ) : (
@@ -777,16 +779,19 @@ export default function GroupView({
 
   useEffect(() => {
     setLoading(true)
+    // Hent members + watchlist først så listen vises med det samme
     Promise.all([
       fetch(`/api/groups/${groupId}/members`).then(r => r.json()),
       fetch(`/api/groups/${groupId}/watchlist`).then(r => r.json()),
-      fetch(`/api/groups/${groupId}/inspiration`).then(r => r.json()),
-    ]).then(([membersData, itemsData, inspirationData]) => {
+    ]).then(([membersData, itemsData]) => {
       setMembers(membersData.members || [])
       setItems(itemsData.items || [])
-      setInspiration(inspirationData.items || [])
       setLoading(false)
     })
+    // Inspiration hentes separat og vises når den er klar
+    fetch(`/api/groups/${groupId}/inspiration`)
+      .then(r => r.json())
+      .then(d => setInspiration(d.items || []))
   }, [groupId, refreshKey])
 // Lyt på status-ændringer fra personlig liste og refresh inspiration
   useEffect(() => {

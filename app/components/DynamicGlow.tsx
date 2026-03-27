@@ -7,9 +7,15 @@ export default function DynamicGlow({ posterUrl }: { posterUrl: string | null })
 
   useEffect(() => {
     if (!posterUrl) return
+    const cacheKey = `glow:${posterUrl}`
+    const cached = localStorage.getItem(cacheKey)
+    if (cached) { setColor(cached); return }
     fetch(`/api/color?url=${encodeURIComponent(posterUrl)}`)
       .then(r => r.json())
-      .then(d => setColor(d.color))
+      .then(d => {
+        setColor(d.color)
+        localStorage.setItem(cacheKey, d.color)
+      })
   }, [posterUrl])
 
   return (

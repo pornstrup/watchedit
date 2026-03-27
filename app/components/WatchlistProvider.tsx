@@ -367,7 +367,7 @@ useEffect(() => {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
-            <Watchlist key={refreshKey} onRemove={refresh} />
+            <Watchlist key={refreshKey} onRemove={refresh} groups={groups} />
           </motion.div>
         ) : (
           <motion.div

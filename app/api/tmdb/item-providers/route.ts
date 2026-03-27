@@ -9,7 +9,7 @@ export async function GET(request: Request) {
 
   const res = await fetch(
     `https://api.themoviedb.org/3/${type}/${id}/watch/providers`,
-    { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` } }
+    { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 86400 } }
   )
   const data = await res.json()
   const dk = data.results?.DK

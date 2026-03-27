@@ -89,7 +89,7 @@ export async function GET(
       const type = item.media_type === 'movie' ? 'movie' : 'tv'
       const res = await fetch(
         `https://api.themoviedb.org/3/${type}/${item.tmdb_id}?language=en-US`,
-        { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` } }
+        { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 3600 } }
       )
       const tmdb = await res.json()
 

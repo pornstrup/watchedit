@@ -135,6 +135,8 @@ function PosterCard({
               src={item.poster}
               alt={item.title}
               className="w-full h-full object-cover"
+              loading="lazy"
+              decoding="async"
               style={{ animation: 'fadeIn 0.3s ease-out' }}
             />
           ) : (
@@ -342,20 +344,17 @@ function PersonalMonthSection({
   )
 }
 
-export default function Watchlist({ onRemove }: { onRemove?: () => void }) {
+export default function Watchlist({ onRemove, groups = [] }: { onRemove?: () => void; groups?: Group[] }) {
   const [items, setItems] = useState<WatchlistItem[]>([])
-  const [groups, setGroups] = useState<Group[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/watchlist/list').then(r => r.json()),
-      fetch('/api/groups').then(r => r.json()),
-    ]).then(([watchlistData, groupsData]) => {
-      setItems(watchlistData.items || [])
-      setGroups((groupsData.groups || []).filter(Boolean))
-      setLoading(false)
-    })
+    fetch('/api/watchlist/list')
+      .then(r => r.json())
+      .then(watchlistData => {
+        setItems(watchlistData.items || [])
+        setLoading(false)
+      })
   }, [])
 
   const removeItem = async (id: string, tmdbId: number, mediaType: string) => {

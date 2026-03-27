@@ -3,10 +3,12 @@ import { NextResponse } from 'next/server'
 export async function GET() {
   const [moviesRes, tvRes] = await Promise.all([
     fetch('https://api.themoviedb.org/3/trending/movie/week?language=da-DK&region=DK', {
-      headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }
+      headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` },
+      next: { revalidate: 21600 },
     }),
     fetch('https://api.themoviedb.org/3/trending/tv/week?language=da-DK&region=DK', {
-      headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }
+      headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` },
+      next: { revalidate: 21600 },
     })
   ])
 
