@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 
 type Season = {
   season_number: number
@@ -204,10 +205,12 @@ export default function EpisodeTracker({
                 whileHover={{ scale: 1.02 }}
               >
                 {ep.still_path ? (
-                  <img
+                  <Image
                     src={`https://image.tmdb.org/t/p/w300${ep.still_path}`}
                     alt={ep.name}
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
+                    sizes="120px"
                   />
                 ) : (
                   <div className="w-full h-full bg-white/5" />

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 import SettingsSheet from './SettingsSheet'
 
 const glassStyle = {
@@ -81,7 +82,7 @@ export default function ProfileClient({
 
         <div className="relative">
           {avatar ? (
-            <img src={avatar} alt={name} className="w-24 h-24 rounded-full ring-2 ring-white/10" />
+            <Image src={avatar} alt={name} width={96} height={96} className="rounded-full ring-2 ring-white/10" />
           ) : (
             <div className="w-24 h-24 rounded-full bg-white/10 flex items-center justify-center ring-2 ring-white/10">
               <span className="text-white text-3xl font-bold">{name?.[0]}</span>
@@ -195,10 +196,12 @@ export default function ProfileClient({
                 className="flex-shrink-0 no-underline"
               >
                 {item.poster ? (
-                  <img
+                  <Image
                     src={item.poster}
                     alt={item.title}
-                    className="w-20 h-28 rounded-xl object-cover shadow-lg"
+                    width={80}
+                    height={112}
+                    className="rounded-xl object-cover shadow-lg"
                   />
                 ) : (
                   <div className="w-20 h-28 rounded-xl bg-white/10" />

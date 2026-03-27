@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
 
 type Profile = {
   name: string
@@ -39,6 +40,10 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 26, stiffness: 300 }}
+        drag="y"
+        dragConstraints={{ top: 0 }}
+        dragElastic={{ top: 0, bottom: 0.3 }}
+        onDragEnd={(_, info) => { if (info.offset.y > 80 || info.velocity.y > 500) onClose() }}
         className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-3xl px-6 pt-5 pb-12"
         style={{
           background: 'rgba(28, 28, 30, 0.95)',
@@ -56,10 +61,12 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
           <div className="flex items-center gap-4 mb-8">
             <label className="relative cursor-pointer">
               {profile.avatar ? (
-                <img
+                <Image
                   src={profile.avatar}
                   alt={profile.name}
-                  className="w-14 h-14 rounded-full object-cover ring-2 ring-white/10"
+                  width={56}
+                  height={56}
+                  className="rounded-full object-cover ring-2 ring-white/10"
                 />
               ) : (
                 <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center ring-2 ring-white/10">

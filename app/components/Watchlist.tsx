@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
 
 type WatchlistItem = {
   id: string
@@ -131,12 +132,12 @@ function PosterCard({
       >
         <div className={`relative rounded-2xl overflow-hidden h-full ${item.status === 'done' ? 'opacity-70' : ''}`}>
           {item.poster ? (
-            <img
+            <Image
               src={item.poster}
               alt={item.title}
-              className="w-full h-full object-cover"
-              loading="lazy"
-              decoding="async"
+              fill
+              className="object-cover"
+              sizes="160px"
               style={{ animation: 'fadeIn 0.3s ease-out' }}
             />
           ) : (
@@ -155,7 +156,7 @@ function PosterCard({
 
           <div className="absolute bottom-0 left-0 right-0 p-3">
             <p className="text-white text-xs font-semibold leading-tight truncate">{item.title}</p>
-            {item.status === 'watching' && item.progress && (
+            {item.status === 'watching' && item.progress && item.media_type === 'tv' && (
               <div className="mt-1.5">
                 <div className="w-full h-0.5 bg-white/20 rounded-full overflow-hidden">
                   <div
@@ -164,9 +165,12 @@ function PosterCard({
                   />
                 </div>
                 <p className="text-white/65 text-xs mt-1">
-                  {Math.round((item.progress.watched_episodes / item.progress.total_episodes) * 100)}%
+                  Afsnit {item.progress.watched_episodes + 1} af {item.progress.total_episodes}
                 </p>
               </div>
+            )}
+            {item.status === 'watching' && item.media_type === 'movie' && (
+              <p className="text-emerald-400/80 text-xs mt-1">I gang</p>
             )}
             {item.status !== 'watching' && (
               <p className="text-white/65 text-xs">{item.media_type === 'tv' ? 'Serie' : 'Film'}{item.year && ` · ${item.year}`}</p>
@@ -207,7 +211,7 @@ function PosterCard({
             >
               <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                 {item.poster && (
-                  <img src={item.poster} alt={item.title} className="w-8 rounded-lg object-cover flex-shrink-0" style={{ aspectRatio: '2/3' }} />
+                  <Image src={item.poster} alt={item.title} width={32} height={48} className="rounded-lg object-cover flex-shrink-0" />
                 )}
                 <div className="flex flex-col gap-0.5 min-w-0">
                   <p className="text-white text-xs font-semibold truncate">{item.title}</p>
@@ -377,7 +381,7 @@ const updateStatus = (id: string, status: string) => {
     <div className="flex flex-col gap-8">
       <div className="flex gap-3 overflow-x-auto pb-2">
         {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="flex-shrink-0 w-36 h-52 rounded-2xl bg-white/5 animate-pulse" />
+          <div key={i} className="flex-shrink-0 w-40 h-60 rounded-2xl bg-white/5 animate-pulse" />
         ))}
       </div>
       <div className="grid grid-cols-2 gap-3">
@@ -419,7 +423,7 @@ const updateStatus = (id: string, status: string) => {
             transition={{ duration: 0.35, ease: 'easeOut' }}
           >
             <p className="text-emerald-400/80 text-xs uppercase tracking-widest font-semibold mb-4">
-              I gang ({watchingItems.length})
+              Fortsæt med
             </p>
             <div className="flex gap-3 overflow-x-auto scrollbar-none pb-2 -mx-6 px-6">
               <AnimatePresence>
@@ -430,7 +434,7 @@ const updateStatus = (id: string, status: string) => {
                     groups={groups}
                     onRemove={removeItem}
                     onStatusChange={updateStatus}
-                    className="flex-shrink-0 w-36 h-52"
+                    className="flex-shrink-0 w-40 h-60"
                   />
                 ))}
               </AnimatePresence>

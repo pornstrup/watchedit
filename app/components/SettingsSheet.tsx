@@ -39,6 +39,10 @@ export default function SettingsSheet({
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            drag="y"
+            dragConstraints={{ top: 0 }}
+            dragElastic={{ top: 0, bottom: 0.3 }}
+            onDragEnd={(_, info) => { if (info.offset.y > 80 || info.velocity.y > 500) onClose() }}
             className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl pb-10"
             style={{
               background: 'rgba(18, 18, 18, 0.95)',

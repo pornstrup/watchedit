@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
+import Image from 'next/image'
 
 type Result = {
   tmdb_id: number
@@ -173,6 +174,10 @@ export default function SearchSheet({
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 26, stiffness: 300 }}
+        drag="y"
+        dragConstraints={{ top: 0 }}
+        dragElastic={{ top: 0, bottom: 0.3 }}
+        onDragEnd={(_, info) => { if (info.offset.y > 80 || info.velocity.y > 500) onClose() }}
         className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-3xl"
         style={{
           background: 'rgba(18, 18, 18, 0.98)',
@@ -186,7 +191,7 @@ export default function SearchSheet({
         }}
       >
         {/* RESULTATER — scroller opad over søgefeltet */}
-        <div className="flex-1 overflow-y-auto px-4 pt-5 pb-2 flex flex-col gap-2 min-h-0">
+        <div className="flex-1 overflow-y-auto px-4 pt-5 pb-2 flex flex-col gap-2 min-h-0" style={{ touchAction: 'pan-y' }}>
 
           {displayItems.length > 0 && (
             <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-1">
@@ -214,7 +219,7 @@ export default function SearchSheet({
               >
                 <a href={href} className="flex items-center gap-3 flex-1 min-w-0 no-underline">
                   {item.poster ? (
-                    <img src={item.poster} alt={item.title} className="w-10 h-14 rounded-lg object-cover flex-shrink-0" loading="lazy" decoding="async" />
+                    <Image src={item.poster} alt={item.title} width={40} height={56} className="rounded-lg object-cover flex-shrink-0" />
                   ) : (
                     <div className="w-10 h-14 rounded-lg bg-white/10 flex-shrink-0" />
                   )}
@@ -237,7 +242,7 @@ export default function SearchSheet({
                             className="flex items-center gap-1 px-1.5 py-0.5 rounded-md"
                             style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.08)' }}
                           >
-                            <img src={p.logo} alt={p.name} className="w-3.5 h-3.5 rounded-sm object-cover flex-shrink-0" />
+                            <Image src={p.logo} alt={p.name} width={14} height={14} className="rounded-sm object-cover flex-shrink-0" />
                             <span className="text-white/60 text-xs leading-none">{p.name}</span>
                           </div>
                         ))}

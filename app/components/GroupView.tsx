@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
+import Image from 'next/image'
 
 type Group = {
   id: string
@@ -48,11 +49,12 @@ type InspirationItem = {
 function Avatar({ url, name, size = 6 }: { url: string | null; name: string; size?: number }) {
   const px = size * 4
   return url ? (
-    <img
+    <Image
       src={url}
       alt={name}
+      width={px}
+      height={px}
       className="rounded-full ring-2 ring-black object-cover"
-      style={{ width: px, height: px }}
     />
   ) : (
     <div
@@ -157,12 +159,12 @@ function GroupPosterCard({
       >
         <div className={`relative rounded-2xl overflow-hidden h-full ${item.status === 'done' ? 'opacity-70' : ''}`}>
           {item.poster ? (
-            <img
+            <Image
               src={item.poster}
               alt={item.title}
-              className="w-full h-full object-cover"
-              loading="lazy"
-              decoding="async"
+              fill
+              className="object-cover"
+              sizes="160px"
               style={{ animation: 'fadeIn 0.3s ease-out' }}
             />
           ) : (
@@ -180,7 +182,7 @@ function GroupPosterCard({
 
           <div className="absolute bottom-0 left-0 right-0 p-3">
             <p className="text-white text-xs font-semibold leading-tight truncate">{item.title}</p>
-            {item.status === 'watching' && item.progress && (
+            {item.status === 'watching' && item.progress && item.media_type === 'tv' && (
               <div className="mt-1.5">
                 <div className="w-full h-0.5 bg-white/20 rounded-full overflow-hidden">
                   <div
@@ -189,9 +191,12 @@ function GroupPosterCard({
                   />
                 </div>
                 <p className="text-white/65 text-xs mt-1">
-                  {Math.round((item.progress.watched_episodes / item.progress.total_episodes) * 100)}%
+                  Afsnit {item.progress.watched_episodes + 1} af {item.progress.total_episodes}
                 </p>
               </div>
+            )}
+            {item.status === 'watching' && item.media_type === 'movie' && (
+              <p className="text-emerald-400/80 text-xs mt-1">I gang</p>
             )}
             {item.status !== 'watching' && (
               <p className="text-white/50 text-xs">{item.media_type === 'tv' ? 'Serie' : 'Film'}{item.year && ` · ${item.year}`}</p>
@@ -233,11 +238,11 @@ function GroupPosterCard({
               {/* PREVIEW */}
               <div className="flex items-center gap-3 px-4 py-3" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
                 {item.poster && (
-                  <img src={item.poster} alt={item.title} className="w-8 rounded-lg object-cover flex-shrink-0" style={{ aspectRatio: '2/3' }} />
+                  <Image src={item.poster} alt={item.title} width={32} height={48} className="rounded-lg object-cover flex-shrink-0" />
                 )}
                 <div className="flex flex-col gap-0.5 min-w-0">
                   <p className="text-white text-xs font-semibold truncate">{item.title}</p>
-                  <p className="text-white/30 text-xs">{item.media_type === 'tv' ? 'Serie' : 'Film'}{item.year && ` · ${item.year}`}</p>
+                  <p className="text-white/50 text-xs">{item.media_type === 'tv' ? 'Serie' : 'Film'}{item.year && ` · ${item.year}`}</p>
                 </div>
               </div>
 
@@ -365,16 +370,21 @@ const handleTouchStart = (_e: TouchEvent) => {
         onMouseDown={startPress}
         onMouseUp={cancelPress}
         onMouseLeave={cancelPress}
-        animate={{ scale: pressing || showOverlay ? 0.96 : 1 }}
-        transition={{ duration: 0.15 }}
+        animate={{
+          scale: showOverlay ? 1.05 : pressing && !showOverlay ? 0.95 : 1,
+          filter: showOverlay ? 'brightness(1.15)' : 'brightness(1)',
+        }}
+        transition={{ type: 'spring', damping: 20, stiffness: 300 }}
         className="cursor-pointer"
       >
         <div className="relative w-28 rounded-xl overflow-hidden aspect-[2/3]">
           {item.poster ? (
-            <img 
-              src={item.poster} 
-              alt={item.title} 
-              className="w-full h-full object-cover opacity-70"
+            <Image
+              src={item.poster}
+              alt={item.title}
+              fill
+              className="object-cover opacity-70"
+              sizes="112px"
               style={{ animation: 'fadeIn 0.3s ease-out' }}
             />
           ) : (
@@ -418,11 +428,11 @@ const handleTouchStart = (_e: TouchEvent) => {
             >
               <div className="flex items-center gap-3 px-4 py-3 border-b border-white/8">
                 {item.poster && (
-                  <img src={item.poster} alt={item.title} className="w-8 rounded-lg object-cover flex-shrink-0" style={{ aspectRatio: '2/3' }} />
+                  <Image src={item.poster} alt={item.title} width={32} height={48} className="rounded-lg object-cover flex-shrink-0" />
                 )}
                 <div className="flex flex-col gap-0.5 min-w-0">
                   <p className="text-white text-xs font-semibold truncate">{item.title}</p>
-                  <p className="text-white/30 text-xs truncate">{item.members.join(', ')} har denne</p>
+                  <p className="text-white/55 text-xs truncate">{item.members.join(', ')} har denne</p>
                 </div>
               </div>
 
@@ -431,7 +441,7 @@ const handleTouchStart = (_e: TouchEvent) => {
                 className="flex items-center justify-between px-4 py-3.5 text-sm font-medium text-white hover:bg-white/5 transition-colors border-b border-white/6"
               >
                 Tilføj til Vil se
-                <span className="text-white/30 text-base">+</span>
+                <span className="text-white/55 text-base">+</span>
               </button>
 
               <button
@@ -490,7 +500,7 @@ function AllInspirationSheet({
         <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mt-4 mb-4 flex-shrink-0" />
         <div className="flex items-center justify-between px-6 mb-4 flex-shrink-0">
           <p className="text-white font-semibold text-base">Al inspiration ({items.length})</p>
-          <button onClick={onClose} className="text-white/40 text-sm">Luk</button>
+          <button onClick={onClose} className="text-white/60 text-sm">Luk</button>
         </div>
         <div className="overflow-y-auto flex-1 px-6 pb-10">
           <div className="grid grid-cols-3 gap-3">
@@ -570,7 +580,7 @@ function HiddenInspirationSheet({
         <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mt-4 mb-4 flex-shrink-0" />
         <div className="flex items-center justify-between px-6 mb-4 flex-shrink-0">
           <p className="text-white font-semibold text-base">Skjulte ({items.length})</p>
-          <button onClick={onClose} className="text-white/40 text-sm">Luk</button>
+          <button onClick={onClose} className="text-white/60 text-sm">Luk</button>
         </div>
 
         <div className="overflow-y-auto flex-1 px-6 pb-10">
@@ -594,11 +604,11 @@ function HiddenInspirationSheet({
                   }}
                 >
                   {item.poster && (
-                    <img src={item.poster} alt={item.title} className="w-10 rounded-lg object-cover flex-shrink-0" style={{ aspectRatio: '2/3' }} />
+                    <Image src={item.poster} alt={item.title} width={40} height={60} className="rounded-lg object-cover flex-shrink-0" />
                   )}
                   <div className="flex-1 min-w-0">
                     <p className="text-white text-sm font-medium truncate">{item.title}</p>
-                    <p className="text-white/40 text-xs">{item.media_type === 'tv' ? 'Serie' : 'Film'}{item.year && ` · ${item.year}`}</p>
+                    <p className="text-white/60 text-xs">{item.media_type === 'tv' ? 'Serie' : 'Film'}{item.year && ` · ${item.year}`}</p>
                   </div>
                   <button
                     onClick={() => restore(item)}
@@ -691,6 +701,10 @@ const isOwner = group.created_by === currentUserId
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 26, stiffness: 300 }}
+        drag="y"
+        dragConstraints={{ top: 0 }}
+        dragElastic={{ top: 0, bottom: 0.3 }}
+        onDragEnd={(_, info) => { if (info.offset.y > 80 || info.velocity.y > 500) onClose() }}
         className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-3xl px-6 pt-5 pb-12"
         style={{
           background: 'rgba(28, 28, 30, 0.85)',
@@ -955,7 +969,7 @@ export default function GroupView({
         <div className="flex justify-end -mt-6 mb-2">
           <button
             onClick={() => { setShowSettings(true); window.dispatchEvent(new Event('sheet-opened')) }}
-            className="w-9 h-9 flex items-center justify-center rounded-xl text-white/30 hover:text-white/60 transition-colors"
+            className="w-9 h-9 flex items-center justify-center rounded-xl text-white/55 hover:text-white/80 transition-colors"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
               <circle cx="5" cy="12" r="2"/>
@@ -981,10 +995,12 @@ export default function GroupView({
         {featuredItem ? (
           <div className="relative rounded-3xl overflow-hidden" style={{ minHeight: 160 }}>
             {featuredItem.poster && (
-              <img
+              <Image
                 src={featuredItem.poster}
                 alt={featuredItem.title}
-                className="absolute inset-0 w-full h-full object-cover opacity-40"
+                fill
+                className="object-cover opacity-40"
+                sizes="100vw"
                 style={{ filter: 'blur(12px)', transform: 'scale(1.1)' }}
               />
             )}
@@ -1008,7 +1024,7 @@ export default function GroupView({
         ) : (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <p className="text-white text-lg font-semibold">Ingen titler endnu</p>
-            <p className="text-white/30 text-sm">Søg efter film og serier og tilføj dem til {currentGroupName}</p>
+            <p className="text-white/55 text-sm">Søg efter film og serier og tilføj dem til {currentGroupName}</p>
           </div>
         )}
 
@@ -1016,7 +1032,7 @@ export default function GroupView({
         {watchingItems.length > 0 && (
           <section>
             <p className="text-emerald-400/80 text-xs uppercase tracking-widest font-semibold mb-4">
-              I gang ({watchingItems.length})
+              Fortsæt med
             </p>
             <div className="flex gap-3 overflow-x-auto scrollbar-none pb-2 -mx-6 px-6">
               <AnimatePresence>
@@ -1027,7 +1043,7 @@ export default function GroupView({
                       groupId={groupId}
                       onRemove={removeItem}
                       onStatusChange={updateStatus}
-                      className="flex-shrink-0 w-36 h-52"
+                      className="flex-shrink-0 w-40 h-60"
                       inScrollContainer
                     />
                   ))}
@@ -1194,8 +1210,8 @@ function MonthSection({
       >
         <p className="text-white/70 text-sm font-medium capitalize">{label}</p>
         <div className="flex items-center gap-2">
-          <span className="text-white/30 text-xs">{items.length}</span>
-          <span className="text-white/30 text-xs">{open ? '↑' : '↓'}</span>
+          <span className="text-white/50 text-xs">{items.length}</span>
+          <span className="text-white/50 text-xs">{open ? '↑' : '↓'}</span>
         </div>
       </button>
       <AnimatePresence>

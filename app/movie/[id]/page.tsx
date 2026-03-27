@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
+import Image from 'next/image'
 import StatusButtons from '../../components/StatusButtons'
 import SlideTransition from '../../components/SlideTransition'
 import BackButton from '@/app/components/BackButton'
@@ -74,7 +75,7 @@ export default async function MoviePage({
       <SlideTransition>
         <div className="relative h-72 overflow-hidden">
           {backdrop && (
-            <img src={backdrop} alt={movie.title} className="w-full h-full object-cover opacity-40" />
+            <Image src={backdrop} alt={movie.title} fill className="object-cover opacity-40" sizes="100vw" priority />
           )}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black" />
           <BackButton />
@@ -83,7 +84,7 @@ export default async function MoviePage({
         <div className="px-6 -mt-16 relative">
           <div className="flex gap-4 mb-6">
             {poster && (
-              <img src={poster} alt={movie.title} className="w-24 rounded-xl shadow-2xl flex-shrink-0" />
+              <Image src={poster} alt={movie.title} width={96} height={144} className="rounded-xl shadow-2xl flex-shrink-0" />
             )}
             <div className="flex flex-col justify-end pb-1">
               <p className="text-white/60 text-xs mb-1">Film · {movie.release_date?.split('-')[0]}</p>
@@ -115,7 +116,7 @@ export default async function MoviePage({
                       boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.08)',
                     }}
                   >
-                    <img src={`https://image.tmdb.org/t/p/w45${p.logo_path}`} alt={p.provider_name} className="w-6 h-6 rounded-md" />
+                    <Image src={`https://image.tmdb.org/t/p/w45${p.logo_path}`} alt={p.provider_name} width={24} height={24} className="rounded-md" />
                     <span className="text-white/70 text-sm font-medium">{p.provider_name}</span>
                   </div>
                 ))}

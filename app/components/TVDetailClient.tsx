@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import StatusButtons from './StatusButtons'
 import ExpandableText from './ExpandableText'
 import EpisodeTracker from './EpisodeTracker'
@@ -60,7 +61,7 @@ export default function TVDetailClient({
                   boxShadow: 'inset 0 1px 0 rgba(255, 255, 255, 0.08)',
                 }}
               >
-                <img src={`https://image.tmdb.org/t/p/w45${p.logo_path}`} alt={p.provider_name} className="w-6 h-6 rounded-md" />
+                <Image src={`https://image.tmdb.org/t/p/w45${p.logo_path}`} alt={p.provider_name} width={24} height={24} className="rounded-md" />
                 <span className="text-white/70 text-sm font-medium">{p.provider_name}</span>
               </div>
             ))}

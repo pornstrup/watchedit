@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
+import Image from 'next/image'
 import TVDetailClient from '../../components/TVDetailClient'
 import SlideTransition from '../../components/SlideTransition'
 import BackButton from '../../components/BackButton'
@@ -86,7 +87,7 @@ export default async function TVPage({
       <SlideTransition>
         <div className="relative h-72 overflow-hidden">
           {backdrop && (
-            <img src={backdrop} alt={show.name} className="w-full h-full object-cover opacity-40" />
+            <Image src={backdrop} alt={show.name} fill className="object-cover opacity-40" sizes="100vw" priority />
           )}
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black" />
           <BackButton />
@@ -95,7 +96,7 @@ export default async function TVPage({
         <div className="px-6 -mt-16 relative">
           <div className="flex gap-4 mb-6">
             {poster && (
-              <img src={poster} alt={show.name} className="w-24 rounded-xl shadow-2xl flex-shrink-0" />
+              <Image src={poster} alt={show.name} width={96} height={144} className="rounded-xl shadow-2xl flex-shrink-0" />
             )}
             <div className="flex flex-col justify-end pb-1">
               <p className="text-white/60 text-xs mb-1">Serie · {show.first_air_date?.split('-')[0]}</p>

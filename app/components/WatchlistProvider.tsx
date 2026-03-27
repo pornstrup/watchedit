@@ -80,6 +80,10 @@ function NewGroupSheet({ onClose, onCreated }: { onClose: () => void; onCreated:
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 26, stiffness: 300 }}
+        drag="y"
+        dragConstraints={{ top: 0 }}
+        dragElastic={{ top: 0, bottom: 0.3 }}
+        onDragEnd={(_, info) => { if (info.offset.y > 80 || info.velocity.y > 500) onClose() }}
         className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-3xl px-6 pt-5 pb-32"
         style={{
           background: 'rgba(28, 28, 30, 0.85)',
