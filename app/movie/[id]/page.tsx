@@ -69,7 +69,7 @@ export default async function MoviePage({
     : null
 
   return (
-    <main className="min-h-screen bg-black pb-24 relative">
+    <main className="min-h-screen bg-black relative" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
       <DynamicGlow posterUrl={poster} />
       <StickyHeader title={movie.title} />
       <SlideTransition>

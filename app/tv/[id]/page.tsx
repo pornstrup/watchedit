@@ -81,7 +81,7 @@ export default async function TVPage({
   const nextEpisode = show.next_episode_to_air || null
 
   return (
-    <main className="min-h-screen bg-black pb-24 relative">
+    <main className="min-h-screen bg-black relative" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
       <DynamicGlow posterUrl={poster} />
       <StickyHeader title={show.name} />
       <SlideTransition>

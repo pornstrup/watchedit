@@ -9,7 +9,7 @@ export default async function Home() {
   if (!user) redirect('/login')
 
   return (
-    <main className="min-h-screen bg-black pb-24 flex flex-col items-center">
+    <main className="min-h-screen bg-black flex flex-col items-center" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
       <div className="w-full max-w-md px-6 flex flex-col pt-14">
         <PageTransition>
           <WatchlistProvider userName={user.user_metadata.full_name} userId={user.id} />

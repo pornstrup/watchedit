@@ -9,7 +9,7 @@ export default async function ProfilePage() {
   if (!user) redirect('/login')
 
   return (
-    <main className="min-h-screen bg-black pb-24">
+    <main className="min-h-screen bg-black" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
       <div className="w-full max-w-md mx-auto px-6 pt-14">
         <PageTransition>
           <ProfileClient

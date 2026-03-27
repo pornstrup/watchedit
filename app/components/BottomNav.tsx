@@ -43,7 +43,7 @@ export default function BottomNav() {
     <>
       <AnimatePresence>
         {!isHidden && (
-          <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-end justify-center pb-8 pointer-events-none">
+          <nav className="fixed bottom-0 left-0 right-0 z-50 flex items-end justify-center pointer-events-none" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 0.5rem)' }}>
             <div
               className="pointer-events-auto flex items-center gap-1 px-2 py-2 rounded-[28px]"
               style={{

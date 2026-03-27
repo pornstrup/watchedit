@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import Watchlist from './Watchlist'
 import GroupView from './GroupView'
+import PullToRefresh from './PullToRefresh'
 
 type Group = {
   id: string
@@ -371,6 +372,7 @@ useEffect(() => {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
           >
+            <PullToRefresh onRefresh={refresh} />
             <Watchlist key={refreshKey} onRemove={refresh} groups={groups} />
           </motion.div>
         ) : (
