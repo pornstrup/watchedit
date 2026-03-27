@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import StatusButtons from '../../components/StatusButtons'
-import PageTransition from '../../components/PageTransition'
+import SlideTransition from '../../components/SlideTransition'
 import BackButton from '@/app/components/BackButton'
 import RemoveFromList from '@/app/components/RemoveFromList'
 import StickyHeader from '@/app/components/StickyHeader'
@@ -71,7 +71,7 @@ export default async function MoviePage({
     <main className="min-h-screen bg-black pb-24 relative">
       <DynamicGlow posterUrl={poster} />
       <StickyHeader title={movie.title} />
-      <PageTransition>
+      <SlideTransition>
         <div className="relative h-72 overflow-hidden">
           {backdrop && (
             <img src={backdrop} alt={movie.title} className="w-full h-full object-cover opacity-40" />
@@ -136,7 +136,7 @@ export default async function MoviePage({
             </div>
           )}
         </div>
-      </PageTransition>
+      </SlideTransition>
     </main>
   )
 }

@@ -101,7 +101,7 @@ export default function ProfileClient({
       {loading ? (
         <div className="flex gap-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="flex-1 h-16 rounded-2xl bg-white/5 animate-pulse" />
+            <div key={i} className="flex-1 h-16 rounded-xl bg-white/5 animate-pulse" />
           ))}
         </div>
       ) : stats ? (
@@ -116,7 +116,7 @@ export default function ProfileClient({
             { value: stats.tvTotal, label: 'Serier' },
             { value: stats.episodesWatched, label: 'Episoder' },
           ].map((s, i) => (
-            <div key={i} className="flex-1 rounded-2xl px-4 py-3 flex flex-col gap-0.5" style={glassStyle}>
+            <div key={i} className="flex-1 rounded-xl px-4 py-3 flex flex-col gap-0.5" style={glassStyle}>
               <p className="text-white text-2xl font-bold">{s.value}</p>
               <p className="text-white/60 text-xs">{s.label}</p>
             </div>
@@ -132,18 +132,18 @@ export default function ProfileClient({
           transition={{ duration: 0.3, delay: 0.05 }}
           className="flex gap-3"
         >
-          <div className="flex-1 rounded-2xl px-4 py-3" style={{
+          <div className="flex-1 rounded-xl px-4 py-3" style={{
             ...glassStyle,
             border: '1px solid rgba(52, 211, 153, 0.2)',
           }}>
             <p className="text-white text-2xl font-bold">{stats.watching}</p>
             <p className="text-white/60 text-xs mt-0.5">I gang</p>
           </div>
-          <div className="flex-1 rounded-2xl px-4 py-3" style={glassStyle}>
+          <div className="flex-1 rounded-xl px-4 py-3" style={glassStyle}>
             <p className="text-white text-2xl font-bold">{stats.thisMonth}</p>
             <p className="text-white/60 text-xs mt-0.5">Denne måned</p>
           </div>
-          <div className="flex-1 rounded-2xl px-4 py-3" style={glassStyle}>
+          <div className="flex-1 rounded-xl px-4 py-3" style={glassStyle}>
             <p className="text-white text-2xl font-bold">{stats.done}</p>
             <p className="text-white/60 text-xs mt-0.5">Færdige</p>
           </div>

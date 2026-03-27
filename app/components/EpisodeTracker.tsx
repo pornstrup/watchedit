@@ -180,7 +180,7 @@ export default function EpisodeTracker({
           Array.from({ length: 24 }).map((_, i) => (
             <div
               key={`skeleton-${i}`}
-              className="relative rounded-2xl overflow-hidden aspect-[2/3] border border-white/8 bg-gradient-to-r from-white/5 to-white/10 animate-pulse"
+              className="relative rounded-xl overflow-hidden aspect-[2/3] border border-white/8 bg-gradient-to-r from-white/5 to-white/10 animate-pulse"
             />
           ))
         ) : (
@@ -195,7 +195,7 @@ export default function EpisodeTracker({
                   opacity: { duration: 0.6 },
                   scale: { duration: 0.3, delay: 0.2 }
                 }}
-                className={`relative rounded-2xl overflow-hidden cursor-pointer transition-all active:scale-95 aspect-[2/3] border ${
+                className={`relative rounded-xl overflow-hidden cursor-pointer transition-all active:scale-95 aspect-[2/3] border ${
                   isWatched
                     ? 'border-white/20 opacity-40'
                     : 'border-white/8 hover:border-white/20'
@@ -231,7 +231,7 @@ export default function EpisodeTracker({
       {/* MARKER SÆSON */}
       <motion.button
         onClick={() => markSeasonWatched(activeSeason, currentSeason?.episode_count || 0)}
-        className="w-full py-2.5 rounded-2xl bg-white/5 border border-white/10 text-white/50 text-sm font-medium hover:bg-white/10 transition-all"
+        className="w-full py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/50 text-sm font-medium hover:bg-white/10 transition-all"
         whileHover={{ scale: 1.01 }}
         whileTap={{ scale: 0.98 }}
       >

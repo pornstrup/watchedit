@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import TVDetailClient from '../../components/TVDetailClient'
-import PageTransition from '../../components/PageTransition'
+import SlideTransition from '../../components/SlideTransition'
 import BackButton from '../../components/BackButton'
 import RemoveFromList from '../../components/RemoveFromList'
 import StickyHeader from '../../components/StickyHeader'
@@ -83,7 +83,7 @@ export default async function TVPage({
     <main className="min-h-screen bg-black pb-24 relative">
       <DynamicGlow posterUrl={poster} />
       <StickyHeader title={show.name} />
-      <PageTransition>
+      <SlideTransition>
         <div className="relative h-72 overflow-hidden">
           {backdrop && (
             <img src={backdrop} alt={show.name} className="w-full h-full object-cover opacity-40" />
@@ -130,7 +130,7 @@ export default async function TVPage({
             </div>
           )}
         </div>
-      </PageTransition>
+      </SlideTransition>
     </main>
   )
 }
