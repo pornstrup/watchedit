@@ -33,7 +33,7 @@ export default function RemoveFromList({
     <button
       onClick={remove}
       disabled={loading}
-      className="w-full py-3 rounded-2xl bg-white/5 border border-white/8 text-white/40 text-sm font-medium hover:bg-red-500/10 hover:text-red-400/70 hover:border-red-500/20 transition-all"
+      className="w-full py-3 rounded-2xl bg-white/5 border border-white/8 text-white/60 text-sm font-medium hover:bg-red-500/10 hover:text-red-400/70 hover:border-red-500/20 transition-all"
     >
       {loading ? 'Fjerner...' : 'Fjern fra liste'}
     </button>

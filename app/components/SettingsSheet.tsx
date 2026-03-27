@@ -53,21 +53,9 @@ export default function SettingsSheet({
             </div>
 
             <div className="px-6 flex flex-col gap-2">
-              <p className="text-white/30 text-xs uppercase tracking-widest font-semibold mb-2">
+              <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-2">
                 Konto
               </p>
-
-              {/* Fremtidige indstillinger placeholder */}
-              <div
-                className="flex items-center justify-between px-4 py-3.5 rounded-2xl"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.08)',
-                }}
-              >
-                <span className="text-white/30 text-sm">Notifikationer</span>
-                <span className="text-white/20 text-xs">Kommer snart</span>
-              </div>
 
               {/* Log ud */}
               <button

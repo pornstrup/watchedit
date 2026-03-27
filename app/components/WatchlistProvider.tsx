@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import Search from './Search'
 import Watchlist from './Watchlist'
 import GroupView from './GroupView'
 
@@ -299,7 +298,7 @@ useEffect(() => {
               <button
                 onClick={() => switchGroup(null)}
                 className="relative flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-colors duration-200 outline-none focus:outline-none"
-                style={{ color: activeGroupId === null ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.4)' }}
+                style={{ color: activeGroupId === null ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.55)' }}
               >
                 {activeGroupId === null && (
                   <motion.div
@@ -323,7 +322,7 @@ useEffect(() => {
                   key={group.id}
                   onClick={() => switchGroup(group.id)}
                   className="relative flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-colors duration-200 outline-none focus:outline-none"
-                  style={{ color: activeGroupId === group.id ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.4)' }}
+                  style={{ color: activeGroupId === group.id ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.55)' }}
                 >
                   {activeGroupId === group.id && (
                     <motion.div
@@ -346,7 +345,7 @@ useEffect(() => {
             {/* + OPRET NY GRUPPE */}
             <button
               onClick={() => { setShowNewGroupSheet(true); window.dispatchEvent(new Event('sheet-opened')) }}
-              className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-white/30 hover:text-white/60 transition-colors outline-none focus:outline-none"
+              className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-xl text-white/55 hover:text-white/75 transition-colors outline-none focus:outline-none"
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <path d="M8 2v12M2 8h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>

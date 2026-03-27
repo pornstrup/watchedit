@@ -92,18 +92,6 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
         )}
 
         <div className="flex flex-col gap-3">
-          {/* NOTIFIKATIONER */}
-          <div
-            className="flex items-center justify-between px-4 py-3.5 rounded-2xl"
-            style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-            }}
-          >
-            <span className="text-white/50 text-sm">Notifikationer</span>
-            <span className="text-white/20 text-xs">Kommer snart</span>
-          </div>
-
           <div className="h-px bg-white/8 my-1" />
 
           {/* LOG UD */}

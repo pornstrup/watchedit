@@ -87,7 +87,6 @@ export default function ProfileClient({
               <span className="text-white text-3xl font-bold">{name?.[0]}</span>
             </div>
           )}
-          <div className="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full bg-emerald-400 ring-2 ring-black" />
         </div>
         <div>
           <h1 className="text-white text-2xl font-bold">{name}</h1>
