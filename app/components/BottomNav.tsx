@@ -57,7 +57,7 @@ export default function BottomNav() {
               {/* MIN LISTE */}
               <a
                 href="/"
-                aria-label="Min liste"
+                aria-label="Lister"
                 className="relative flex flex-col items-center gap-1 px-5 py-2 rounded-[20px] transition-all duration-200"
                 style={{
                   background: pathname === '/' ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
@@ -69,7 +69,7 @@ export default function BottomNav() {
                   strokeWidth={pathname === '/' ? 2 : 1.5}
                   color={pathname === '/' ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.5)'}
                 />
-                <span style={{ color: pathname === '/' ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: 500, lineHeight: 1 }}>Min liste</span>
+                <span style={{ color: pathname === '/' ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: 500, lineHeight: 1 }}>Lister</span>
               </a>
 
               {/* SØG */}
