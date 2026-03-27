@@ -71,7 +71,16 @@ export default async function MoviePage({
   return (
     <main className="min-h-screen bg-black relative" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
       <DynamicGlow posterUrl={poster} />
-      <StickyHeader title={movie.title} />
+      <StickyHeader
+        title={movie.title}
+        poster={poster}
+        year={movie.release_date?.split('-')[0]}
+        rating={movie.vote_average}
+        tmdbId={Number(id)}
+        mediaType="movie"
+        isOnList={!!item}
+        ctx={ctx}
+      />
       <SlideTransition>
         <div className="relative h-[45vh] overflow-hidden">
           {backdrop && (
@@ -91,6 +100,12 @@ export default async function MoviePage({
               <div className="flex flex-wrap gap-2">
                 <span className="text-white/50 text-xs">{movie.release_date?.split('-')[0]}</span>
                 {movie.runtime > 0 && <span className="text-white/50 text-xs">{movie.runtime} min</span>}
+                {movie.vote_average > 0 && (
+                  <span className="flex items-center gap-1">
+                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 1L7.5 4.5L11 5L8.5 7.5L9 11L6 9.5L3 11L3.5 7.5L1 5L4.5 4.5L6 1Z" fill="rgba(251,191,36,1)" /></svg>
+                    <span className="text-white/50 text-xs">{movie.vote_average.toFixed(1)}</span>
+                  </span>
+                )}
                 {movie.genres?.slice(0, 2).map((g: { id: number; name: string }) => (
                   <span key={g.id} className="text-white/50 text-xs">{g.name}</span>
                 ))}

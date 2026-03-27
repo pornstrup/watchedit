@@ -6,16 +6,15 @@ export default function BackButton() {
   return (
     <button
       onClick={() => window.history.back()}
-      className="absolute top-14 left-6 flex items-center gap-1 px-3 py-2 rounded-full text-white/70 text-sm font-medium transition-all duration-200 hover:text-white/90"
+      className="absolute top-14 left-4 w-10 h-10 rounded-full flex items-center justify-center transition-all active:scale-95"
       style={{
-        background: 'rgba(255, 255, 255, 0.07)',
+        background: 'rgba(0, 0, 0, 0.35)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
-        border: '1px solid rgba(255, 255, 255, 0.12)',
+        border: '1px solid rgba(255, 255, 255, 0.18)',
       }}
     >
-      <ChevronLeft size={16} strokeWidth={2.5} />
-      Tilbage
+      <ChevronLeft size={18} strokeWidth={2.5} color="white" />
     </button>
   )
 }

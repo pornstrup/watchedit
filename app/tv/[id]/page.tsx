@@ -83,7 +83,16 @@ export default async function TVPage({
   return (
     <main className="min-h-screen bg-black relative" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
       <DynamicGlow posterUrl={poster} />
-      <StickyHeader title={show.name} />
+      <StickyHeader
+        title={show.name}
+        poster={poster}
+        year={show.first_air_date?.split('-')[0]}
+        rating={show.vote_average}
+        tmdbId={Number(id)}
+        mediaType="tv"
+        isOnList={!!item}
+        ctx={ctx}
+      />
       <SlideTransition>
         <div className="relative h-[45vh] overflow-hidden">
           {backdrop && (
@@ -103,6 +112,12 @@ export default async function TVPage({
               <div className="flex flex-wrap gap-2">
                 <span className="text-white/50 text-xs">{show.first_air_date?.split('-')[0]}</span>
                 <span className="text-white/50 text-xs">{show.number_of_seasons} sæsoner</span>
+                {show.vote_average > 0 && (
+                  <span className="flex items-center gap-1">
+                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 1L7.5 4.5L11 5L8.5 7.5L9 11L6 9.5L3 11L3.5 7.5L1 5L4.5 4.5L6 1Z" fill="rgba(251,191,36,1)" /></svg>
+                    <span className="text-white/50 text-xs">{show.vote_average.toFixed(1)}</span>
+                  </span>
+                )}
                 {show.genres?.slice(0, 2).map((g: { id: number; name: string }) => (
                   <span key={g.id} className="text-white/50 text-xs">{g.name}</span>
                 ))}
