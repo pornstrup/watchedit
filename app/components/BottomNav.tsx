@@ -12,6 +12,8 @@ export default function BottomNav() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [profileOpen, setProfileOpen] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
+  const [initialQuery, setInitialQuery] = useState('')
+  const [initialAiMode, setInitialAiMode] = useState(false)
 
   const isDetailPage =
     pathname.startsWith('/movie/') ||
@@ -19,11 +21,22 @@ export default function BottomNav() {
     pathname === '/login'
   if (isDetailPage) return null
 
-  const groupId = typeof window !== 'undefined'
-    ? new URLSearchParams(window.location.search).get('group')
-    : null
+  const params = typeof window !== 'undefined'
+    ? new URLSearchParams(window.location.search)
+    : new URLSearchParams()
+  const groupId = params.get('group')
 
   useEffect(() => {
+    // Auto-åbn søgning hvis URL har ?search=
+    const urlParams = new URLSearchParams(window.location.search)
+    const savedQuery = urlParams.get('search') || ''
+    const savedAiMode = urlParams.get('aiMode') === '1'
+    if (savedQuery) {
+      setInitialQuery(savedQuery)
+      setInitialAiMode(savedAiMode)
+      setSearchOpen(true)
+    }
+
     const show = () => setSheetOpen(true)
     const hide = () => setSheetOpen(false)
     const openSearch = () => setSearchOpen(true)
@@ -115,8 +128,20 @@ export default function BottomNav() {
       <AnimatePresence>
         {searchOpen && (
           <SearchSheet
-            onClose={() => setSearchOpen(false)}
+            onClose={() => {
+              setSearchOpen(false)
+              setInitialQuery('')
+              setInitialAiMode(false)
+              // Ryd søge-params fra URL
+              const urlParams = new URLSearchParams(window.location.search)
+              urlParams.delete('search')
+              urlParams.delete('aiMode')
+              const qs = urlParams.toString()
+              window.history.replaceState(null, '', qs ? `/?${qs}` : '/')
+            }}
             initialGroupId={groupId}
+            initialQuery={initialQuery}
+            initialAiMode={initialAiMode}
           />
         )}
       </AnimatePresence>

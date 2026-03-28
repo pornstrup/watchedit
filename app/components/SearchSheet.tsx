@@ -10,6 +10,7 @@ type Result = {
   title: string
   year?: string
   poster: string | null
+  reason?: string
 }
 
 type Group = {
@@ -26,11 +27,15 @@ type Provider = {
 export default function SearchSheet({
   onClose,
   initialGroupId,
+  initialQuery = '',
+  initialAiMode = false,
 }: {
   onClose: () => void
   initialGroupId: string | null
+  initialQuery?: string
+  initialAiMode?: boolean
 }) {
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useState(initialQuery)
   const [results, setResults] = useState<Result[]>([])
   const [trending, setTrending] = useState<Result[]>([])
   const [loading, setLoading] = useState(false)
@@ -41,14 +46,26 @@ export default function SearchSheet({
   const [showContextPicker, setShowContextPicker] = useState(false)
   const [providers, setProviders] = useState<Record<string, Provider[]>>({})
   const [filter, setFilter] = useState<'all' | 'movie' | 'tv'>('all')
+  const [aiMode, setAiMode] = useState(initialAiMode)
+  const [aiThinking, setAiThinking] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const sheetRef = useRef<HTMLDivElement>(null)
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Auto-fokus
+  // Auto-fokus — kun hvis ingen initial query
   useEffect(() => {
-    const timer = setTimeout(() => inputRef.current?.focus(), 150)
-    return () => clearTimeout(timer)
+    if (!initialQuery) {
+      const timer = setTimeout(() => inputRef.current?.focus(), 150)
+      return () => clearTimeout(timer)
+    }
+  }, [initialQuery])
+
+  // Kør initial søgning hvis der er en query fra URL
+  useEffect(() => {
+    if (initialQuery && initialQuery.length >= 2) {
+      handleInput(initialQuery)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // Flyt sheet præcis over tastaturet (iOS visualViewport)
@@ -112,22 +129,64 @@ export default function SearchSheet({
     })
   }, [results, query])
 
+  const updateUrl = (q: string, ai: boolean) => {
+    const params = new URLSearchParams(window.location.search)
+    if (q.length >= 2) {
+      params.set('search', q)
+      if (ai) params.set('aiMode', '1')
+      else params.delete('aiMode')
+    } else {
+      params.delete('search')
+      params.delete('aiMode')
+    }
+    const qs = params.toString()
+    window.history.replaceState(null, '', qs ? `/?${qs}` : '/')
+  }
+
   const handleInput = (val: string) => {
     setQuery(val)
     setFilter('all')
+    updateUrl(val, aiMode)
     if (searchTimer.current) clearTimeout(searchTimer.current)
     if (val.length < 2) {
       setResults([])
       setLoading(false)
+      setAiThinking(false)
       return
     }
-    setLoading(true)
-    searchTimer.current = setTimeout(async () => {
-      const res = await fetch(`/api/tmdb/search?query=${encodeURIComponent(val)}`)
-      const data = await res.json()
-      setResults(data.results || [])
-      setLoading(false)
-    }, 300)
+    if (aiMode) {
+      setAiThinking(true)
+      setResults([])
+      searchTimer.current = setTimeout(async () => {
+        const res = await fetch('/api/ai-search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: val }),
+        })
+        const data = await res.json()
+        setResults(data.results || [])
+        setAiThinking(false)
+      }, 600)
+    } else {
+      setLoading(true)
+      searchTimer.current = setTimeout(async () => {
+        const res = await fetch(`/api/tmdb/search?query=${encodeURIComponent(val)}`)
+        const data = await res.json()
+        setResults(data.results || [])
+        setLoading(false)
+      }, 300)
+    }
+  }
+
+  const toggleAiMode = () => {
+    const newAi = !aiMode
+    setAiMode(newAi)
+    setQuery('')
+    setResults([])
+    setAiThinking(false)
+    setLoading(false)
+    updateUrl('', newAi)
+    setTimeout(() => inputRef.current?.focus(), 50)
   }
 
   const addToList = async (item: Result) => {
@@ -203,7 +262,39 @@ export default function SearchSheet({
         {/* INDHOLD — skifter mellem trending og søgeresultater */}
         <div className="flex-1 overflow-y-auto min-h-0" style={{ touchAction: 'pan-y' }}>
           <AnimatePresence mode="wait">
-            {!showSearch ? (
+            {!showSearch && aiMode ? (
+              /* ── AI IDLE ── */
+              <motion.div
+                key="ai-idle"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }}
+                className="px-6 pt-8 pb-4 flex flex-col gap-4"
+              >
+                <div className="flex flex-col gap-2">
+                  <p className="text-white text-base font-semibold">Beskriv hvad du leder efter</p>
+                  <p className="text-white/45 text-sm leading-relaxed">AI finder film og serier baseret på hvad du skriver — ikke kun titler.</p>
+                </div>
+                <div className="flex flex-col gap-2 mt-2">
+                  {[
+                    'Noget der minder om Interstellar',
+                    'En sjov dansk komedie fra 90\'erne',
+                    'Sci-fi thriller med twist ending',
+                    'Noget vi kan se med børnene',
+                  ].map(example => (
+                    <button
+                      key={example}
+                      onClick={() => { handleInput(example); inputRef.current?.focus() }}
+                      className="text-left px-4 py-3 rounded-xl text-sm text-white/60 active:bg-white/10 transition-colors"
+                      style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}
+                    >
+                      {example}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            ) : !showSearch ? (
               /* ── TRENDING ── */
               <motion.div
                 key="trending"
@@ -244,35 +335,63 @@ export default function SearchSheet({
                 transition={{ duration: 0.15 }}
                 className="flex flex-col"
               >
-                {/* Filter pills */}
-                <div className="flex gap-2 px-4 pt-4 pb-3 flex-shrink-0">
-                  {(['all', 'movie', 'tv'] as const).map(f => (
-                    <button
-                      key={f}
-                      onClick={() => setFilter(f)}
-                      className="px-4 py-1.5 rounded-full text-sm font-medium transition-all"
-                      style={filter === f ? {
-                        background: 'white',
-                        color: 'black',
-                      } : {
-                        background: 'rgba(255,255,255,0.08)',
-                        border: '1px solid rgba(255,255,255,0.12)',
-                        color: 'rgba(255,255,255,0.6)',
-                      }}
-                    >
-                      {f === 'all' ? 'Top' : f === 'movie' ? 'Film' : 'Serier'}
-                    </button>
-                  ))}
-                  {loading && (
-                    <div className="ml-auto flex items-center">
-                      <div className="w-4 h-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+                {/* Filter pills — kun i normal tilstand */}
+                {!aiMode && (
+                  <div className="flex gap-2 px-4 pt-4 pb-3 flex-shrink-0">
+                    {(['all', 'movie', 'tv'] as const).map(f => (
+                      <button
+                        key={f}
+                        onClick={() => setFilter(f)}
+                        className="px-4 py-1.5 rounded-full text-sm font-medium transition-all"
+                        style={filter === f ? {
+                          background: 'white',
+                          color: 'black',
+                        } : {
+                          background: 'rgba(255,255,255,0.08)',
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          color: 'rgba(255,255,255,0.6)',
+                        }}
+                      >
+                        {f === 'all' ? 'Top' : f === 'movie' ? 'Film' : 'Serier'}
+                      </button>
+                    ))}
+                    {loading && (
+                      <div className="ml-auto flex items-center">
+                        <div className="w-4 h-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* AI thinking */}
+                {aiMode && aiThinking && (
+                  <div className="flex flex-col items-center gap-3 py-12 px-6">
+                    <div className="flex gap-1.5">
+                      {[0, 1, 2].map(i => (
+                        <motion.div
+                          key={i}
+                          className="w-2 h-2 rounded-full"
+                          style={{ background: 'rgba(150,100,255,0.8)' }}
+                          animate={{ scale: [1, 1.4, 1], opacity: [0.5, 1, 0.5] }}
+                          transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                        />
+                      ))}
                     </div>
-                  )}
-                </div>
+                    <p className="text-white/40 text-sm">Finder forslag...</p>
+                  </div>
+                )}
+
+                {/* AI label */}
+                {aiMode && !aiThinking && results.length > 0 && (
+                  <div className="flex items-center gap-2 px-4 pt-4 pb-2">
+                    <span style={{ fontSize: 13 }}>✦</span>
+                    <p className="text-white/40 text-xs">AI-forslag baseret på din beskrivelse</p>
+                  </div>
+                )}
 
                 {/* Resultatliste */}
                 <div className="flex flex-col px-4 pb-2">
-                  {filteredResults.length === 0 && !loading && (
+                  {filteredResults.length === 0 && !loading && !aiThinking && (
                     <p className="text-white/40 text-sm text-center py-8">Ingen resultater for &quot;{query}&quot;</p>
                   )}
                   {filteredResults.map(item => {
@@ -297,7 +416,10 @@ export default function SearchSheet({
                             <p className="text-white/45 text-xs mt-0.5">
                               {item.media_type === 'tv' ? 'Serie' : 'Film'}{item.year && ` · ${item.year}`}
                             </p>
-                            {itemProviders && itemProviders.length > 0 && (
+                            {item.reason && (
+                              <p className="text-white/35 text-xs mt-0.5 italic">{item.reason}</p>
+                            )}
+                            {!aiMode && itemProviders && itemProviders.length > 0 && (
                               <div className="flex gap-1 mt-1.5">
                                 {itemProviders.slice(0, 3).map(p => (
                                   <Image key={p.id} src={p.logo} alt={p.name} width={16} height={16} className="rounded-sm object-cover" />
@@ -384,19 +506,31 @@ export default function SearchSheet({
             <div
               className="flex items-center gap-3 px-4 py-3.5 rounded-2xl flex-1"
               style={{
-                background: 'rgba(255,255,255,0.07)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                background: aiMode ? 'rgba(120,80,255,0.12)' : 'rgba(255,255,255,0.07)',
+                border: aiMode ? '1px solid rgba(150,100,255,0.3)' : '1px solid rgba(255,255,255,0.1)',
+                transition: 'background 0.2s, border 0.2s',
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-              </svg>
+              {/* AI / Søg toggle */}
+              <button
+                onClick={toggleAiMode}
+                className="flex-shrink-0 transition-transform active:scale-90"
+                title={aiMode ? 'Skift til normal søgning' : 'Skift til AI-søgning'}
+              >
+                {aiMode ? (
+                  <span style={{ fontSize: 16 }}>✦</span>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2">
+                    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                  </svg>
+                )}
+              </button>
               <input
                 ref={inputRef}
                 type="text"
                 value={query}
                 onChange={e => handleInput(e.target.value)}
-                placeholder="Søg efter film eller serie..."
+                placeholder={aiMode ? 'Beskriv hvad du leder efter...' : 'Søg efter film eller serie...'}
                 className="flex-1 bg-transparent text-white text-sm outline-none placeholder:text-white/30"
               />
               {query.length > 0 && (
