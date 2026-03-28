@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
+import RatingSheet from './RatingSheet'
 
 type Group = {
   id: string
@@ -19,12 +20,15 @@ type ActivityEvent = {
   user_name: string
   user_avatar: string | null
   title?: string
+  poster?: string | null
   tmdb_id?: number
   media_type?: string
   season?: number
   episode?: number
   timestamp: string
 }
+
+type ReactionData = { count: number; userReacted: boolean }
 
 function relativeTime(ts: string): string {
   const diff = Date.now() - new Date(ts).getTime()
@@ -106,6 +110,8 @@ function GroupPosterCard({
   onMarkNext,
   className,
   inScrollContainer,
+  reaction,
+  onReact,
 }: {
   item: GroupItem
   groupId: string
@@ -114,9 +120,12 @@ function GroupPosterCard({
   onMarkNext?: () => void
   className?: string
   inScrollContainer?: boolean
+  reaction?: ReactionData
+  onReact?: () => void
 }) {
   const [pressing, setPressing] = useState(false)
   const [showOverlay, setShowOverlay] = useState(false)
+  const [showRating, setShowRating] = useState(false)
   const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const [popupPos, setPopupPos] = useState<{ top?: number; bottom?: number; left: number }>({ bottom: 8, left: 0 })
   const cardRef = useRef<HTMLDivElement>(null)
@@ -239,6 +248,25 @@ function GroupPosterCard({
         </div>
       </motion.a>
 
+      {/* Reaktion — kun på "vil se" */}
+      {item.status === 'want' && onReact && (
+        <button
+          onClick={e => { e.stopPropagation(); onReact() }}
+          className="flex items-center gap-1 mt-1.5 px-1.5 py-0.5 rounded-full transition-all active:scale-90"
+          style={{
+            background: reaction?.userReacted ? 'rgba(255,59,48,0.15)' : 'rgba(255,255,255,0.06)',
+            border: reaction?.userReacted ? '1px solid rgba(255,59,48,0.25)' : '1px solid rgba(255,255,255,0.08)',
+          }}
+        >
+          <span style={{ fontSize: 12 }}>{reaction?.userReacted ? '❤️' : '🤍'}</span>
+          {(reaction?.count ?? 0) > 0 && (
+            <span className="text-[11px] font-medium" style={{ color: reaction?.userReacted ? 'rgba(255,59,48,0.9)' : 'rgba(255,255,255,0.35)' }}>
+              {reaction?.count}
+            </span>
+          )}
+        </button>
+      )}
+
      {showOverlay && typeof document !== 'undefined' && createPortal(
           <>
             <motion.div
@@ -302,6 +330,7 @@ function GroupPosterCard({
                     })
                     onStatusChange?.(item.id, s)
                     setShowOverlay(false)
+                    if (s === 'done') setShowRating(true)
                   }}
                   className="flex items-center justify-between px-4 py-3 text-sm transition-colors"
                   style={{
@@ -333,6 +362,18 @@ function GroupPosterCard({
           </>,
           document.body
         )}
+
+      <AnimatePresence>
+        {showRating && (
+          <RatingSheet
+            tmdbId={item.tmdb_id}
+            mediaType={item.media_type}
+            title={item.title}
+            poster={item.poster}
+            onClose={() => setShowRating(false)}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }
@@ -836,6 +877,7 @@ export default function GroupView({
   const [currentGroupName, setCurrentGroupName] = useState(group.name)
   const [activity, setActivity] = useState<ActivityEvent[]>([])
   const [showActivity, setShowActivity] = useState(false)
+  const [reactions, setReactions] = useState<Record<string, ReactionData>>({})
 
   useEffect(() => {
     setLoading(true)
@@ -852,10 +894,13 @@ export default function GroupView({
     fetch(`/api/groups/${groupId}/inspiration`)
       .then(r => r.json())
       .then(d => setInspiration(d.items || []))
-    // Aktivitet hentes baggrunden
+    // Aktivitet + reaktioner hentes i baggrunden
     fetch(`/api/groups/${groupId}/activity`)
       .then(r => r.json())
       .then(d => setActivity(d.events || []))
+    fetch(`/api/groups/${groupId}/reactions`)
+      .then(r => r.json())
+      .then(d => setReactions(d.reactions || {}))
   }, [groupId, refreshKey])
 // Lyt på status-ændringer fra personlig liste og refresh inspiration
   useEffect(() => {
@@ -946,6 +991,24 @@ export default function GroupView({
     return acc
   }, {} as Record<string, { label: string; items: GroupItem[] }>)
 
+  const toggleReaction = async (itemId: string) => {
+    const current = reactions[itemId]
+    const userReacted = current?.userReacted ?? false
+    // Optimistisk opdatering
+    setReactions(prev => ({
+      ...prev,
+      [itemId]: {
+        count: (prev[itemId]?.count ?? 0) + (userReacted ? -1 : 1),
+        userReacted: !userReacted,
+      }
+    }))
+    await fetch(`/api/groups/${groupId}/reactions`, {
+      method: userReacted ? 'DELETE' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ item_id: itemId }),
+    })
+  }
+
   const handleLeave = () => {
     setShowSettings(false)
     onRefresh()
@@ -1031,32 +1094,13 @@ export default function GroupView({
 
         {/* MEDLEMMER + AKTIVITET */}
         {members.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <div className="flex gap-3">
-              {members.map(m => (
-                <div key={m.id} className="flex items-center gap-2">
-                  <Avatar url={m.avatar_url} name={m.name} size={7} />
-                  <span className="text-white/50 text-sm">{m.name?.split(' ')[0]}</span>
-                </div>
-              ))}
-            </div>
-            {activity.length > 0 && (
-              <button
-                onClick={() => { setShowActivity(true); window.dispatchEvent(new Event('sheet-opened')) }}
-                className="flex items-center gap-2 text-left active:opacity-60 transition-opacity"
-              >
-                {activity[0].user_avatar ? (
-                  <Image src={activity[0].user_avatar} alt={activity[0].user_name} width={16} height={16} className="rounded-full object-cover flex-shrink-0" />
-                ) : (
-                  <div className="w-4 h-4 rounded-full bg-white/20 flex-shrink-0" />
-                )}
-                <span className="text-white/40 text-xs truncate">
-                  <span className="text-white/60">{activity[0].user_name}</span>
-                  {' '}{eventText(activity[0])}
-                </span>
-                <span className="text-white/22 text-xs flex-shrink-0">{relativeTime(activity[0].timestamp)}</span>
-              </button>
-            )}
+          <div className="flex gap-3">
+            {members.map(m => (
+              <div key={m.id} className="flex items-center gap-2">
+                <Avatar url={m.avatar_url} name={m.name} size={7} />
+                <span className="text-white/50 text-sm">{m.name?.split(' ')[0]}</span>
+              </div>
+            ))}
           </div>
         )}
 
@@ -1149,6 +1193,8 @@ export default function GroupView({
                     onRemove={removeItem}
                     onStatusChange={updateStatus}
                     className="aspect-[2/3]"
+                    reaction={reactions[item.id]}
+                    onReact={() => toggleReaction(item.id)}
                   />
                 ))}
               </AnimatePresence>

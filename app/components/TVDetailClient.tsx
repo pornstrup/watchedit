@@ -19,6 +19,9 @@ export default function TVDetailClient({
   providers,
   overview,
   ctx,
+  tmdbId,
+  title,
+  poster,
 }: {
   item: { id: string }
   seasons: Season[]
@@ -28,6 +31,9 @@ export default function TVDetailClient({
   providers: Provider[]
   overview: string
   ctx?: string
+  tmdbId?: number
+  title?: string
+  poster?: string | null
 }) {
   const [status, setStatus] = useState(initialStatus)
 
@@ -40,6 +46,10 @@ export default function TVDetailClient({
           initialStatus={status as 'want' | 'watching' | 'done'}
           onStatusChange={setStatus}
           ctx={ctx}
+          tmdbId={tmdbId}
+          mediaType="tv"
+          title={title}
+          poster={poster}
         />
       </div>
 

@@ -115,7 +115,15 @@ export default async function MoviePage({
 
           {item && (
             <div className="mb-6">
-              <StatusButtons itemId={item.id} initialStatus={item.status as 'want' | 'watching' | 'done'} />
+              <StatusButtons
+                itemId={item.id}
+                initialStatus={item.status as 'want' | 'watching' | 'done'}
+                ctx={ctx}
+                tmdbId={Number(id)}
+                mediaType="movie"
+                title={movie.title}
+                poster={poster}
+              />
             </div>
           )}
 

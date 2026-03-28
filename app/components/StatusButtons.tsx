@@ -1,6 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { AnimatePresence } from 'framer-motion'
+import RatingSheet from './RatingSheet'
 
 type Status = 'want' | 'watching' | 'done'
 
@@ -16,20 +18,28 @@ export default function StatusButtons({
   initialStatus,
   onStatusChange,
   ctx,
+  tmdbId,
+  mediaType,
+  title,
+  poster,
 }: {
   itemId: string
   initialStatus: Status
   onStatusChange?: (status: string) => void
   ctx?: string
+  tmdbId?: number
+  mediaType?: string
+  title?: string
+  poster?: string | null
 }) {
   const [status, setStatus] = useState<Status>(initialStatus)
+  const [showRating, setShowRating] = useState(false)
 
-  // Synkroniser hvis ekstern status ændres (fx fra EpisodeTracker)
   useEffect(() => {
     setStatus(initialStatus)
   }, [initialStatus])
 
-const updateStatus = async (newStatus: Status) => {
+  const updateStatus = async (newStatus: Status) => {
     if (navigator.vibrate) navigator.vibrate(8)
     setStatus(newStatus)
     onStatusChange?.(newStatus)
@@ -46,24 +56,41 @@ const updateStatus = async (newStatus: Status) => {
         body: JSON.stringify({ id: itemId, status: newStatus })
       })
     }
+    if (newStatus === 'done' && tmdbId && mediaType && title) {
+      setShowRating(true)
+    }
   }
 
   return (
-    <div className="flex gap-2">
-      {(['want', 'watching', 'done'] as const).map((s) => (
-        <button
-          key={s}
-          onClick={() => updateStatus(s)}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-            status === s
-              ? 'bg-white text-black border border-transparent'
-              : 'text-white/50 hover:text-white/80'
-          }`}
-          style={status === s ? {} : glassStyle}
-        >
-          {s === 'want' ? 'Vil se' : s === 'watching' ? 'I gang' : 'Set'}
-        </button>
-      ))}
-    </div>
+    <>
+      <div className="flex gap-2">
+        {(['want', 'watching', 'done'] as const).map((s) => (
+          <button
+            key={s}
+            onClick={() => updateStatus(s)}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
+              status === s
+                ? 'bg-white text-black border border-transparent'
+                : 'text-white/50 hover:text-white/80'
+            }`}
+            style={status === s ? {} : glassStyle}
+          >
+            {s === 'want' ? 'Vil se' : s === 'watching' ? 'I gang' : 'Set'}
+          </button>
+        ))}
+      </div>
+
+      <AnimatePresence>
+        {showRating && tmdbId && mediaType && title && (
+          <RatingSheet
+            tmdbId={tmdbId}
+            mediaType={mediaType}
+            title={title}
+            poster={poster ?? null}
+            onClose={() => setShowRating(false)}
+          />
+        )}
+      </AnimatePresence>
+    </>
   )
 }

@@ -142,6 +142,9 @@ export default async function TVPage({
               providers={providers}
               overview={show.overview}
               ctx={ctx}
+              tmdbId={Number(id)}
+              title={show.name}
+              poster={poster}
             />
           )}
 

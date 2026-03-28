@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
+import RatingSheet from './RatingSheet'
 
 type WatchlistItem = {
   id: string
@@ -43,6 +44,7 @@ function PosterCard({
 }) {
   const [pressing, setPressing] = useState(false)
   const [showOverlay, setShowOverlay] = useState(false)
+  const [showRating, setShowRating] = useState(false)
   const [popupPos, setPopupPos] = useState<{ top?: number; bottom?: number; left: number }>({ bottom: 8, left: 0 })
   const [sharingTo, setSharingTo] = useState<string | null>(null)
   const [sharedGroups, setSharedGroups] = useState<string[]>([])
@@ -242,6 +244,7 @@ function PosterCard({
                     })
                     onStatusChange?.(item.id, s)
                     setShowOverlay(false)
+                    if (s === 'done') setShowRating(true)
                   }}
                   className="flex items-center justify-between px-4 py-3 text-sm transition-colors"
                   style={{
@@ -302,6 +305,18 @@ function PosterCard({
           </>,
           document.body
         )}
+
+      <AnimatePresence>
+        {showRating && (
+          <RatingSheet
+            tmdbId={item.tmdb_id}
+            mediaType={item.media_type}
+            title={item.title}
+            poster={item.poster}
+            onClose={() => setShowRating(false)}
+          />
+        )}
+      </AnimatePresence>
     </motion.div>
   )
 }

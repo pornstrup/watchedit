@@ -59,7 +59,7 @@ export async function GET(
     ...new Map((allItems || []).map(i => [`${i.tmdb_id}-${i.media_type}`, i])).values()
   ].slice(0, 20)
 
-  const titleMap: Record<string, string> = {}
+  const tmdbMap: Record<string, { title: string; poster: string | null }> = {}
   await Promise.all(
     uniqueTmdb.map(async (item) => {
       const res = await fetch(
@@ -70,7 +70,10 @@ export async function GET(
         }
       )
       const tmdb = await res.json()
-      titleMap[`${item.tmdb_id}-${item.media_type}`] = tmdb.title || tmdb.name || ''
+      tmdbMap[`${item.tmdb_id}-${item.media_type}`] = {
+        title: tmdb.title || tmdb.name || '',
+        poster: tmdb.poster_path ? `https://image.tmdb.org/t/p/w185${tmdb.poster_path}` : null,
+      }
     })
   )
 
@@ -81,6 +84,7 @@ export async function GET(
     user_name: string
     user_avatar: string | null
     title?: string
+    poster?: string | null
     tmdb_id?: number
     media_type?: string
     season?: number
@@ -94,12 +98,14 @@ export async function GET(
   for (const item of (allItems || []).slice(0, 20)) {
     const profile = profileMap[item.added_by]
     if (!profile) continue
+    const tmdb = tmdbMap[`${item.tmdb_id}-${item.media_type}`]
     events.push({
       id: `added-${item.id}`,
       type: 'added',
       user_name: profile.name?.split(' ')[0] || 'Nogen',
       user_avatar: profile.avatar_url,
-      title: titleMap[`${item.tmdb_id}-${item.media_type}`],
+      title: tmdb?.title,
+      poster: tmdb?.poster ?? null,
       tmdb_id: item.tmdb_id,
       media_type: item.media_type,
       timestamp: item.added_at,
@@ -111,12 +117,14 @@ export async function GET(
     const profile = profileMap[ep.marked_by]
     const watchlistItem = itemMap[ep.group_watchlist_item_id]
     if (!profile || !watchlistItem) continue
+    const tmdb = tmdbMap[`${watchlistItem.tmdb_id}-${watchlistItem.media_type}`]
     events.push({
       id: `episode-${ep.id}`,
       type: 'episode',
       user_name: profile.name?.split(' ')[0] || 'Nogen',
       user_avatar: profile.avatar_url,
-      title: titleMap[`${watchlistItem.tmdb_id}-${watchlistItem.media_type}`],
+      title: tmdb?.title,
+      poster: tmdb?.poster ?? null,
       tmdb_id: watchlistItem.tmdb_id,
       media_type: watchlistItem.media_type,
       season: ep.season_number,
