@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
+import UserSheet from './UserSheet'
 
 type FeedItem = {
   user_id: string
@@ -76,6 +77,7 @@ export default function SearchSheet({
   const [aiThinking, setAiThinking] = useState(false)
   const [feed, setFeed] = useState<FeedItem[]>([])
   const [feedLoading, setFeedLoading] = useState(true)
+  const [openUserId, setOpenUserId] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const sheetRef = useRef<HTMLDivElement>(null)
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -586,17 +588,19 @@ export default function SearchSheet({
                             className="flex items-center gap-3 py-3"
                             style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
                           >
-                            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                              {u.avatar ? (
-                                <Image src={u.avatar} alt={u.name} width={40} height={40} className="object-cover" />
-                              ) : (
-                                <span className="text-white font-semibold text-base">{u.name?.[0]}</span>
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-white text-sm font-medium">{u.name}</p>
-                              {u.username && <p className="text-white/40 text-xs">@{u.username}</p>}
-                            </div>
+                            <button className="flex items-center gap-3 flex-1 min-w-0 text-left" onClick={() => setOpenUserId(u.id)}>
+                              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                                {u.avatar ? (
+                                  <Image src={u.avatar} alt={u.name} width={40} height={40} className="object-cover" />
+                                ) : (
+                                  <span className="text-white font-semibold text-base">{u.name?.[0]}</span>
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-white text-sm font-medium">{u.name}</p>
+                                {u.username && <p className="text-white/40 text-xs">@{u.username}</p>}
+                              </div>
+                            </button>
                             <button
                               onClick={() => toggleFollow(u)}
                               className="px-4 py-1.5 rounded-full text-xs font-medium flex-shrink-0"
@@ -624,17 +628,19 @@ export default function SearchSheet({
                         className="flex items-center gap-3 py-3"
                         style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
                       >
-                        <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
-                          {u.avatar ? (
-                            <Image src={u.avatar} alt={u.name} width={40} height={40} className="object-cover" />
-                          ) : (
-                            <span className="text-white font-semibold text-base">{u.name?.[0]}</span>
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white text-sm font-medium leading-snug">{u.name}</p>
-                          {u.username && <p className="text-white/40 text-xs">@{u.username}</p>}
-                        </div>
+                        <button className="flex items-center gap-3 flex-1 min-w-0 text-left" onClick={() => setOpenUserId(u.id)}>
+                          <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            {u.avatar ? (
+                              <Image src={u.avatar} alt={u.name} width={40} height={40} className="object-cover" />
+                            ) : (
+                              <span className="text-white font-semibold text-base">{u.name?.[0]}</span>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white text-sm font-medium leading-snug">{u.name}</p>
+                            {u.username && <p className="text-white/40 text-xs">@{u.username}</p>}
+                          </div>
+                        </button>
                         <button
                           onClick={() => toggleFollow(u)}
                           className="px-4 py-1.5 rounded-full text-xs font-medium flex-shrink-0"
@@ -859,6 +865,12 @@ export default function SearchSheet({
           </div>
         </div>
       </motion.div>
+
+      <AnimatePresence>
+        {openUserId && (
+          <UserSheet userId={openUserId} onClose={() => setOpenUserId(null)} />
+        )}
+      </AnimatePresence>
     </>
   )
 }
