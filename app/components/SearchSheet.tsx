@@ -859,7 +859,7 @@ export default function SearchSheet({
               <input
                 ref={inputRef}
                 type="search"
-                autoComplete="off"
+                autoComplete="new-password"
                 autoCorrect="off"
                 autoCapitalize="off"
                 spellCheck={false}
