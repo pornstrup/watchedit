@@ -27,15 +27,22 @@ export default function BottomNav() {
   const groupId = params.get('group')
 
   useEffect(() => {
-    // Auto-åbn søgning hvis URL har ?search=
-    const urlParams = new URLSearchParams(window.location.search)
-    const savedQuery = urlParams.get('search') || ''
-    const savedAiMode = urlParams.get('aiMode') === '1'
-    if (savedQuery) {
-      setInitialQuery(savedQuery)
-      setInitialAiMode(savedAiMode)
-      setSearchOpen(true)
+    const checkSearchUrl = () => {
+      const urlParams = new URLSearchParams(window.location.search)
+      const savedQuery = urlParams.get('search') || ''
+      const savedAiMode = urlParams.get('aiMode') === '1'
+      if (savedQuery) {
+        setInitialQuery(savedQuery)
+        setInitialAiMode(savedAiMode)
+        setSearchOpen(true)
+      }
     }
+
+    // Auto-åbn søgning ved mount
+    checkSearchUrl()
+
+    // Genåbn søgning når bruger navigerer tilbage via browser-back
+    window.addEventListener('popstate', checkSearchUrl)
 
     const show = () => setSheetOpen(true)
     const hide = () => setSheetOpen(false)
@@ -44,6 +51,7 @@ export default function BottomNav() {
     window.addEventListener('sheet-closed', hide)
     window.addEventListener('open-search', openSearch)
     return () => {
+      window.removeEventListener('popstate', checkSearchUrl)
       window.removeEventListener('sheet-opened', show)
       window.removeEventListener('sheet-closed', hide)
       window.removeEventListener('open-search', openSearch)

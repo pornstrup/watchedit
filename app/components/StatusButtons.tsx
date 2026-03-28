@@ -58,6 +58,7 @@ export default function StatusButtons({
     if (navigator.vibrate) navigator.vibrate(8)
     setOnList(true)
     setStatus('want')
+    if (ctx) setShowAlsoAdd(true)
     const endpoint = ctx ? `/api/groups/${ctx}/watchlist` : '/api/watchlist'
     const res = await fetch(endpoint, {
       method: 'POST',
@@ -66,7 +67,6 @@ export default function StatusButtons({
     })
     const { data } = await res.json()
     if (data?.id) setItemId(data.id)
-    if (ctx) setShowAlsoAdd(true)
   }
 
   const addToPersonalList = async () => {
@@ -84,6 +84,7 @@ export default function StatusButtons({
     setOnList(false)
     setStatus(null)
     setItemId(undefined)
+    setShowAlsoAdd(false)
     const endpoint = ctx ? `/api/groups/${ctx}/watchlist` : '/api/watchlist'
     await fetch(endpoint, {
       method: 'DELETE',

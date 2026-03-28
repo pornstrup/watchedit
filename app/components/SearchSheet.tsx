@@ -192,6 +192,7 @@ export default function SearchSheet({
 
   const removeFromList = async (item: Result) => {
     const key = `${item.tmdb_id}-${item.media_type}`
+    setAlsoAddPrompt(null)
     const url = activeContext ? `/api/groups/${activeContext}/watchlist` : '/api/watchlist'
     await fetch(url, {
       method: 'DELETE',
@@ -207,6 +208,9 @@ export default function SearchSheet({
   const addToList = async (item: Result) => {
     const key = `${item.tmdb_id}-${item.media_type}`
     if (existingIds.has(key) || added.has(key)) return
+    setAdded(prev => new Set([...prev, key]))
+    if (navigator.vibrate) navigator.vibrate(8)
+    if (activeContext) setAlsoAddPrompt(item)
     const url = activeContext ? `/api/groups/${activeContext}/watchlist` : '/api/watchlist'
     const res = await fetch(url, {
       method: 'POST',
@@ -214,11 +218,11 @@ export default function SearchSheet({
       body: JSON.stringify({ tmdb_id: item.tmdb_id, media_type: item.media_type })
     })
     if (res.ok) {
-      setAdded(prev => new Set([...prev, key]))
-      if (navigator.vibrate) navigator.vibrate(8)
       window.dispatchEvent(new CustomEvent('watchlist-updated', { detail: { groupId: activeContext } }))
-      // Tilbyd at tilføje til egen liste også, hvis vi er i gruppe-kontekst
-      if (activeContext) setAlsoAddPrompt(item)
+    } else {
+      // Fortryd optimistisk opdatering ved fejl
+      setAdded(prev => { const s = new Set(prev); s.delete(key); return s })
+      setAlsoAddPrompt(null)
     }
   }
 
