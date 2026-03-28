@@ -4,6 +4,20 @@ import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 
+type FeedItem = {
+  user_id: string
+  user_name: string
+  user_username: string | null
+  user_avatar: string | null
+  tmdb_id: number
+  media_type: string
+  title: string
+  poster: string | null
+  rating: number | null
+  note: string | null
+  watched_at: string
+}
+
 type Result = {
   tmdb_id: number
   media_type: string
@@ -22,6 +36,14 @@ type Provider = {
   id: number
   name: string
   logo: string
+}
+
+type UserResult = {
+  id: string
+  name: string
+  username: string | null
+  avatar: string | null
+  is_following: boolean
 }
 
 export default function SearchSheet({
@@ -46,9 +68,12 @@ export default function SearchSheet({
   const [showContextPicker, setShowContextPicker] = useState(false)
   const [alsoAddPrompt, setAlsoAddPrompt] = useState<Result | null>(null)
   const [providers, setProviders] = useState<Record<string, Provider[]>>({})
-  const [filter, setFilter] = useState<'all' | 'movie' | 'tv'>('all')
+  const [filter, setFilter] = useState<'all' | 'movie' | 'tv' | 'users'>('all')
+  const [userResults, setUserResults] = useState<UserResult[]>([])
+  const [following, setFollowing] = useState<Set<string>>(new Set())
   const [aiMode, setAiMode] = useState(initialAiMode)
   const [aiThinking, setAiThinking] = useState(false)
+  const [feed, setFeed] = useState<FeedItem[]>([])
   const inputRef = useRef<HTMLInputElement>(null)
   const sheetRef = useRef<HTMLDivElement>(null)
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -87,11 +112,14 @@ export default function SearchSheet({
     }
   }, [])
 
-  // Hent trending ved mount
+  // Hent trending + feed ved mount
   useEffect(() => {
     fetch('/api/tmdb/trending')
       .then(r => r.json())
       .then(d => setTrending((d.results || []).slice(0, 12)))
+    fetch('/api/follows/feed')
+      .then(r => r.json())
+      .then(d => setFeed(d.items || []))
   }, [])
 
   // Hent grupper + eksisterende ids
@@ -146,13 +174,22 @@ export default function SearchSheet({
 
   const handleInput = (val: string) => {
     setQuery(val)
-    setFilter('all')
+    if (filter !== 'users') setFilter('all')
     updateUrl(val, aiMode)
     if (searchTimer.current) clearTimeout(searchTimer.current)
     if (val.length < 2) {
       setResults([])
+      setUserResults([])
       setLoading(false)
       setAiThinking(false)
+      return
+    }
+    if (filter === 'users') {
+      searchTimer.current = setTimeout(async () => {
+        const res = await fetch(`/api/users/search?q=${encodeURIComponent(val)}`)
+        const data = await res.json()
+        setUserResults(data.users || [])
+      }, 300)
       return
     }
     if (aiMode) {
@@ -176,6 +213,33 @@ export default function SearchSheet({
         setResults(data.results || [])
         setLoading(false)
       }, 300)
+    }
+  }
+
+  const toggleFollow = async (u: UserResult) => {
+    if (navigator.vibrate) navigator.vibrate(8)
+    const newFollowing = new Set(following)
+    const optimisticFollowing = !u.is_following && !following.has(u.id)
+    if (optimisticFollowing) {
+      newFollowing.add(u.id)
+    } else {
+      newFollowing.delete(u.id)
+    }
+    setFollowing(newFollowing)
+    setUserResults(prev => prev.map(x => x.id === u.id ? { ...x, is_following: optimisticFollowing } : x))
+
+    if (optimisticFollowing) {
+      await fetch('/api/follows', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: u.id }),
+      })
+    } else {
+      await fetch('/api/follows', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: u.id }),
+      })
     }
   }
 
@@ -247,7 +311,7 @@ export default function SearchSheet({
     : 'Min liste'
 
   const showSearch = query.length >= 2
-  const filteredResults = filter === 'all' ? results : results.filter(r => r.media_type === (filter === 'movie' ? 'movie' : 'tv'))
+  const filteredResults = filter === 'all' || filter === 'users' ? results : results.filter(r => r.media_type === filter)
 
   const trendingMovies = trending.filter(t => t.media_type === 'movie')
   const trendingSeries = trending.filter(t => t.media_type === 'tv')
@@ -327,7 +391,7 @@ export default function SearchSheet({
                 </div>
               </motion.div>
             ) : !showSearch ? (
-              /* ── TRENDING ── */
+              /* ── IDLE: FEED + TRENDING ── */
               <motion.div
                 key="trending"
                 initial={{ opacity: 0 }}
@@ -336,6 +400,18 @@ export default function SearchSheet({
                 transition={{ duration: 0.15 }}
                 className="px-4 pt-4 pb-2 flex flex-col gap-6"
               >
+                {/* FEED */}
+                {feed.length > 0 && (
+                  <div>
+                    <p className="text-white/50 text-xs font-medium mb-3 px-1">Dine venner ser</p>
+                    <div className="flex gap-2.5 overflow-x-auto scrollbar-none -mx-4 px-4 pb-1">
+                      {feed.slice(0, 10).map((item, i) => (
+                        <FeedCard key={`${item.user_id}-${item.tmdb_id}-${i}`} item={item} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {trendingMovies.length > 0 && (
                   <div>
                     <p className="text-white/50 text-xs font-medium mb-3 px-1">Populære film</p>
@@ -369,12 +445,19 @@ export default function SearchSheet({
               >
                 {/* Filter pills — kun i normal tilstand */}
                 {!aiMode && (
-                  <div className="flex gap-2 px-4 pt-4 pb-3 flex-shrink-0">
-                    {(['all', 'movie', 'tv'] as const).map(f => (
+                  <div className="flex gap-2 px-4 pt-4 pb-3 flex-shrink-0 overflow-x-auto scrollbar-none">
+                    {(['all', 'movie', 'tv', 'users'] as const).map(f => (
                       <button
                         key={f}
-                        onClick={() => setFilter(f)}
-                        className="px-4 py-1.5 rounded-full text-sm font-medium transition-all"
+                        onClick={() => {
+                          setFilter(f)
+                          if (f === 'users' && query.length >= 2) {
+                            fetch(`/api/users/search?q=${encodeURIComponent(query)}`)
+                              .then(r => r.json())
+                              .then(d => setUserResults(d.users || []))
+                          }
+                        }}
+                        className="flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-all"
                         style={filter === f ? {
                           background: 'white',
                           color: 'black',
@@ -384,11 +467,11 @@ export default function SearchSheet({
                           color: 'rgba(255,255,255,0.6)',
                         }}
                       >
-                        {f === 'all' ? 'Top' : f === 'movie' ? 'Film' : 'Serier'}
+                        {f === 'all' ? 'Top' : f === 'movie' ? 'Film' : f === 'tv' ? 'Serier' : 'Brugere'}
                       </button>
                     ))}
-                    {loading && (
-                      <div className="ml-auto flex items-center">
+                    {loading && filter !== 'users' && (
+                      <div className="ml-auto flex items-center flex-shrink-0">
                         <div className="w-4 h-4 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
                       </div>
                     )}
@@ -422,11 +505,54 @@ export default function SearchSheet({
                 )}
 
                 {/* Resultatliste */}
-                <div className="flex flex-col px-4 pb-2">
-                  {filteredResults.length === 0 && !loading && !aiThinking && (
+                {/* Bruger-resultater */}
+                {filter === 'users' && (
+                  <div className="flex flex-col px-4 pb-2">
+                    {userResults.length === 0 && query.length >= 2 && (
+                      <p className="text-white/40 text-sm text-center py-8">Ingen brugere fundet for &quot;{query}&quot;</p>
+                    )}
+                    {userResults.map(u => (
+                      <div
+                        key={u.id}
+                        className="flex items-center gap-3 py-3"
+                        style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                      >
+                        <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                          {u.avatar ? (
+                            <Image src={u.avatar} alt={u.name} width={40} height={40} className="object-cover" />
+                          ) : (
+                            <span className="text-white font-semibold text-base">{u.name?.[0]}</span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white text-sm font-medium leading-snug">{u.name}</p>
+                          {u.username && <p className="text-white/40 text-xs">@{u.username}</p>}
+                        </div>
+                        <button
+                          onClick={() => toggleFollow(u)}
+                          className="px-4 py-1.5 rounded-full text-xs font-medium flex-shrink-0"
+                          style={u.is_following ? {
+                            background: 'rgba(52,199,89,0.15)',
+                            border: '1px solid rgba(52,199,89,0.35)',
+                            color: 'rgb(52,199,89)',
+                          } : {
+                            background: 'rgba(255,255,255,0.12)',
+                            border: '1px solid rgba(255,255,255,0.2)',
+                            color: 'white',
+                          }}
+                        >
+                          {u.is_following ? 'Følger' : 'Følg'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex flex-col px-4 pb-2" style={{ display: filter === 'users' ? 'none' : undefined }}>
+                  {filteredResults.length === 0 && !loading && !aiThinking && filter !== 'users' && (
                     <p className="text-white/40 text-sm text-center py-8">Ingen resultater for &quot;{query}&quot;</p>
                   )}
-                  {filteredResults.map(item => {
+                  {filter !== 'users' && filteredResults.map(item => {
                     const itemAdded = isAdded(item)
                     const key = `${item.tmdb_id}-${item.media_type}`
                     const itemProviders = providers[key]
@@ -627,6 +753,45 @@ export default function SearchSheet({
         </div>
       </motion.div>
     </>
+  )
+}
+
+function FeedCard({ item }: { item: FeedItem }) {
+  const href = `/${item.media_type === 'movie' ? 'movie' : 'tv'}/${item.tmdb_id}`
+  return (
+    <a href={href} className="flex-shrink-0 w-28 no-underline block">
+      <div className="relative w-28 h-40 rounded-xl overflow-hidden">
+        {item.poster ? (
+          <Image src={item.poster} alt={item.title} fill className="object-cover" sizes="112px" />
+        ) : (
+          <div className="w-full h-full bg-white/8" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+        {/* Avatar overlay */}
+        <div className="absolute top-1.5 left-1.5 w-6 h-6 rounded-full overflow-hidden ring-1 ring-black/40">
+          {item.user_avatar ? (
+            <Image src={item.user_avatar} alt={item.user_name} width={24} height={24} className="object-cover" />
+          ) : (
+            <div className="w-full h-full bg-white/20 flex items-center justify-center">
+              <span className="text-white text-xs font-bold">{item.user_name[0]}</span>
+            </div>
+          )}
+        </div>
+        {/* Rating */}
+        {item.rating && (
+          <div className="absolute bottom-1.5 left-1.5 flex gap-0.5">
+            {[1,2,3,4,5].map(s => (
+              <svg key={s} width="8" height="8" viewBox="0 0 12 12" fill="none">
+                <path d="M6 1L7.5 4.5L11 5L8.5 7.5L9 11L6 9.5L3 11L3.5 7.5L1 5L4.5 4.5L6 1Z"
+                  fill={s <= item.rating! ? 'rgba(251,191,36,1)' : 'rgba(255,255,255,0.2)'} />
+              </svg>
+            ))}
+          </div>
+        )}
+      </div>
+      <p className="text-white/60 text-xs mt-1.5 leading-tight line-clamp-1 px-0.5">{item.user_name.split(' ')[0]}</p>
+      <p className="text-white/80 text-xs leading-tight line-clamp-1 px-0.5 font-medium">{item.title}</p>
+    </a>
   )
 }
 

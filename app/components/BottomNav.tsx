@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
-import { Tv2, Search, User } from 'lucide-react'
+import { Tv2, Compass, User } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
 import SearchSheet from './SearchSheet'
 import ProfileSheet from './ProfileSheet'
@@ -93,22 +93,22 @@ export default function BottomNav() {
                 <span style={{ color: pathname === '/' ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: 500, lineHeight: 1 }}>Lister</span>
               </a>
 
-              {/* SØG */}
+              {/* OPDAG */}
               <button
                 onClick={() => setSearchOpen(true)}
-                aria-label="Søg"
+                aria-label="Opdag"
                 className="relative flex flex-col items-center gap-1 px-5 py-2 rounded-[20px] transition-all duration-200"
                 style={{
                   background: searchOpen ? 'rgba(255, 255, 255, 0.15)' : 'transparent',
                   boxShadow: searchOpen ? 'inset 0 1px 0 rgba(255,255,255,0.2), 0 2px 8px rgba(0,0,0,0.3)' : 'none',
                 }}
               >
-                <Search
+                <Compass
                   size={20}
                   strokeWidth={searchOpen ? 2 : 1.5}
                   color={searchOpen ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.5)'}
                 />
-                <span style={{ color: searchOpen ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: 500, lineHeight: 1 }}>Søg</span>
+                <span style={{ color: searchOpen ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: 500, lineHeight: 1 }}>Opdag</span>
               </button>
 
               {/* PROFIL */}
