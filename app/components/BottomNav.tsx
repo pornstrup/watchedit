@@ -31,6 +31,18 @@ export default function BottomNav() {
     fetch('/api/opdag/providers')
   }, [])
 
+  // Genåbn søgning når vi navigerer tilbage til forsiden med søge-params i URL
+  useEffect(() => {
+    if (isDetailPage) return
+    const urlParams = new URLSearchParams(window.location.search)
+    const savedQuery = urlParams.get('search') || ''
+    if (savedQuery) {
+      setInitialQuery(savedQuery)
+      setInitialAiMode(urlParams.get('aiMode') === '1')
+      setSearchOpen(true)
+    }
+  }, [pathname])
+
   useEffect(() => {
     const checkSearchUrl = () => {
       const urlParams = new URLSearchParams(window.location.search)
