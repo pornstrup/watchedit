@@ -86,6 +86,12 @@ export default function SearchSheet({
   const sheetRef = useRef<HTMLDivElement>(null)
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // Lås baggrunds-scroll mens sheet er åben
+  useEffect(() => {
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = '' }
+  }, [])
+
   // Auto-fokus — kun hvis ingen initial query
   useEffect(() => {
     if (!initialQuery) {
@@ -852,7 +858,11 @@ export default function SearchSheet({
               </button>
               <input
                 ref={inputRef}
-                type="text"
+                type="search"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
                 value={query}
                 onChange={e => handleInput(e.target.value)}
                 placeholder={aiMode ? 'Beskriv hvad du leder efter...' : 'Søg efter film eller serie...'}
