@@ -863,6 +863,8 @@ export default function SearchSheet({
                 autoCorrect="off"
                 autoCapitalize="off"
                 spellCheck={false}
+                readOnly
+                onTouchStart={e => e.currentTarget.removeAttribute('readonly')}
                 value={query}
                 onChange={e => handleInput(e.target.value)}
                 placeholder={aiMode ? 'Beskriv hvad du leder efter...' : 'Søg efter film eller serie...'}
