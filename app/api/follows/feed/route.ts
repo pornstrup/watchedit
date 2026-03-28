@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
+import { getTmdbItems } from '@/lib/tmdb'
 
 export async function GET() {
   const supabase = await createClient()
@@ -36,25 +37,9 @@ export async function GET() {
 
   const profileMap = Object.fromEntries((profiles ?? []).map(p => [p.id, p]))
 
-  // Hent TMDB-data for unikke film/serier
-  const uniqueTmdb = [
-    ...new Map(content.map(c => [`${c.tmdb_id}-${c.media_type}`, c])).values()
-  ]
-
-  const tmdbMap: Record<string, { title: string; poster: string | null }> = {}
-  await Promise.all(
-    uniqueTmdb.map(async (item) => {
-      const res = await fetch(
-        `https://api.themoviedb.org/3/${item.media_type}/${item.tmdb_id}?language=da-DK`,
-        { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 86400 } }
-      )
-      const tmdb = await res.json()
-      tmdbMap[`${item.tmdb_id}-${item.media_type}`] = {
-        title: tmdb.title || tmdb.name || '',
-        poster: tmdb.poster_path ? `https://image.tmdb.org/t/p/w185${tmdb.poster_path}` : null,
-      }
-    })
-  )
+  // Hent TMDB-data for unikke film/serier via cache
+  const uniqueTmdb = [...new Map(content.map(c => [`${c.tmdb_id}-${c.media_type}`, c])).values()]
+  const tmdbMap = await getTmdbItems(uniqueTmdb.map(c => ({ tmdb_id: c.tmdb_id, media_type: c.media_type })))
 
   const items = content.map(c => {
     const profile = profileMap[c.user_id]

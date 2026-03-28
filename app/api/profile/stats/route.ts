@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { getTmdbItems } from '@/lib/tmdb'
 
 export async function GET() {
   const supabase = await createClient()
@@ -29,47 +30,33 @@ const { data: items } = await supabase
   startOfMonth.setHours(0, 0, 0, 0)
   const thisMonth = items.filter(i => new Date(i.added_at) >= startOfMonth)
 
+  const recentSorted = [...items].sort((a, b) => new Date(b.added_at).getTime() - new Date(a.added_at).getTime()).slice(0, 5)
+  const forGenres = done.slice(0, 20)
+  const allNeeded = [...new Map([...forGenres, ...recentSorted].map(i => [`${i.tmdb_id}-${i.media_type}`, i])).values()]
+
+  const tmdbMap = await getTmdbItems(allNeeded.map(i => ({ tmdb_id: i.tmdb_id, media_type: i.media_type })))
+
   const genreCounts: Record<number, { count: number; name: string }> = {}
+  for (const item of forGenres) {
+    const tmdb = tmdbMap[`${item.tmdb_id}-${item.media_type}`]
+    for (const genre of tmdb?.genres ?? []) {
+      if (!genreCounts[genre.id]) genreCounts[genre.id] = { count: 0, name: genre.name }
+      genreCounts[genre.id].count++
+    }
+  }
 
-  await Promise.all(
-    done.slice(0, 20).map(async item => {
-      const type = item.media_type === 'movie' ? 'movie' : 'tv'
-      const res = await fetch(
-        `https://api.themoviedb.org/3/${type}/${item.tmdb_id}?language=en-US`,
-        { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` } }
-      )
-      const data = await res.json()
-      for (const genre of data.genres || []) {
-        if (!genreCounts[genre.id]) genreCounts[genre.id] = { count: 0, name: genre.name }
-        genreCounts[genre.id].count++
-      }
-    })
-  )
+  const topGenres = Object.values(genreCounts).sort((a, b) => b.count - a.count).slice(0, 5)
 
-  const topGenres = Object.values(genreCounts)
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5)
-
-  const recentItems = await Promise.all(
-    items
-      .sort((a, b) => new Date(b.added_at).getTime() - new Date(a.added_at).getTime())
-      .slice(0, 5)
-      .map(async item => {
-        const type = item.media_type === 'movie' ? 'movie' : 'tv'
-        const res = await fetch(
-          `https://api.themoviedb.org/3/${type}/${item.tmdb_id}?language=en-US`,
-          { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` } }
-        )
-        const data = await res.json()
-        return {
-          tmdb_id: item.tmdb_id,
-          media_type: item.media_type,
-          title: data.title || data.name,
-          poster: data.poster_path ? `https://image.tmdb.org/t/p/w200${data.poster_path}` : null,
-          status: item.status,
-        }
-      })
-  )
+  const recentItems = recentSorted.map(item => {
+    const tmdb = tmdbMap[`${item.tmdb_id}-${item.media_type}`]
+    return {
+      tmdb_id: item.tmdb_id,
+      media_type: item.media_type,
+      title: tmdb?.title ?? '',
+      poster: tmdb?.poster ?? null,
+      status: item.status,
+    }
+  })
 
   return NextResponse.json({
     stats: {
