@@ -10,6 +10,7 @@ import SlideTransition from '../../components/SlideTransition'
 import BackButton from '../../components/BackButton'
 import StickyHeader from '../../components/StickyHeader'
 import DynamicGlow from '../../components/DynamicGlow'
+import { getDKWebSchedule, formatDanishDate } from '@/lib/tvmaze'
 
 export default async function TVPage({
   params,
@@ -25,18 +26,19 @@ export default async function TVPage({
   if (!user) redirect('/login')
 
   const res = await fetch(
-    `https://api.themoviedb.org/3/tv/${id}?language=en-US`,
+    `https://api.themoviedb.org/3/tv/${id}?language=en-US&append_to_response=external_ids`,
     { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 3600 } }
   )
   const show = await res.json()
 
-  const [providersRes, recRes] = await Promise.all([
+  const [providersRes, recRes, dkSchedule] = await Promise.all([
     fetch(`https://api.themoviedb.org/3/tv/${id}/watch/providers`, {
       headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 86400 },
     }),
     fetch(`https://api.themoviedb.org/3/tv/${id}/recommendations?language=en-US`, {
       headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 86400 },
     }),
+    getDKWebSchedule(10),
   ])
   const providersData = await providersRes.json()
   const providers = providersData.results?.DK?.flatrate || []
@@ -95,7 +97,15 @@ export default async function TVPage({
     : null
 
   const seasons = show.seasons?.filter((s: any) => s.season_number > 0) || []
-  const nextEpisode = show.next_episode_to_air || null
+
+  // Find næste afsnit på dansk streaming via TVMaze DK-kalender
+  const imdbId = show.external_ids?.imdb_id ?? null
+  const nextDKEpisode = imdbId
+    ? dkSchedule
+        .filter(e => e.show?.externals?.imdb === imdbId && e.airstamp && new Date(e.airstamp) > new Date())
+        .sort((a, b) => new Date(a.airstamp!).getTime() - new Date(b.airstamp!).getTime())[0] ?? null
+    : null
+  const nextDKLabel = nextDKEpisode?.airstamp ? formatDanishDate(nextDKEpisode.airstamp) : null
 
   return (
     <main className="min-h-screen bg-black relative" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
@@ -140,13 +150,11 @@ export default async function TVPage({
                     <span key={g.id} className="text-white/50 text-xs">{g.name}</span>
                   ))}
                 </div>
-                {nextEpisode?.air_date && (() => {
-                  const days = Math.round((new Date(nextEpisode.air_date).getTime() - Date.now()) / 86400000)
-                  const label = days === 0 ? 'i dag' : days === 1 ? 'i morgen' : days > 0 ? `${new Date(nextEpisode.air_date).toLocaleDateString('da-DK', { weekday: 'long', day: 'numeric', month: 'long' })}` : null
-                  return label ? (
-                    <p className="text-white/50 text-xs mt-1">→ S{nextEpisode.season_number} E{nextEpisode.episode_number} · {label}</p>
-                  ) : null
-                })()}
+                {nextDKLabel && nextDKEpisode && (
+                  <p className="text-white/50 text-xs mt-1.5">
+                    → S{nextDKEpisode.season} · E{nextDKEpisode.number} · {nextDKLabel}
+                  </p>
+                )}
               </div>
               <StatusButtons
                 itemId={item?.id}
