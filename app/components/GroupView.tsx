@@ -13,6 +13,38 @@ type Group = {
   created_at: string
 }
 
+type ActivityEvent = {
+  id: string
+  type: 'added' | 'episode' | 'joined'
+  user_name: string
+  user_avatar: string | null
+  title?: string
+  tmdb_id?: number
+  media_type?: string
+  season?: number
+  episode?: number
+  timestamp: string
+}
+
+function relativeTime(ts: string): string {
+  const diff = Date.now() - new Date(ts).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'lige nu'
+  if (mins < 60) return `${mins} min siden`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}t siden`
+  const days = Math.floor(hrs / 24)
+  if (days === 1) return 'i går'
+  if (days < 7) return `${days} dage siden`
+  return new Date(ts).toLocaleDateString('da-DK', { day: 'numeric', month: 'short' })
+}
+
+function eventText(e: ActivityEvent): string {
+  if (e.type === 'added') return `tilføjede${e.title ? ` ${e.title}` : ''}`
+  if (e.type === 'episode') return `så S${e.season}E${e.episode}${e.title ? ` af ${e.title}` : ''}`
+  return 'joined gruppen'
+}
+
 type Member = {
   id: string
   name: string
@@ -802,6 +834,8 @@ export default function GroupView({
   const [showAllInspiration, setShowAllInspiration] = useState(false)
   const [showHiddenInspiration, setShowHiddenInspiration] = useState(false)
   const [currentGroupName, setCurrentGroupName] = useState(group.name)
+  const [activity, setActivity] = useState<ActivityEvent[]>([])
+  const [showActivity, setShowActivity] = useState(false)
 
   useEffect(() => {
     setLoading(true)
@@ -818,6 +852,10 @@ export default function GroupView({
     fetch(`/api/groups/${groupId}/inspiration`)
       .then(r => r.json())
       .then(d => setInspiration(d.items || []))
+    // Aktivitet hentes baggrunden
+    fetch(`/api/groups/${groupId}/activity`)
+      .then(r => r.json())
+      .then(d => setActivity(d.events || []))
   }, [groupId, refreshKey])
 // Lyt på status-ændringer fra personlig liste og refresh inspiration
   useEffect(() => {
@@ -991,15 +1029,34 @@ export default function GroupView({
           </button>
         </div>
 
-        {/* MEDLEMMER */}
+        {/* MEDLEMMER + AKTIVITET */}
         {members.length > 0 && (
-          <div className="flex gap-3">
-            {members.map(m => (
-              <div key={m.id} className="flex items-center gap-2">
-                <Avatar url={m.avatar_url} name={m.name} size={7} />
-                <span className="text-white/50 text-sm">{m.name?.split(' ')[0]}</span>
-              </div>
-            ))}
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-3">
+              {members.map(m => (
+                <div key={m.id} className="flex items-center gap-2">
+                  <Avatar url={m.avatar_url} name={m.name} size={7} />
+                  <span className="text-white/50 text-sm">{m.name?.split(' ')[0]}</span>
+                </div>
+              ))}
+            </div>
+            {activity.length > 0 && (
+              <button
+                onClick={() => { setShowActivity(true); window.dispatchEvent(new Event('sheet-opened')) }}
+                className="flex items-center gap-2 text-left active:opacity-60 transition-opacity"
+              >
+                {activity[0].user_avatar ? (
+                  <Image src={activity[0].user_avatar} alt={activity[0].user_name} width={16} height={16} className="rounded-full object-cover flex-shrink-0" />
+                ) : (
+                  <div className="w-4 h-4 rounded-full bg-white/20 flex-shrink-0" />
+                )}
+                <span className="text-white/40 text-xs truncate">
+                  <span className="text-white/60">{activity[0].user_name}</span>
+                  {' '}{eventText(activity[0])}
+                </span>
+                <span className="text-white/22 text-xs flex-shrink-0">{relativeTime(activity[0].timestamp)}</span>
+              </button>
+            )}
           </div>
         )}
 
@@ -1205,6 +1262,15 @@ export default function GroupView({
           />
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {showActivity && (
+          <ActivitySheet
+            events={activity}
+            onClose={() => { setShowActivity(false); window.dispatchEvent(new Event('sheet-closed')) }}
+          />
+        )}
+      </AnimatePresence>
     </>
   )
 }
@@ -1261,5 +1327,105 @@ function MonthSection({
         )}
       </AnimatePresence>
     </div>
+  )
+}
+
+function ActivitySheet({
+  events,
+  onClose,
+}: {
+  events: ActivityEvent[]
+  onClose: () => void
+}) {
+  const groups: { label: string; events: ActivityEvent[] }[] = []
+  for (const e of events) {
+    const d = new Date(e.timestamp)
+    const isToday = d.toDateString() === new Date().toDateString()
+    const isYesterday = d.toDateString() === new Date(Date.now() - 86400000).toDateString()
+    const label = isToday ? 'I dag' : isYesterday ? 'I går' : d.toLocaleDateString('da-DK', { day: 'numeric', month: 'long' })
+    const last = groups[groups.length - 1]
+    if (last?.label === label) last.events.push(e)
+    else groups.push({ label, events: [e] })
+  }
+
+  return (
+    <>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.2 }}
+        className="fixed inset-0 z-40 bg-black/50"
+        style={{ backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)' }}
+        onClick={onClose}
+      />
+      <motion.div
+        initial={{ y: '100%' }}
+        animate={{ y: 0 }}
+        exit={{ y: '100%' }}
+        transition={{ type: 'spring', damping: 26, stiffness: 300 }}
+        drag="y"
+        dragConstraints={{ top: 0 }}
+        dragElastic={{ top: 0, bottom: 0.3 }}
+        onDragEnd={(_, info) => { if (info.offset.y > 80 || info.velocity.y > 500) onClose() }}
+        className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-3xl overflow-hidden"
+        style={{
+          background: 'rgba(28,28,30,0.97)',
+          backdropFilter: 'blur(60px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(60px) saturate(180%)',
+          border: '1px solid rgba(255,255,255,0.1)',
+          borderBottom: 'none',
+          boxShadow: '0 -8px 40px rgba(0,0,0,0.5)',
+          maxHeight: '80vh',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}
+      >
+        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mt-3 flex-shrink-0" />
+
+        <div className="px-5 pt-5 pb-4 flex-shrink-0">
+          <p className="text-white font-semibold text-base">Aktivitet</p>
+        </div>
+
+        <div className="overflow-y-auto flex-1">
+          {events.length === 0 && (
+            <p className="text-white/35 text-sm text-center py-12">Ingen aktivitet endnu</p>
+          )}
+
+          {groups.map(group => (
+            <div key={group.label}>
+              <p className="text-white/25 text-xs px-5 pt-4 pb-2">{group.label}</p>
+
+              {group.events.map((e, i) => (
+                <div
+                  key={e.id}
+                  className="flex items-center gap-3 px-5 py-3"
+                  style={i < group.events.length - 1 ? { borderBottom: '1px solid rgba(255,255,255,0.05)' } : {}}
+                >
+                  {e.user_avatar ? (
+                    <Image src={e.user_avatar} alt={e.user_name} width={36} height={36} className="rounded-full object-cover flex-shrink-0" />
+                  ) : (
+                    <div className="w-9 h-9 rounded-full bg-white/12 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white/80 text-sm font-semibold">{e.user_name[0]}</span>
+                    </div>
+                  )}
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white/85 text-[14px] leading-snug">
+                      <span className="text-white font-medium">{e.user_name}</span>
+                      {e.type === 'added' && <>{' '}<span className="text-white/50">tilføjede</span>{e.title && <>{' '}<span>{e.title}</span></>}</>}
+                      {e.type === 'episode' && <>{' '}<span className="text-white/50">så</span>{' '}<span>S{e.season}E{e.episode}</span>{e.title && <>{' '}<span className="text-white/50">af</span>{' '}<span>{e.title}</span></>}</>}
+                      {e.type === 'joined' && <>{' '}<span className="text-white/50">joined gruppen</span></>}
+                    </p>
+                  </div>
+
+                  <span className="text-white/25 text-xs flex-shrink-0">{relativeTime(e.timestamp)}</span>
+                </div>
+              ))}
+            </div>
+          ))}
+          <div className="h-6" />
+        </div>
+      </motion.div>
+    </>
   )
 }
