@@ -8,7 +8,7 @@ export async function GET() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('avatar_url, name, username, searchable')
+    .select('avatar_url, name, username, searchable, streaming_services')
     .eq('id', user.id)
     .single()
 
@@ -18,6 +18,7 @@ export async function GET() {
     email: user.email,
     username: profile?.username || null,
     searchable: profile?.searchable ?? true,
+    streaming_services: profile?.streaming_services || [],
   })
 }
 
@@ -30,6 +31,7 @@ export async function PATCH(req: Request) {
   const updates: Record<string, unknown> = {}
   if ('username' in body) updates.username = body.username || null
   if ('searchable' in body) updates.searchable = body.searchable
+  if ('streaming_services' in body) updates.streaming_services = body.streaming_services
 
   if (Object.keys(updates).length === 0)
     return NextResponse.json({ error: 'Ingen felter at opdatere' }, { status: 400 })

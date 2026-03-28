@@ -11,6 +11,7 @@ export type TmdbItem = {
   runtime: number | null
   release_year: string | null
   vote_average: number | null
+  number_of_episodes: number | null
 }
 
 export async function getTmdbItem(tmdb_id: number, media_type: string): Promise<TmdbItem> {
@@ -24,8 +25,9 @@ export async function getTmdbItem(tmdb_id: number, media_type: string): Promise<
 
   if (cached) {
     const age = (Date.now() - new Date(cached.cached_at).getTime()) / (1000 * 60 * 60 * 24)
-    if (age < CACHE_TTL_DAYS) {
-      return cached.data as TmdbItem
+    const data = cached.data as Record<string, unknown>
+    if (age < CACHE_TTL_DAYS && 'number_of_episodes' in data) {
+      return data as TmdbItem
     }
   }
 
@@ -46,6 +48,7 @@ export async function getTmdbItem(tmdb_id: number, media_type: string): Promise<
     runtime: tmdb.runtime || tmdb.episode_run_time?.[0] || null,
     release_year: (tmdb.release_date || tmdb.first_air_date)?.split('-')[0] || null,
     vote_average: tmdb.vote_average || null,
+    number_of_episodes: tmdb.number_of_episodes || null,
   }
 
   // 3. Gem i cache (upsert)
@@ -80,8 +83,11 @@ export async function getTmdbItems(
     const hit = cached?.find(c => c.tmdb_id === item.tmdb_id && c.media_type === item.media_type)
     if (hit) {
       const age = (now - new Date(hit.cached_at).getTime()) / (1000 * 60 * 60 * 24)
-      if (age < CACHE_TTL_DAYS) {
-        result[key] = hit.data as TmdbItem
+      const data = hit.data as Record<string, unknown>
+      const isStale = age >= CACHE_TTL_DAYS
+      const isMissingFields = !('number_of_episodes' in data)
+      if (!isStale && !isMissingFields) {
+        result[key] = data as TmdbItem
         continue
       }
     }

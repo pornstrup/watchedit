@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
+import { getTmdbItems } from '@/lib/tmdb'
 
 export async function GET(
   _: Request,
@@ -83,26 +84,21 @@ export async function GET(
 
   const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p.name]))
 
-  // Enrich med TMDB data
-  const enriched = await Promise.all(
-    uniqueItems.slice(0, 50).map(async (item) => {
-      const type = item.media_type === 'movie' ? 'movie' : 'tv'
-      const res = await fetch(
-        `https://api.themoviedb.org/3/${type}/${item.tmdb_id}?language=en-US`,
-        { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 3600 } }
-      )
-      const tmdb = await res.json()
+  // Enrich via cache
+  const sliced = uniqueItems.slice(0, 50)
+  const tmdbMap = await getTmdbItems(sliced.map(i => ({ tmdb_id: i.tmdb_id, media_type: i.media_type })))
 
-      return {
-        tmdb_id: item.tmdb_id,
-        media_type: item.media_type,
-        title: tmdb.title || tmdb.name,
-        poster: tmdb.poster_path ? `https://image.tmdb.org/t/p/w300${tmdb.poster_path}` : null,
-        year: (tmdb.release_date || tmdb.first_air_date)?.split('-')[0],
-        members: item.member_ids.map(id => profileMap[id] || 'Ukendt'),
-      }
-    })
-  )
+  const enriched = sliced.map((item) => {
+    const tmdb = tmdbMap[`${item.tmdb_id}-${item.media_type}`]
+    return {
+      tmdb_id: item.tmdb_id,
+      media_type: item.media_type,
+      title: tmdb?.title ?? '',
+      poster: tmdb?.poster ?? null,
+      year: tmdb?.release_year ?? null,
+      members: item.member_ids.map(id => profileMap[id] || 'Ukendt'),
+    }
+  })
 
   return NextResponse.json({ items: enriched })
 }

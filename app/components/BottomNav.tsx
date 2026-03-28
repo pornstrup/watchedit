@@ -27,6 +27,11 @@ export default function BottomNav() {
   const groupId = params.get('group')
 
   useEffect(() => {
+    fetch('/api/opdag/base')
+    fetch('/api/opdag/providers')
+  }, [])
+
+  useEffect(() => {
     const checkSearchUrl = () => {
       const urlParams = new URLSearchParams(window.location.search)
       const savedQuery = urlParams.get('search') || ''

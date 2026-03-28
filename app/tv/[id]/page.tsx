@@ -5,6 +5,7 @@ import Image from 'next/image'
 import TVDetailClient from '../../components/TVDetailClient'
 import StatusButtons from '../../components/StatusButtons'
 import RatingInline from '../../components/RatingInline'
+import SimilarTitles from '../../components/SimilarTitles'
 import SlideTransition from '../../components/SlideTransition'
 import BackButton from '../../components/BackButton'
 import StickyHeader from '../../components/StickyHeader'
@@ -29,12 +30,27 @@ export default async function TVPage({
   )
   const show = await res.json()
 
-  const providersRes = await fetch(
-    `https://api.themoviedb.org/3/tv/${id}/watch/providers`,
-    { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 86400 } }
-  )
+  const [providersRes, recRes] = await Promise.all([
+    fetch(`https://api.themoviedb.org/3/tv/${id}/watch/providers`, {
+      headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 86400 },
+    }),
+    fetch(`https://api.themoviedb.org/3/tv/${id}/recommendations?language=en-US`, {
+      headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 86400 },
+    }),
+  ])
   const providersData = await providersRes.json()
   const providers = providersData.results?.DK?.flatrate || []
+  const recData = await recRes.json()
+  const similar = ((recData.results || []) as any[])
+    .filter((r) => r.poster_path)
+    .slice(0, 12)
+    .map((r) => ({
+      id: r.id as number,
+      title: (r.title || r.name) as string,
+      poster: `https://image.tmdb.org/t/p/w300${r.poster_path}`,
+      year: ((r.release_date || r.first_air_date) as string | undefined)?.split('-')[0] ?? null,
+      mediaType: 'tv' as const,
+    }))
 
   let item = null
   if (ctx) {
@@ -163,6 +179,9 @@ export default async function TVPage({
             title={show.name}
             poster={poster}
           />
+
+          <SimilarTitles items={similar} ctx={ctx} />
+
         </div>
       </SlideTransition>
     </main>

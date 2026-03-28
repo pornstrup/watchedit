@@ -9,6 +9,7 @@ import StickyHeader from '@/app/components/StickyHeader'
 import DynamicGlow from '@/app/components/DynamicGlow'
 import ExpandableText from '@/app/components/ExpandableText'
 import RatingInline from '@/app/components/RatingInline'
+import SimilarTitles from '@/app/components/SimilarTitles'
 
 export default async function MoviePage({
   params,
@@ -29,12 +30,27 @@ export default async function MoviePage({
   )
   const movie = await res.json()
 
-  const providersRes = await fetch(
-    `https://api.themoviedb.org/3/movie/${id}/watch/providers`,
-    { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 86400 } }
-  )
+  const [providersRes, recRes] = await Promise.all([
+    fetch(`https://api.themoviedb.org/3/movie/${id}/watch/providers`, {
+      headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 86400 },
+    }),
+    fetch(`https://api.themoviedb.org/3/movie/${id}/recommendations?language=en-US`, {
+      headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 86400 },
+    }),
+  ])
   const providersData = await providersRes.json()
   const providers = providersData.results?.DK?.flatrate || []
+  const recData = await recRes.json()
+  const similar = ((recData.results || []) as any[])
+    .filter((r) => r.poster_path)
+    .slice(0, 12)
+    .map((r) => ({
+      id: r.id as number,
+      title: (r.title || r.name) as string,
+      poster: `https://image.tmdb.org/t/p/w300${r.poster_path}`,
+      year: ((r.release_date || r.first_air_date) as string | undefined)?.split('-')[0] ?? null,
+      mediaType: 'movie' as const,
+    }))
 
   let item = null
   if (ctx) {
@@ -160,7 +176,7 @@ export default async function MoviePage({
             </div>
           )}
 
-
+          <SimilarTitles items={similar} ctx={ctx} />
 
         </div>
       </SlideTransition>

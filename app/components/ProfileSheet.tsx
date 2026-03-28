@@ -10,6 +10,13 @@ type Profile = {
   email: string
   username: string | null
   searchable: boolean
+  streaming_services: number[]
+}
+
+type StreamingProvider = {
+  id: number
+  name: string
+  logo: string
 }
 
 export default function ProfileSheet({ onClose }: { onClose: () => void }) {
@@ -17,15 +24,19 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
   const [usernameInput, setUsernameInput] = useState('')
   const [usernameState, setUsernameState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [usernameError, setUsernameError] = useState('')
+  const [allProviders, setAllProviders] = useState<StreamingProvider[]>([])
+  const [providerQuery, setProviderQuery] = useState('')
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    fetch('/api/profile/me')
-      .then(r => r.json())
-      .then(d => {
-        setProfile(d)
-        setUsernameInput(d.username || '')
-      })
+    Promise.all([
+      fetch('/api/profile/me').then(r => r.json()),
+      fetch('/api/streaming-providers').then(r => r.json()),
+    ]).then(([profileData, providersData]) => {
+      setProfile(profileData)
+      setUsernameInput(profileData.username || '')
+      setAllProviders(providersData.providers || [])
+    })
   }, [])
 
   const handleLogout = async () => {
@@ -67,6 +78,28 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
       body: JSON.stringify({ searchable: val }),
     })
   }
+
+  const toggleProvider = async (id: number) => {
+    if (!profile) return
+    const current = profile.streaming_services || []
+    const updated = current.includes(id)
+      ? current.filter(p => p !== id)
+      : [...current, id]
+    setProfile(prev => prev ? { ...prev, streaming_services: updated } : prev)
+    setProviderQuery('')
+    await fetch('/api/profile/me', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ streaming_services: updated }),
+    })
+  }
+
+  const filteredProviders = providerQuery.length >= 1
+    ? allProviders.filter(p =>
+        p.name.toLowerCase().includes(providerQuery.toLowerCase()) &&
+        !(profile?.streaming_services || []).includes(p.id)
+      ).slice(0, 5)
+    : []
 
   return (
     <>
@@ -218,6 +251,97 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
                   className="absolute top-1 w-5 h-5 rounded-full bg-white shadow-md"
                 />
               </button>
+            </div>
+
+            {/* STREAMING TJENESTER */}
+            <div className="mb-4">
+              <p className="text-white/50 text-xs font-medium mb-2 px-1">Mine tjenester</p>
+
+              {/* Valgte tjenester */}
+              {(profile.streaming_services || []).length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {(profile.streaming_services || []).map(id => {
+                    const provider = allProviders.find(p => p.id === id)
+                    if (!provider) return null
+                    return (
+                      <motion.button
+                        key={id}
+                        onClick={() => toggleProvider(id)}
+                        whileTap={{ scale: 0.9 }}
+                        className="relative flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-xl"
+                        style={{
+                          background: 'rgba(255,255,255,0.1)',
+                          border: '1px solid rgba(255,255,255,0.18)',
+                        }}
+                      >
+                        <Image src={provider.logo} alt={provider.name} width={22} height={22} className="rounded-md" />
+                        <span className="text-white/80 text-xs font-medium">{provider.name}</span>
+                        <span className="text-white/40 text-xs ml-0.5">×</span>
+                      </motion.button>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Søgefelt */}
+              <div
+                className="flex items-center gap-2 px-4 py-3 rounded-2xl"
+                style={{
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+                </svg>
+                <input
+                  type="text"
+                  value={providerQuery}
+                  onChange={e => setProviderQuery(e.target.value)}
+                  placeholder="Tilføj tjeneste..."
+                  className="flex-1 bg-transparent text-white text-sm outline-none placeholder:text-white/25"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                />
+                {providerQuery.length > 0 && (
+                  <button onClick={() => setProviderQuery('')} className="text-white/30 text-sm">×</button>
+                )}
+              </div>
+
+              {/* Søgeresultater */}
+              <AnimatePresence>
+                {filteredProviders.length > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.15 }}
+                    className="mt-1 rounded-2xl overflow-hidden"
+                    style={{
+                      background: 'rgba(255,255,255,0.06)',
+                      border: '1px solid rgba(255,255,255,0.1)',
+                    }}
+                  >
+                    {filteredProviders.map((provider, i) => (
+                      <button
+                        key={provider.id}
+                        onClick={() => toggleProvider(provider.id)}
+                        className="w-full flex items-center gap-3 px-4 py-3 active:bg-white/10 transition-colors"
+                        style={i > 0 ? { borderTop: '1px solid rgba(255,255,255,0.06)' } : {}}
+                      >
+                        <Image src={provider.logo} alt={provider.name} width={28} height={28} className="rounded-lg flex-shrink-0" />
+                        <span className="text-white/80 text-sm">{provider.name}</span>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {(profile.streaming_services || []).length === 0 && providerQuery.length === 0 && (
+                <p className="text-white/25 text-xs mt-1.5 px-1">
+                  Bruges til at vise indhold fra dine tjenester i Opdag
+                </p>
+              )}
             </div>
 
             <div className="h-px bg-white/8 mb-4" />

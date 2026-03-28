@@ -60,7 +60,10 @@ export default function SearchSheet({
 }) {
   const [query, setQuery] = useState(initialQuery)
   const [results, setResults] = useState<Result[]>([])
-  const [trending, setTrending] = useState<Result[]>([])
+  type OpdagSection = { id: string; title: string; providerLogo?: string; items: Result[] }
+  const [baseSections, setBaseSections] = useState<OpdagSection[]>([])
+  const [providerSections, setProviderSections] = useState<OpdagSection[]>([])
+  const [baseLoading, setBaseLoading] = useState(true)
   const [loading, setLoading] = useState(false)
   const [added, setAdded] = useState<Set<string>>(new Set())
   const [existingIds, setExistingIds] = useState<Set<string>>(new Set())
@@ -116,11 +119,14 @@ export default function SearchSheet({
     }
   }, [])
 
-  // Hent trending + feed ved mount
+  // Hent opdag-sektioner + feed ved mount
   useEffect(() => {
-    fetch('/api/tmdb/trending')
+    fetch('/api/opdag/base')
       .then(r => r.json())
-      .then(d => setTrending((d.results || []).slice(0, 12)))
+      .then(d => { setBaseSections(d.sections || []); setBaseLoading(false) })
+    fetch('/api/opdag/providers')
+      .then(r => r.json())
+      .then(d => setProviderSections(d.sections || []))
     fetch('/api/follows/feed')
       .then(r => r.json())
       .then(d => { setFeed(d.items || []); setFeedLoading(false) })
@@ -334,8 +340,6 @@ export default function SearchSheet({
   const showSearch = query.length >= 2 || filter === 'users'
   const filteredResults = filter === 'all' || filter === 'users' ? results : results.filter(r => r.media_type === filter)
 
-  const trendingMovies = trending.filter(t => t.media_type === 'movie')
-  const trendingSeries = trending.filter(t => t.media_type === 'tv')
 
   return (
     <>
@@ -486,25 +490,36 @@ export default function SearchSheet({
                   </div>
                 )}
 
-                {trendingMovies.length > 0 && (
-                  <div>
-                    <p className="text-white/50 text-xs font-medium mb-3 px-1">Populære film</p>
-                    <div className="flex gap-2.5 overflow-x-auto scrollbar-none -mx-4 px-4 pb-1">
-                      {trendingMovies.slice(0, 8).map(item => (
-                        <TrendingCard key={item.tmdb_id} item={item} isAdded={isAdded(item)} onAdd={() => addToList(item)} onRemove={() => removeFromList(item)} ctx={activeContext ?? undefined} />
-                      ))}
+                {baseLoading ? (
+                  [0, 1].map(i => (
+                    <div key={i}>
+                      <div className="h-2.5 w-28 rounded-full bg-white/8 animate-pulse mb-3 mx-1" />
+                      <div className="flex gap-2.5 -mx-4 px-4 pb-1">
+                        {[0,1,2,3,4].map(j => (
+                          <div key={j} className="flex-shrink-0">
+                            <div className="w-24 h-36 rounded-xl bg-white/8 animate-pulse" />
+                            <div className="mt-1.5 h-2 w-16 rounded-full bg-white/8 animate-pulse" />
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                )}
-                {trendingSeries.length > 0 && (
-                  <div>
-                    <p className="text-white/50 text-xs font-medium mb-3 px-1">Populære serier</p>
-                    <div className="flex gap-2.5 overflow-x-auto scrollbar-none -mx-4 px-4 pb-1">
-                      {trendingSeries.slice(0, 8).map(item => (
-                        <TrendingCard key={item.tmdb_id} item={item} isAdded={isAdded(item)} onAdd={() => addToList(item)} onRemove={() => removeFromList(item)} ctx={activeContext ?? undefined} />
-                      ))}
+                  ))
+                ) : (
+                  [...baseSections, ...providerSections].map(section => section.items.length > 0 && (
+                    <div key={section.id}>
+                      <div className="flex items-center gap-1.5 mb-3 px-1">
+                        {section.providerLogo && (
+                          <Image src={section.providerLogo} alt="" width={14} height={14} className="rounded" />
+                        )}
+                        <p className="text-white/50 text-xs font-medium">{section.title}</p>
+                      </div>
+                      <div className="flex gap-2.5 overflow-x-auto scrollbar-none -mx-4 px-4 pb-1">
+                        {section.items.map(item => (
+                          <TrendingCard key={`${item.tmdb_id}-${item.media_type}`} item={item} isAdded={isAdded(item)} onAdd={() => addToList(item)} onRemove={() => removeFromList(item)} ctx={activeContext ?? undefined} />
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  ))
                 )}
               </motion.div>
             ) : (

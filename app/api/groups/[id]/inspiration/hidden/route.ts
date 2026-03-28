@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
+import { getTmdbItems } from '@/lib/tmdb'
 
 export async function GET(
   _: Request,
@@ -19,23 +20,18 @@ export async function GET(
 
   if (!hidden?.length) return NextResponse.json({ items: [] })
 
-  const enriched = await Promise.all(
-    hidden.map(async (item) => {
-      const type = item.media_type === 'movie' ? 'movie' : 'tv'
-      const res = await fetch(
-        `https://api.themoviedb.org/3/${type}/${item.tmdb_id}?language=en-US`,
-        { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` } }
-      )
-      const tmdb = await res.json()
-      return {
-        tmdb_id: item.tmdb_id,
-        media_type: item.media_type,
-        title: tmdb.title || tmdb.name,
-        poster: tmdb.poster_path ? `https://image.tmdb.org/t/p/w300${tmdb.poster_path}` : null,
-        year: (tmdb.release_date || tmdb.first_air_date)?.split('-')[0],
-      }
-    })
-  )
+  const tmdbMap = await getTmdbItems(hidden.map(i => ({ tmdb_id: i.tmdb_id, media_type: i.media_type })))
+
+  const enriched = hidden.map((item) => {
+    const tmdb = tmdbMap[`${item.tmdb_id}-${item.media_type}`]
+    return {
+      tmdb_id: item.tmdb_id,
+      media_type: item.media_type,
+      title: tmdb?.title ?? '',
+      poster: tmdb?.poster ?? null,
+      year: tmdb?.release_year ?? null,
+    }
+  })
 
   return NextResponse.json({ items: enriched })
 }

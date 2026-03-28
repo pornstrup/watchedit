@@ -24,15 +24,17 @@ export async function GET() {
 
   const [episodeCountsResult, tmdbMap] = await Promise.all([
     watchingTvIds.length > 0
-      ? Promise.all(
-          watchingTvIds.map(async (id) => {
-            const { count } = await supabase
-              .from('episode_progress')
-              .select('*', { count: 'exact', head: true })
-              .eq('watchlist_item_id', id)
-            return [id, count || 0] as [string, number]
+      ? supabase
+          .from('episode_progress')
+          .select('watchlist_item_id')
+          .in('watchlist_item_id', watchingTvIds)
+          .then(({ data }) => {
+            const counts: Record<string, number> = {}
+            for (const row of data ?? []) {
+              counts[row.watchlist_item_id] = (counts[row.watchlist_item_id] || 0) + 1
+            }
+            return counts
           })
-        ).then(Object.fromEntries)
       : Promise.resolve({} as Record<string, number>),
     getTmdbItems(items.map(i => ({ tmdb_id: i.tmdb_id, media_type: i.media_type }))),
   ])
@@ -41,7 +43,7 @@ export async function GET() {
     const tmdb = tmdbMap[`${item.tmdb_id}-${item.media_type}`]
     let progress = null
     if (item.media_type === 'tv' && item.status === 'watching') {
-      const totalEpisodes = (tmdb as any)?.number_of_episodes || 0
+      const totalEpisodes = tmdb?.number_of_episodes || 0
       if (totalEpisodes > 0) {
         progress = { total_episodes: totalEpisodes, watched_episodes: episodeCountsResult[item.id] ?? 0 }
       }

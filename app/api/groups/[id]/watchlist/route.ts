@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
+import { getTmdbItems } from '@/lib/tmdb'
 
 export async function GET(
   _: Request,
@@ -20,53 +21,44 @@ export async function GET(
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Hent episode-counts for alle 'watching' TV-items på én gang
   const watchingTvIds = items
     .filter(i => i.media_type === 'tv' && i.status === 'watching')
     .map(i => i.id)
 
-  const episodeCounts: Record<string, number> = {}
-  if (watchingTvIds.length > 0) {
-    await Promise.all(
-      watchingTvIds.map(async (id) => {
-        const { count } = await supabaseAdmin
+  const [episodeCounts, tmdbMap] = await Promise.all([
+    watchingTvIds.length > 0
+      ? supabaseAdmin
           .from('group_episode_progress')
-          .select('*', { count: 'exact', head: true })
-          .eq('group_watchlist_item_id', id)
-        episodeCounts[id] = count || 0
-      })
-    )
-  }
+          .select('group_watchlist_item_id')
+          .in('group_watchlist_item_id', watchingTvIds)
+          .then(({ data }) => {
+            const counts: Record<string, number> = {}
+            for (const row of data ?? []) {
+              counts[row.group_watchlist_item_id] = (counts[row.group_watchlist_item_id] || 0) + 1
+            }
+            return counts
+          })
+      : Promise.resolve({} as Record<string, number>),
+    getTmdbItems(items.map(i => ({ tmdb_id: i.tmdb_id, media_type: i.media_type }))),
+  ])
 
-  const enriched = await Promise.all(
-    items.map(async (item) => {
-      const type = item.media_type === 'movie' ? 'movie' : 'tv'
-      const res = await fetch(
-        `https://api.themoviedb.org/3/${type}/${item.tmdb_id}?language=en-US`,
-        {
-          headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` },
-          next: { revalidate: 3600 },
-        }
-      )
-      const tmdb = await res.json()
-
-      let progress = null
-      if (item.media_type === 'tv' && item.status === 'watching') {
-        const totalEpisodes = tmdb.number_of_episodes || 0
-        if (totalEpisodes > 0) {
-          progress = { total_episodes: totalEpisodes, watched_episodes: episodeCounts[item.id] ?? 0 }
-        }
+  const enriched = items.map((item) => {
+    const tmdb = tmdbMap[`${item.tmdb_id}-${item.media_type}`]
+    let progress = null
+    if (item.media_type === 'tv' && item.status === 'watching') {
+      const totalEpisodes = tmdb?.number_of_episodes || 0
+      if (totalEpisodes > 0) {
+        progress = { total_episodes: totalEpisodes, watched_episodes: episodeCounts[item.id] ?? 0 }
       }
-
-      return {
-        ...item,
-        title: tmdb.title || tmdb.name,
-        poster: tmdb.poster_path ? `https://image.tmdb.org/t/p/w300${tmdb.poster_path}` : null,
-        year: (tmdb.release_date || tmdb.first_air_date)?.split('-')[0],
-        progress,
-      }
-    })
-  )
+    }
+    return {
+      ...item,
+      title: tmdb?.title ?? '',
+      poster: tmdb?.poster ?? null,
+      year: tmdb?.release_year ?? null,
+      progress,
+    }
+  })
 
   return NextResponse.json({ items: enriched })
 }

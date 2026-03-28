@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
+import { getTmdbItems } from '@/lib/tmdb'
 
 export async function GET(
   _: Request,
@@ -54,28 +55,9 @@ export async function GET(
 
   const profileMap = Object.fromEntries((profiles || []).map(p => [p.id, p]))
 
-  // Hent TMDB-titler for unikke items
-  const uniqueTmdb = [
-    ...new Map((allItems || []).map(i => [`${i.tmdb_id}-${i.media_type}`, i])).values()
-  ].slice(0, 20)
-
-  const tmdbMap: Record<string, { title: string; poster: string | null }> = {}
-  await Promise.all(
-    uniqueTmdb.map(async (item) => {
-      const res = await fetch(
-        `https://api.themoviedb.org/3/${item.media_type}/${item.tmdb_id}?language=da-DK`,
-        {
-          headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` },
-          next: { revalidate: 86400 },
-        }
-      )
-      const tmdb = await res.json()
-      tmdbMap[`${item.tmdb_id}-${item.media_type}`] = {
-        title: tmdb.title || tmdb.name || '',
-        poster: tmdb.poster_path ? `https://image.tmdb.org/t/p/w185${tmdb.poster_path}` : null,
-      }
-    })
-  )
+  // Hent TMDB-data via cache
+  const uniqueTmdb = [...new Map((allItems || []).map(i => [`${i.tmdb_id}-${i.media_type}`, i])).values()].slice(0, 20)
+  const tmdbMap = await getTmdbItems(uniqueTmdb.map(i => ({ tmdb_id: i.tmdb_id, media_type: i.media_type })))
 
   // Byg events
   type Event = {
@@ -104,7 +86,7 @@ export async function GET(
       type: 'added',
       user_name: profile.name?.split(' ')[0] || 'Nogen',
       user_avatar: profile.avatar_url,
-      title: tmdb?.title,
+      title: tmdb?.title ?? '',
       poster: tmdb?.poster ?? null,
       tmdb_id: item.tmdb_id,
       media_type: item.media_type,
@@ -123,7 +105,7 @@ export async function GET(
       type: 'episode',
       user_name: profile.name?.split(' ')[0] || 'Nogen',
       user_avatar: profile.avatar_url,
-      title: tmdb?.title,
+      title: tmdb?.title ?? '',
       poster: tmdb?.poster ?? null,
       tmdb_id: watchlistItem.tmdb_id,
       media_type: watchlistItem.media_type,
