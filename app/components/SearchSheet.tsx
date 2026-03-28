@@ -251,6 +251,10 @@ export default function SearchSheet({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: u.id }),
       })
+      // Opdater feed så den nye brugers aktivitet vises med det samme
+      fetch('/api/follows/feed')
+        .then(r => r.json())
+        .then(d => { setFeed(d.items || []) })
     } else {
       await fetch('/api/follows', {
         method: 'DELETE',
@@ -431,7 +435,7 @@ export default function SearchSheet({
                       ))
                     ) : feed.length > 0 ? (
                       feed.slice(0, 10).map((item, i) => (
-                        <FeedCard key={`${item.user_id}-${item.tmdb_id}-${i}`} item={item} />
+                        <FeedCard key={`${item.user_id}-${item.tmdb_id}-${i}`} item={item} onUserClick={() => setOpenUserId(item.user_id)} />
                       ))
                     ) : (
                       <button
@@ -875,42 +879,49 @@ export default function SearchSheet({
   )
 }
 
-function FeedCard({ item }: { item: FeedItem }) {
+function FeedCard({ item, onUserClick }: { item: FeedItem; onUserClick: () => void }) {
   const href = `/${item.media_type === 'movie' ? 'movie' : 'tv'}/${item.tmdb_id}`
   return (
-    <a href={href} className="flex-shrink-0 w-28 no-underline block">
-      <div className="relative w-28 h-40 rounded-xl overflow-hidden">
-        {item.poster ? (
-          <Image src={item.poster} alt={item.title} fill className="object-cover" sizes="112px" />
-        ) : (
-          <div className="w-full h-full bg-white/8" />
-        )}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-        {/* Avatar overlay */}
-        <div className="absolute top-1.5 left-1.5 w-6 h-6 rounded-full overflow-hidden ring-1 ring-black/40">
-          {item.user_avatar ? (
-            <Image src={item.user_avatar} alt={item.user_name} width={24} height={24} className="object-cover" />
+    <div className="flex-shrink-0 w-28">
+      <a href={href} className="no-underline block">
+        <div className="relative w-28 h-40 rounded-xl overflow-hidden">
+          {item.poster ? (
+            <Image src={item.poster} alt={item.title} fill className="object-cover" sizes="112px" />
           ) : (
-            <div className="w-full h-full bg-white/20 flex items-center justify-center">
-              <span className="text-white text-xs font-bold">{item.user_name[0]}</span>
+            <div className="w-full h-full bg-white/8" />
+          )}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+          {/* Avatar overlay — klikbar */}
+          <button
+            onClick={e => { e.preventDefault(); e.stopPropagation(); onUserClick() }}
+            className="absolute top-1.5 left-1.5 w-6 h-6 rounded-full overflow-hidden ring-1 ring-black/40 active:scale-110 transition-transform"
+          >
+            {item.user_avatar ? (
+              <Image src={item.user_avatar} alt={item.user_name} width={24} height={24} className="object-cover" />
+            ) : (
+              <div className="w-full h-full bg-white/20 flex items-center justify-center">
+                <span className="text-white text-xs font-bold">{item.user_name[0]}</span>
+              </div>
+            )}
+          </button>
+          {/* Rating */}
+          {item.rating && (
+            <div className="absolute bottom-1.5 left-1.5 flex gap-0.5">
+              {[1,2,3,4,5].map(s => (
+                <svg key={s} width="8" height="8" viewBox="0 0 12 12" fill="none">
+                  <path d="M6 1L7.5 4.5L11 5L8.5 7.5L9 11L6 9.5L3 11L3.5 7.5L1 5L4.5 4.5L6 1Z"
+                    fill={s <= item.rating! ? 'rgba(251,191,36,1)' : 'rgba(255,255,255,0.2)'} />
+                </svg>
+              ))}
             </div>
           )}
         </div>
-        {/* Rating */}
-        {item.rating && (
-          <div className="absolute bottom-1.5 left-1.5 flex gap-0.5">
-            {[1,2,3,4,5].map(s => (
-              <svg key={s} width="8" height="8" viewBox="0 0 12 12" fill="none">
-                <path d="M6 1L7.5 4.5L11 5L8.5 7.5L9 11L6 9.5L3 11L3.5 7.5L1 5L4.5 4.5L6 1Z"
-                  fill={s <= item.rating! ? 'rgba(251,191,36,1)' : 'rgba(255,255,255,0.2)'} />
-              </svg>
-            ))}
-          </div>
-        )}
-      </div>
-      <p className="text-white/60 text-xs mt-1.5 leading-tight line-clamp-1 px-0.5">{item.user_name.split(' ')[0]}</p>
+      </a>
+      <button onClick={onUserClick} className="text-left px-0.5 mt-1.5 w-full">
+        <p className="text-white/60 text-xs leading-tight line-clamp-1">{item.user_name.split(' ')[0]}</p>
+      </button>
       <p className="text-white/80 text-xs leading-tight line-clamp-1 px-0.5 font-medium">{item.title}</p>
-    </a>
+    </div>
   )
 }
 

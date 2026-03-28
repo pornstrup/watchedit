@@ -34,7 +34,6 @@ export default function UserSheet({
   const [tabItems, setTabItems] = useState<Partial<Record<Tab, ListItem[]>>>({})
   const [loadingTab, setLoadingTab] = useState<Tab | null>('want')
   const [following, setFollowing] = useState(false)
-  const [unfollowConfirm, setUnfollowConfirm] = useState(false)
 
   const fetchTab = async (tab: Tab) => {
     if (tabItems[tab]) return
@@ -57,14 +56,8 @@ export default function UserSheet({
   }
 
   const handleFollow = async () => {
-    if (following && !unfollowConfirm) {
-      setUnfollowConfirm(true)
-      setTimeout(() => setUnfollowConfirm(false), 2000)
-      return
-    }
     const newFollowing = !following
     setFollowing(newFollowing)
-    setUnfollowConfirm(false)
     await fetch('/api/follows', {
       method: newFollowing ? 'POST' : 'DELETE',
       headers: { 'Content-Type': 'application/json' },
@@ -127,21 +120,17 @@ export default function UserSheet({
               <button
                 onClick={handleFollow}
                 className="px-4 py-1.5 rounded-full text-xs font-medium flex-shrink-0 transition-all"
-                style={following ? (unfollowConfirm ? {
-                  background: 'rgba(255,59,48,0.15)',
-                  border: '1px solid rgba(255,59,48,0.35)',
-                  color: 'rgb(255,59,48)',
-                } : {
+                style={following ? {
                   background: 'rgba(52,199,89,0.15)',
                   border: '1px solid rgba(52,199,89,0.35)',
                   color: 'rgb(52,199,89)',
-                }) : {
+                } : {
                   background: 'rgba(255,255,255,0.12)',
                   border: '1px solid rgba(255,255,255,0.2)',
                   color: 'white',
                 }}
               >
-                {following ? (unfollowConfirm ? 'Unfolg?' : 'Følger') : 'Følg'}
+                {following ? 'Følger' : 'Følg'}
               </button>
             </>
           ) : (
