@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 import Image from 'next/image'
 import TVDetailClient from '../../components/TVDetailClient'
 import StatusButtons from '../../components/StatusButtons'
+import RatingInline from '../../components/RatingInline'
 import SlideTransition from '../../components/SlideTransition'
 import BackButton from '../../components/BackButton'
 import StickyHeader from '../../components/StickyHeader'
@@ -103,7 +104,7 @@ export default async function TVPage({
         </div>
 
         <div className="px-6 -mt-16 relative">
-          <div className="flex gap-4 mb-6">
+          <div className="flex gap-4 mb-4">
             {poster && (
               <Image src={poster} alt={show.name} width={128} height={192} className="rounded-xl shadow-2xl flex-shrink-0" />
             )}
@@ -143,6 +144,10 @@ export default async function TVPage({
                 poster={poster}
               />
             </div>
+          </div>
+
+          <div className="mb-5">
+            <RatingInline tmdbId={Number(id)} mediaType="tv" />
           </div>
 
           <TVDetailClient

@@ -18,10 +18,9 @@ export async function POST(request: Request) {
     media_type,
     watched: true,
     watched_at: new Date().toISOString(),
+    rating: rating ?? null,
+    note: rating == null ? null : (note || null),
   }
-
-  if (rating != null) row.rating = rating
-  if (note != null && note !== '') row.note = note
 
   const { error } = await supabase
     .from('user_content')

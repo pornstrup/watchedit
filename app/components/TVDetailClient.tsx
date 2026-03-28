@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Image from 'next/image'
 import ExpandableText from './ExpandableText'
 import EpisodeTracker from './EpisodeTracker'
+import RatingInline from './RatingInline'
 
 type Season = { season_number: number; episode_count: number; name: string }
 type Progress = { season_number: number; episode_number: number }
@@ -69,6 +70,7 @@ export default function TVDetailClient({
           <ExpandableText text={overview} />
         </div>
       )}
+
 
       {/* EPISODER */}
       {item && seasons.length > 0 && (

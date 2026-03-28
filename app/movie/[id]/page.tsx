@@ -8,6 +8,7 @@ import BackButton from '@/app/components/BackButton'
 import StickyHeader from '@/app/components/StickyHeader'
 import DynamicGlow from '@/app/components/DynamicGlow'
 import ExpandableText from '@/app/components/ExpandableText'
+import RatingInline from '@/app/components/RatingInline'
 
 export default async function MoviePage({
   params,
@@ -90,7 +91,7 @@ export default async function MoviePage({
         </div>
 
         <div className="px-6 -mt-16 relative">
-          <div className="flex gap-4 mb-6">
+          <div className="flex gap-4 mb-4">
             {poster && (
               <Image src={poster} alt={movie.title} width={128} height={192} className="rounded-xl shadow-2xl flex-shrink-0" />
             )}
@@ -125,6 +126,10 @@ export default async function MoviePage({
             </div>
           </div>
 
+          <div className="mb-5">
+            <RatingInline tmdbId={Number(id)} mediaType="movie" />
+          </div>
+
           {providers.length > 0 && (
             <div className="mb-6">
               <p className="text-white/50 text-sm mb-3">Hvor kan du se den</p>
@@ -154,6 +159,8 @@ export default async function MoviePage({
               <ExpandableText text={movie.overview} />
             </div>
           )}
+
+
 
         </div>
       </SlideTransition>
