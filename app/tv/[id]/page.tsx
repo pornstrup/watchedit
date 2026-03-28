@@ -3,9 +3,9 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Image from 'next/image'
 import TVDetailClient from '../../components/TVDetailClient'
+import StatusButtons from '../../components/StatusButtons'
 import SlideTransition from '../../components/SlideTransition'
 import BackButton from '../../components/BackButton'
-import RemoveFromList from '../../components/RemoveFromList'
 import StickyHeader from '../../components/StickyHeader'
 import DynamicGlow from '../../components/DynamicGlow'
 
@@ -107,52 +107,57 @@ export default async function TVPage({
             {poster && (
               <Image src={poster} alt={show.name} width={128} height={192} className="rounded-xl shadow-2xl flex-shrink-0" />
             )}
-            <div className="flex flex-col justify-end pb-1">
-              <h1 className="text-white text-xl font-bold leading-tight mb-2">{show.name}</h1>
-              <div className="flex flex-wrap gap-2">
-                <span className="text-white/50 text-xs">{show.first_air_date?.split('-')[0]}</span>
-                <span className="text-white/50 text-xs">{show.number_of_seasons} sæsoner</span>
-                {show.vote_average > 0 && (
-                  <span className="flex items-center gap-1">
-                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 1L7.5 4.5L11 5L8.5 7.5L9 11L6 9.5L3 11L3.5 7.5L1 5L4.5 4.5L6 1Z" fill="rgba(251,191,36,1)" /></svg>
-                    <span className="text-white/50 text-xs">{show.vote_average.toFixed(1)}</span>
-                  </span>
-                )}
-                {show.genres?.slice(0, 2).map((g: { id: number; name: string }) => (
-                  <span key={g.id} className="text-white/50 text-xs">{g.name}</span>
-                ))}
+            <div className="flex flex-col justify-between flex-1 pb-1" style={{ minHeight: 192 }}>
+              <div>
+                <h1 className="text-white text-xl font-bold leading-tight mb-2">{show.name}</h1>
+                <div className="flex flex-wrap gap-2">
+                  <span className="text-white/50 text-xs">{show.first_air_date?.split('-')[0]}</span>
+                  <span className="text-white/50 text-xs">{show.number_of_seasons} sæsoner</span>
+                  {show.vote_average > 0 && (
+                    <span className="flex items-center gap-1">
+                      <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 1L7.5 4.5L11 5L8.5 7.5L9 11L6 9.5L3 11L3.5 7.5L1 5L4.5 4.5L6 1Z" fill="rgba(251,191,36,1)" /></svg>
+                      <span className="text-white/50 text-xs">{show.vote_average.toFixed(1)}</span>
+                    </span>
+                  )}
+                  {show.genres?.slice(0, 2).map((g: { id: number; name: string }) => (
+                    <span key={g.id} className="text-white/50 text-xs">{g.name}</span>
+                  ))}
+                </div>
+                {nextEpisode?.air_date && (() => {
+                  const days = Math.round((new Date(nextEpisode.air_date).getTime() - Date.now()) / 86400000)
+                  const label = days === 0 ? 'i dag' : days === 1 ? 'i morgen' : days > 0 ? `${new Date(nextEpisode.air_date).toLocaleDateString('da-DK', { weekday: 'long', day: 'numeric', month: 'long' })}` : null
+                  return label ? (
+                    <p className="text-white/50 text-xs mt-1">→ S{nextEpisode.season_number} E{nextEpisode.episode_number} · {label}</p>
+                  ) : null
+                })()}
               </div>
-              {nextEpisode?.air_date && (() => {
-                const days = Math.round((new Date(nextEpisode.air_date).getTime() - Date.now()) / 86400000)
-                const label = days === 0 ? 'i dag' : days === 1 ? 'i morgen' : days > 0 ? `${new Date(nextEpisode.air_date).toLocaleDateString('da-DK', { weekday: 'long', day: 'numeric', month: 'long' })}` : null
-                return label ? (
-                  <p className="text-white/50 text-xs mt-1">→ S{nextEpisode.season_number} E{nextEpisode.episode_number} · {label}</p>
-                ) : null
-              })()}
+              <StatusButtons
+                itemId={item?.id}
+                initialStatus={item?.status as 'want' | 'watching' | 'done' | undefined}
+                initialOnList={!!item}
+                compact
+                ctx={ctx}
+                tmdbId={Number(id)}
+                mediaType="tv"
+                title={show.name}
+                poster={poster}
+              />
             </div>
           </div>
 
-          {item && (
-            <TVDetailClient
-              item={{ id: item.id }}
-              seasons={seasons}
-              episodeProgress={episodeProgress || []}
-              showId={id}
-              initialStatus={item.status}
-              providers={providers}
-              overview={show.overview}
-              ctx={ctx}
-              tmdbId={Number(id)}
-              title={show.name}
-              poster={poster}
-            />
-          )}
-
-          {item && (
-            <div className="mb-6">
-              <RemoveFromList tmdbId={Number(id)} mediaType="tv" groupId={ctx} />
-            </div>
-          )}
+          <TVDetailClient
+            item={item ? { id: item.id } : undefined}
+            seasons={seasons}
+            episodeProgress={episodeProgress || []}
+            showId={id}
+            initialStatus={item?.status}
+            providers={providers}
+            overview={show.overview}
+            ctx={ctx}
+            tmdbId={Number(id)}
+            title={show.name}
+            poster={poster}
+          />
         </div>
       </SlideTransition>
     </main>

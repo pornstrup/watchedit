@@ -28,8 +28,6 @@ type ActivityEvent = {
   timestamp: string
 }
 
-type ReactionData = { count: number; userReacted: boolean }
-
 function relativeTime(ts: string): string {
   const diff = Date.now() - new Date(ts).getTime()
   const mins = Math.floor(diff / 60000)
@@ -110,8 +108,6 @@ function GroupPosterCard({
   onMarkNext,
   className,
   inScrollContainer,
-  reaction,
-  onReact,
 }: {
   item: GroupItem
   groupId: string
@@ -120,8 +116,6 @@ function GroupPosterCard({
   onMarkNext?: () => void
   className?: string
   inScrollContainer?: boolean
-  reaction?: ReactionData
-  onReact?: () => void
 }) {
   const [pressing, setPressing] = useState(false)
   const [showOverlay, setShowOverlay] = useState(false)
@@ -248,24 +242,6 @@ function GroupPosterCard({
         </div>
       </motion.a>
 
-      {/* Reaktion — kun på "vil se" */}
-      {item.status === 'want' && onReact && (
-        <button
-          onClick={e => { e.stopPropagation(); onReact() }}
-          className="flex items-center gap-1 mt-1.5 px-1.5 py-0.5 rounded-full transition-all active:scale-90"
-          style={{
-            background: reaction?.userReacted ? 'rgba(255,59,48,0.15)' : 'rgba(255,255,255,0.06)',
-            border: reaction?.userReacted ? '1px solid rgba(255,59,48,0.25)' : '1px solid rgba(255,255,255,0.08)',
-          }}
-        >
-          <span style={{ fontSize: 12 }}>{reaction?.userReacted ? '❤️' : '🤍'}</span>
-          {(reaction?.count ?? 0) > 0 && (
-            <span className="text-[11px] font-medium" style={{ color: reaction?.userReacted ? 'rgba(255,59,48,0.9)' : 'rgba(255,255,255,0.35)' }}>
-              {reaction?.count}
-            </span>
-          )}
-        </button>
-      )}
 
      {showOverlay && typeof document !== 'undefined' && createPortal(
           <>
@@ -877,7 +853,6 @@ export default function GroupView({
   const [currentGroupName, setCurrentGroupName] = useState(group.name)
   const [activity, setActivity] = useState<ActivityEvent[]>([])
   const [showActivity, setShowActivity] = useState(false)
-  const [reactions, setReactions] = useState<Record<string, ReactionData>>({})
 
   useEffect(() => {
     setLoading(true)
@@ -894,13 +869,10 @@ export default function GroupView({
     fetch(`/api/groups/${groupId}/inspiration`)
       .then(r => r.json())
       .then(d => setInspiration(d.items || []))
-    // Aktivitet + reaktioner hentes i baggrunden
+    // Aktivitet hentes i baggrunden
     fetch(`/api/groups/${groupId}/activity`)
       .then(r => r.json())
       .then(d => setActivity(d.events || []))
-    fetch(`/api/groups/${groupId}/reactions`)
-      .then(r => r.json())
-      .then(d => setReactions(d.reactions || {}))
   }, [groupId, refreshKey])
 // Lyt på status-ændringer fra personlig liste og refresh inspiration
   useEffect(() => {
@@ -990,24 +962,6 @@ export default function GroupView({
     acc[key].items.push(item)
     return acc
   }, {} as Record<string, { label: string; items: GroupItem[] }>)
-
-  const toggleReaction = async (itemId: string) => {
-    const current = reactions[itemId]
-    const userReacted = current?.userReacted ?? false
-    // Optimistisk opdatering
-    setReactions(prev => ({
-      ...prev,
-      [itemId]: {
-        count: (prev[itemId]?.count ?? 0) + (userReacted ? -1 : 1),
-        userReacted: !userReacted,
-      }
-    }))
-    await fetch(`/api/groups/${groupId}/reactions`, {
-      method: userReacted ? 'DELETE' : 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ item_id: itemId }),
-    })
-  }
 
   const handleLeave = () => {
     setShowSettings(false)
@@ -1193,8 +1147,6 @@ export default function GroupView({
                     onRemove={removeItem}
                     onStatusChange={updateStatus}
                     className="aspect-[2/3]"
-                    reaction={reactions[item.id]}
-                    onReact={() => toggleReaction(item.id)}
                   />
                 ))}
               </AnimatePresence>

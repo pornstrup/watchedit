@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import StatusButtons from './StatusButtons'
 import ExpandableText from './ExpandableText'
 import EpisodeTracker from './EpisodeTracker'
 
@@ -23,11 +22,11 @@ export default function TVDetailClient({
   title,
   poster,
 }: {
-  item: { id: string }
+  item?: { id: string }
   seasons: Season[]
   episodeProgress: Progress[]
   showId: string
-  initialStatus: string
+  initialStatus?: string
   providers: Provider[]
   overview: string
   ctx?: string
@@ -35,24 +34,10 @@ export default function TVDetailClient({
   title?: string
   poster?: string | null
 }) {
-  const [status, setStatus] = useState(initialStatus)
+  const [status, setStatus] = useState(initialStatus || 'want')
 
   return (
     <>
-      {/* STATUS */}
-      <div className="mb-6">
-        <StatusButtons
-          itemId={item.id}
-          initialStatus={status as 'want' | 'watching' | 'done'}
-          onStatusChange={setStatus}
-          ctx={ctx}
-          tmdbId={tmdbId}
-          mediaType="tv"
-          title={title}
-          poster={poster}
-        />
-      </div>
-
       {/* PLATFORMS */}
       {providers.length > 0 && (
         <div className="mb-6">
@@ -86,7 +71,7 @@ export default function TVDetailClient({
       )}
 
       {/* EPISODER */}
-      {seasons.length > 0 && (
+      {item && seasons.length > 0 && (
         <div className="mb-6">
           <EpisodeTracker
             itemId={item.id}

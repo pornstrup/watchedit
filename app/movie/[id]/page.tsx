@@ -5,7 +5,6 @@ import Image from 'next/image'
 import StatusButtons from '../../components/StatusButtons'
 import SlideTransition from '../../components/SlideTransition'
 import BackButton from '@/app/components/BackButton'
-import RemoveFromList from '@/app/components/RemoveFromList'
 import StickyHeader from '@/app/components/StickyHeader'
 import DynamicGlow from '@/app/components/DynamicGlow'
 import ExpandableText from '@/app/components/ExpandableText'
@@ -95,29 +94,28 @@ export default async function MoviePage({
             {poster && (
               <Image src={poster} alt={movie.title} width={128} height={192} className="rounded-xl shadow-2xl flex-shrink-0" />
             )}
-            <div className="flex flex-col justify-end pb-1">
-              <h1 className="text-white text-xl font-bold leading-tight mb-2">{movie.title}</h1>
-              <div className="flex flex-wrap gap-2">
-                <span className="text-white/50 text-xs">{movie.release_date?.split('-')[0]}</span>
-                {movie.runtime > 0 && <span className="text-white/50 text-xs">{movie.runtime} min</span>}
-                {movie.vote_average > 0 && (
-                  <span className="flex items-center gap-1">
-                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 1L7.5 4.5L11 5L8.5 7.5L9 11L6 9.5L3 11L3.5 7.5L1 5L4.5 4.5L6 1Z" fill="rgba(251,191,36,1)" /></svg>
-                    <span className="text-white/50 text-xs">{movie.vote_average.toFixed(1)}</span>
-                  </span>
-                )}
-                {movie.genres?.slice(0, 2).map((g: { id: number; name: string }) => (
-                  <span key={g.id} className="text-white/50 text-xs">{g.name}</span>
-                ))}
+            <div className="flex flex-col justify-between flex-1 pb-1" style={{ minHeight: 192 }}>
+              <div>
+                <h1 className="text-white text-xl font-bold leading-tight mb-2">{movie.title}</h1>
+                <div className="flex flex-wrap gap-2">
+                  <span className="text-white/50 text-xs">{movie.release_date?.split('-')[0]}</span>
+                  {movie.runtime > 0 && <span className="text-white/50 text-xs">{movie.runtime} min</span>}
+                  {movie.vote_average > 0 && (
+                    <span className="flex items-center gap-1">
+                      <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><path d="M6 1L7.5 4.5L11 5L8.5 7.5L9 11L6 9.5L3 11L3.5 7.5L1 5L4.5 4.5L6 1Z" fill="rgba(251,191,36,1)" /></svg>
+                      <span className="text-white/50 text-xs">{movie.vote_average.toFixed(1)}</span>
+                    </span>
+                  )}
+                  {movie.genres?.slice(0, 2).map((g: { id: number; name: string }) => (
+                    <span key={g.id} className="text-white/50 text-xs">{g.name}</span>
+                  ))}
+                </div>
               </div>
-            </div>
-          </div>
-
-          {item && (
-            <div className="mb-6">
               <StatusButtons
-                itemId={item.id}
-                initialStatus={item.status as 'want' | 'watching' | 'done'}
+                itemId={item?.id}
+                initialStatus={item?.status as 'want' | 'watching' | 'done' | undefined}
+                initialOnList={!!item}
+                compact
                 ctx={ctx}
                 tmdbId={Number(id)}
                 mediaType="movie"
@@ -125,7 +123,7 @@ export default async function MoviePage({
                 poster={poster}
               />
             </div>
-          )}
+          </div>
 
           {providers.length > 0 && (
             <div className="mb-6">
@@ -157,11 +155,6 @@ export default async function MoviePage({
             </div>
           )}
 
-          {item && (
-            <div className="mb-8 mt-2">
-              <RemoveFromList tmdbId={Number(id)} mediaType="movie" groupId={ctx} />
-            </div>
-          )}
         </div>
       </SlideTransition>
     </main>

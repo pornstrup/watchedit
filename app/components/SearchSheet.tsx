@@ -44,6 +44,7 @@ export default function SearchSheet({
   const [groups, setGroups] = useState<Group[]>([])
   const [activeContext, setActiveContext] = useState<string | null>(initialGroupId)
   const [showContextPicker, setShowContextPicker] = useState(false)
+  const [alsoAddPrompt, setAlsoAddPrompt] = useState<Result | null>(null)
   const [providers, setProviders] = useState<Record<string, Provider[]>>({})
   const [filter, setFilter] = useState<'all' | 'movie' | 'tv'>('all')
   const [aiMode, setAiMode] = useState(initialAiMode)
@@ -189,6 +190,20 @@ export default function SearchSheet({
     setTimeout(() => inputRef.current?.focus(), 50)
   }
 
+  const removeFromList = async (item: Result) => {
+    const key = `${item.tmdb_id}-${item.media_type}`
+    const url = activeContext ? `/api/groups/${activeContext}/watchlist` : '/api/watchlist'
+    await fetch(url, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tmdb_id: item.tmdb_id, media_type: item.media_type })
+    })
+    setAdded(prev => { const s = new Set(prev); s.delete(key); return s })
+    setExistingIds(prev => { const s = new Set(prev); s.delete(key); return s })
+    if (navigator.vibrate) navigator.vibrate(8)
+    window.dispatchEvent(new CustomEvent('watchlist-updated', { detail: { groupId: activeContext } }))
+  }
+
   const addToList = async (item: Result) => {
     const key = `${item.tmdb_id}-${item.media_type}`
     if (existingIds.has(key) || added.has(key)) return
@@ -202,7 +217,20 @@ export default function SearchSheet({
       setAdded(prev => new Set([...prev, key]))
       if (navigator.vibrate) navigator.vibrate(8)
       window.dispatchEvent(new CustomEvent('watchlist-updated', { detail: { groupId: activeContext } }))
+      // Tilbyd at tilføje til egen liste også, hvis vi er i gruppe-kontekst
+      if (activeContext) setAlsoAddPrompt(item)
     }
+  }
+
+  const addToPersonalList = async (item: Result) => {
+    setAlsoAddPrompt(null)
+    await fetch('/api/watchlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tmdb_id: item.tmdb_id, media_type: item.media_type })
+    })
+    if (navigator.vibrate) navigator.vibrate(8)
+    window.dispatchEvent(new CustomEvent('watchlist-updated', { detail: { groupId: null } }))
   }
 
   const isAdded = (item: Result) => {
@@ -309,7 +337,7 @@ export default function SearchSheet({
                     <p className="text-white/50 text-xs font-medium mb-3 px-1">Populære film</p>
                     <div className="flex gap-2.5 overflow-x-auto scrollbar-none -mx-4 px-4 pb-1">
                       {trendingMovies.slice(0, 8).map(item => (
-                        <TrendingCard key={item.tmdb_id} item={item} isAdded={isAdded(item)} onAdd={() => addToList(item)} />
+                        <TrendingCard key={item.tmdb_id} item={item} isAdded={isAdded(item)} onAdd={() => addToList(item)} onRemove={() => removeFromList(item)} ctx={activeContext ?? undefined} />
                       ))}
                     </div>
                   </div>
@@ -319,7 +347,7 @@ export default function SearchSheet({
                     <p className="text-white/50 text-xs font-medium mb-3 px-1">Populære serier</p>
                     <div className="flex gap-2.5 overflow-x-auto scrollbar-none -mx-4 px-4 pb-1">
                       {trendingSeries.slice(0, 8).map(item => (
-                        <TrendingCard key={item.tmdb_id} item={item} isAdded={isAdded(item)} onAdd={() => addToList(item)} />
+                        <TrendingCard key={item.tmdb_id} item={item} isAdded={isAdded(item)} onAdd={() => addToList(item)} onRemove={() => removeFromList(item)} ctx={activeContext ?? undefined} />
                       ))}
                     </div>
                   </div>
@@ -398,7 +426,7 @@ export default function SearchSheet({
                     const itemAdded = isAdded(item)
                     const key = `${item.tmdb_id}-${item.media_type}`
                     const itemProviders = providers[key]
-                    const href = `/${item.media_type === 'movie' ? 'movie' : 'tv'}/${item.tmdb_id}`
+                    const href = `/${item.media_type === 'movie' ? 'movie' : 'tv'}/${item.tmdb_id}${activeContext ? `?ctx=${activeContext}` : ''}`
                     return (
                       <div
                         key={key}
@@ -429,7 +457,7 @@ export default function SearchSheet({
                           </div>
                         </a>
                         <button
-                          onClick={() => !itemAdded && addToList(item)}
+                          onClick={() => itemAdded ? removeFromList(item) : addToList(item)}
                           className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
                           style={{
                             background: itemAdded ? 'rgba(52, 199, 89, 0.15)' : 'rgba(255,255,255,0.07)',
@@ -453,8 +481,40 @@ export default function SearchSheet({
           className="flex-shrink-0 px-4 pb-6 pt-3 flex flex-col gap-2"
           style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}
         >
+          {/* "Også til din liste?" prompt */}
+          <AnimatePresence>
+            {alsoAddPrompt && (
+              <motion.div
+                key="also-add"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 6 }}
+                transition={{ duration: 0.18 }}
+                className="flex items-center gap-2 px-1 pb-2"
+              >
+                <span className="text-white/50 text-xs flex-1 truncate">
+                  Også til <span className="text-white">din liste</span>?
+                </span>
+                <button
+                  onClick={() => addToPersonalList(alsoAddPrompt)}
+                  className="px-3 py-1 rounded-full text-xs font-medium"
+                  style={{ background: 'rgba(52,199,89,0.15)', border: '1px solid rgba(52,199,89,0.3)', color: 'rgb(52,199,89)' }}
+                >
+                  Tilføj
+                </button>
+                <button
+                  onClick={() => setAlsoAddPrompt(null)}
+                  className="px-3 py-1 rounded-full text-xs font-medium"
+                  style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.4)' }}
+                >
+                  Nej
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {/* Kontekst-picker */}
-          {groups.length > 0 && (
+          {(groups.length > 0 || activeContext !== null) && (
             <div className="relative">
               <button
                 onClick={() => setShowContextPicker(p => !p)}
@@ -570,12 +630,16 @@ function TrendingCard({
   item,
   isAdded,
   onAdd,
+  onRemove,
+  ctx,
 }: {
   item: Result
   isAdded: boolean
   onAdd: () => void
+  onRemove: () => void
+  ctx?: string
 }) {
-  const href = `/${item.media_type === 'movie' ? 'movie' : 'tv'}/${item.tmdb_id}`
+  const href = `/${item.media_type === 'movie' ? 'movie' : 'tv'}/${item.tmdb_id}${ctx ? `?ctx=${ctx}` : ''}`
   return (
     <div className="flex-shrink-0 w-28 relative">
       <a href={href} className="block no-underline">
@@ -590,7 +654,7 @@ function TrendingCard({
         <p className="text-white/70 text-xs mt-1.5 leading-tight line-clamp-2 px-0.5">{item.title}</p>
       </a>
       <button
-        onClick={e => { e.preventDefault(); if (!isAdded) onAdd() }}
+        onClick={e => { e.preventDefault(); isAdded ? onRemove() : onAdd() }}
         className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center"
         style={{
           background: isAdded ? 'rgba(52,199,89,0.2)' : 'rgba(0,0,0,0.5)',
