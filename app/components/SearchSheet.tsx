@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence, useDragControls } from 'framer-motion'
 import Image from 'next/image'
+import Link from 'next/link'
 import UserSheet from './UserSheet'
 
 type FeedItem = {
@@ -704,7 +705,7 @@ export default function SearchSheet({
                         className="flex items-center gap-3 py-2.5"
                         style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
                       >
-                        <a href={href} className="flex items-center gap-3 flex-1 min-w-0 no-underline">
+                        <Link href={href} className="flex items-center gap-3 flex-1 min-w-0 no-underline">
                           {item.poster ? (
                             <Image src={item.poster} alt={item.title} width={44} height={62} className="rounded-lg object-cover flex-shrink-0" />
                           ) : (
@@ -726,7 +727,7 @@ export default function SearchSheet({
                               </div>
                             )}
                           </div>
-                        </a>
+                        </Link>
                         <button
                           onClick={() => itemAdded ? removeFromList(item) : addToList(item)}
                           className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
@@ -913,7 +914,7 @@ function FeedCard({ item, onUserClick }: { item: FeedItem; onUserClick: () => vo
   const href = `/${item.media_type === 'movie' ? 'movie' : 'tv'}/${item.tmdb_id}`
   return (
     <div className="flex-shrink-0 w-28">
-      <a href={href} className="no-underline block">
+      <Link href={href} className="no-underline block">
         <div className="relative w-28 h-40 rounded-xl overflow-hidden">
           {item.poster ? (
             <Image src={item.poster} alt={item.title} fill className="object-cover" sizes="112px" />
@@ -946,7 +947,7 @@ function FeedCard({ item, onUserClick }: { item: FeedItem; onUserClick: () => vo
             </div>
           )}
         </div>
-      </a>
+      </Link>
       <button onClick={onUserClick} className="text-left px-0.5 mt-1.5 w-full">
         <p className="text-white/60 text-xs leading-tight line-clamp-1">{item.user_name.split(' ')[0]}</p>
       </button>
@@ -971,7 +972,7 @@ function TrendingCard({
   const href = `/${item.media_type === 'movie' ? 'movie' : 'tv'}/${item.tmdb_id}${ctx ? `?ctx=${ctx}` : ''}`
   return (
     <div className="flex-shrink-0 w-28 relative">
-      <a href={href} className="block no-underline">
+      <Link href={href} className="block no-underline">
         <div className="relative w-28 h-40 rounded-xl overflow-hidden">
           {item.poster ? (
             <Image src={item.poster} alt={item.title} fill className="object-cover" sizes="112px" />
@@ -981,7 +982,7 @@ function TrendingCard({
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
         </div>
         <p className="text-white/70 text-xs mt-1.5 leading-tight line-clamp-2 px-0.5">{item.title}</p>
-      </a>
+      </Link>
       <button
         onClick={e => { e.preventDefault(); isAdded ? onRemove() : onAdd() }}
         className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center"

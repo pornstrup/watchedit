@@ -19,7 +19,6 @@ export default function BottomNav() {
     pathname.startsWith('/movie/') ||
     pathname.startsWith('/tv/') ||
     pathname === '/login'
-  if (isDetailPage) return null
 
   const params = typeof window !== 'undefined'
     ? new URLSearchParams(window.location.search)
@@ -74,6 +73,8 @@ export default function BottomNav() {
       window.removeEventListener('open-search', openSearch)
     }
   }, [])
+
+  if (isDetailPage) return null
 
   const isHidden = searchOpen || profileOpen || sheetOpen
 
