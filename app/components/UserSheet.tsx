@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, useDragControls } from 'framer-motion'
 import Image from 'next/image'
 
 type Tab = 'want' | 'watching' | 'done'
@@ -29,6 +29,7 @@ export default function UserSheet({
   userId: string
   onClose: () => void
 }) {
+  const dragControls = useDragControls()
   const [profile, setProfile] = useState<Profile | null>(null)
   const [activeTab, setActiveTab] = useState<Tab>('want')
   const [tabItems, setTabItems] = useState<Partial<Record<Tab, ListItem[]>>>({})
@@ -85,6 +86,8 @@ export default function UserSheet({
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 26, stiffness: 300 }}
         drag="y"
+        dragControls={dragControls}
+        dragListener={false}
         dragConstraints={{ top: 0 }}
         dragElastic={{ top: 0, bottom: 0.3 }}
         onDragEnd={(_, info) => { if (info.offset.y > 80 || info.velocity.y > 500) onClose() }}
@@ -100,7 +103,7 @@ export default function UserSheet({
           paddingBottom: 'env(safe-area-inset-bottom)',
         }}
       >
-        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mt-3 mb-4 flex-shrink-0" />
+        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mt-3 mb-4 flex-shrink-0" onPointerDown={(e) => dragControls.start(e)} style={{ touchAction: 'none', cursor: 'grab' }} />
 
         {/* HEADER */}
         <div className="flex items-center gap-3 px-6 mb-5 flex-shrink-0">

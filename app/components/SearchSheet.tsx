@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useDragControls } from 'framer-motion'
 import Image from 'next/image'
 import UserSheet from './UserSheet'
 
@@ -82,6 +82,7 @@ export default function SearchSheet({
   const [feedLoading, setFeedLoading] = useState(true)
   const [openUserId, setOpenUserId] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const dragControls = useDragControls()
   const sheetRef = useRef<HTMLDivElement>(null)
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -362,6 +363,8 @@ export default function SearchSheet({
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 26, stiffness: 300 }}
         drag="y"
+        dragControls={dragControls}
+        dragListener={false}
         dragConstraints={{ top: 0 }}
         dragElastic={{ top: 0, bottom: 0.3 }}
         onDragEnd={(_, info) => { if (info.offset.y > 80 || info.velocity.y > 500) onClose() }}
@@ -378,7 +381,7 @@ export default function SearchSheet({
         }}
       >
         {/* Drag handle */}
-        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mt-3 flex-shrink-0" />
+        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mt-3 flex-shrink-0" onPointerDown={(e) => dragControls.start(e)} style={{ touchAction: 'none', cursor: 'grab' }} />
 
         {/* INDHOLD — skifter mellem trending og søgeresultater */}
         <div className="flex-1 overflow-y-auto min-h-0" style={{ touchAction: 'pan-y' }}>

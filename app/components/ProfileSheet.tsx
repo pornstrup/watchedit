@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useDragControls } from 'framer-motion'
 import Image from 'next/image'
 
 type Profile = {
@@ -27,6 +27,7 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
   const [allProviders, setAllProviders] = useState<StreamingProvider[]>([])
   const [providerQuery, setProviderQuery] = useState('')
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const dragControls = useDragControls()
 
   useEffect(() => {
     Promise.all([
@@ -118,6 +119,8 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 26, stiffness: 300 }}
         drag="y"
+        dragControls={dragControls}
+        dragListener={false}
         dragConstraints={{ top: 0 }}
         dragElastic={{ top: 0, bottom: 0.3 }}
         onDragEnd={(_, info) => { if (info.offset.y > 80 || info.velocity.y > 500) onClose() }}
@@ -132,7 +135,7 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
           paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))',
         }}
       >
-        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-6" />
+        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-6" onPointerDown={(e) => dragControls.start(e)} style={{ touchAction: 'none', cursor: 'grab' }} />
 
         {/* PROFIL */}
         {profile && (

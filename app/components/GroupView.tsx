@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useDragControls } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
 import RatingSheet from './RatingSheet'
@@ -703,6 +703,7 @@ function GroupSettingsSheet({
   onLeave: () => void
   onRename: (name: string) => void
 }) {
+  const dragControls = useDragControls()
   const [renaming, setRenaming] = useState(false)
   const [newName, setNewName] = useState(group.name)
   const [inviteUrl, setInviteUrl] = useState<string | null>(null)
@@ -763,6 +764,8 @@ const isOwner = group.created_by === currentUserId
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 26, stiffness: 300 }}
         drag="y"
+        dragControls={dragControls}
+        dragListener={false}
         dragConstraints={{ top: 0 }}
         dragElastic={{ top: 0, bottom: 0.3 }}
         onDragEnd={(_, info) => { if (info.offset.y > 80 || info.velocity.y > 500) onClose() }}
@@ -776,7 +779,7 @@ const isOwner = group.created_by === currentUserId
           borderBottom: 'none',
         }}
       >
-        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-6" />
+        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-6" onPointerDown={(e) => dragControls.start(e)} style={{ touchAction: 'none', cursor: 'grab' }} />
         <div className="flex flex-col gap-3">
           <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-1">{group.name}</p>
 
@@ -1335,6 +1338,7 @@ function ActivitySheet({
   events: ActivityEvent[]
   onClose: () => void
 }) {
+  const dragControls2 = useDragControls()
   const groups: { label: string; events: ActivityEvent[] }[] = []
   for (const e of events) {
     const d = new Date(e.timestamp)
@@ -1363,6 +1367,8 @@ function ActivitySheet({
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 26, stiffness: 300 }}
         drag="y"
+        dragControls={dragControls2}
+        dragListener={false}
         dragConstraints={{ top: 0 }}
         dragElastic={{ top: 0, bottom: 0.3 }}
         onDragEnd={(_, info) => { if (info.offset.y > 80 || info.velocity.y > 500) onClose() }}
@@ -1378,7 +1384,7 @@ function ActivitySheet({
           paddingBottom: 'env(safe-area-inset-bottom)',
         }}
       >
-        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mt-3 flex-shrink-0" />
+        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mt-3 flex-shrink-0" onPointerDown={(e) => dragControls2.start(e)} style={{ touchAction: 'none', cursor: 'grab' }} />
 
         <div className="px-5 pt-5 pb-4 flex-shrink-0">
           <p className="text-white font-semibold text-base">Aktivitet</p>

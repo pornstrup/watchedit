@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useDragControls } from 'framer-motion'
 import Image from 'next/image'
 import { ChevronLeft } from 'lucide-react'
 
@@ -31,6 +31,7 @@ export default function StickyHeader({
   isOnList?: boolean
   ctx?: string
 }) {
+  const dragControls = useDragControls()
   const [visible, setVisible] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [added, setAdded] = useState(false)
@@ -116,6 +117,8 @@ export default function StickyHeader({
               exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 26, stiffness: 300 }}
               drag="y"
+              dragControls={dragControls}
+              dragListener={false}
               dragConstraints={{ top: 0 }}
               dragElastic={{ top: 0, bottom: 0.3 }}
               onDragEnd={(_, info) => { if (info.offset.y > 80 || info.velocity.y > 500) setSheetOpen(false) }}
@@ -130,7 +133,7 @@ export default function StickyHeader({
                 paddingBottom: 'env(safe-area-inset-bottom)',
               }}
             >
-              <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mt-3" />
+              <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mt-3" onPointerDown={(e) => dragControls.start(e)} style={{ touchAction: 'none', cursor: 'grab' }} />
 
               {/* Header: plakat + titel + meta */}
               <div className="flex items-center gap-4 px-5 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>

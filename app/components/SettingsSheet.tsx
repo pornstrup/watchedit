@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useDragControls } from 'framer-motion'
 
 export default function SettingsSheet({
   open,
@@ -12,6 +12,7 @@ export default function SettingsSheet({
   onClose: () => void
   onLogout: () => void
 }) {
+  const dragControls = useDragControls()
   // Luk på escape
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
@@ -40,6 +41,8 @@ export default function SettingsSheet({
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
             drag="y"
+            dragControls={dragControls}
+            dragListener={false}
             dragConstraints={{ top: 0 }}
             dragElastic={{ top: 0, bottom: 0.3 }}
             onDragEnd={(_, info) => { if (info.offset.y > 80 || info.velocity.y > 500) onClose() }}
@@ -52,7 +55,7 @@ export default function SettingsSheet({
             }}
           >
             {/* Handle */}
-            <div className="flex justify-center pt-3 pb-5">
+            <div className="flex justify-center pt-3 pb-5" onPointerDown={(e) => dragControls.start(e)} style={{ touchAction: 'none', cursor: 'grab' }}>
               <div className="w-10 h-1 rounded-full bg-white/20" />
             </div>
 

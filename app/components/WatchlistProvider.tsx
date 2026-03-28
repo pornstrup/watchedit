@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useDragControls } from 'framer-motion'
 import Watchlist from './Watchlist'
 import GroupView from './GroupView'
 import PullToRefresh from './PullToRefresh'
@@ -17,6 +17,7 @@ type Group = {
 type SheetStep = 'name' | 'invite'
 
 function NewGroupSheet({ onClose, onCreated }: { onClose: () => void; onCreated: (group: Group) => void }) {
+  const dragControls = useDragControls()
   const [step, setStep] = useState<SheetStep>('name')
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
@@ -82,6 +83,8 @@ function NewGroupSheet({ onClose, onCreated }: { onClose: () => void; onCreated:
         exit={{ y: '100%' }}
         transition={{ type: 'spring', damping: 26, stiffness: 300 }}
         drag="y"
+        dragControls={dragControls}
+        dragListener={false}
         dragConstraints={{ top: 0 }}
         dragElastic={{ top: 0, bottom: 0.3 }}
         onDragEnd={(_, info) => { if (info.offset.y > 80 || info.velocity.y > 500) onClose() }}
@@ -96,7 +99,7 @@ function NewGroupSheet({ onClose, onCreated }: { onClose: () => void; onCreated:
         }}
       >
         {/* Handle */}
-        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-6" />
+        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-6" onPointerDown={(e) => dragControls.start(e)} style={{ touchAction: 'none', cursor: 'grab' }} />
 
         <AnimatePresence mode="wait">
 
