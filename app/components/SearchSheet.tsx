@@ -70,10 +70,12 @@ export default function SearchSheet({
   const [providers, setProviders] = useState<Record<string, Provider[]>>({})
   const [filter, setFilter] = useState<'all' | 'movie' | 'tv' | 'users'>('all')
   const [userResults, setUserResults] = useState<UserResult[]>([])
+  const [followingUsers, setFollowingUsers] = useState<UserResult[]>([])
   const [following, setFollowing] = useState<Set<string>>(new Set())
   const [aiMode, setAiMode] = useState(initialAiMode)
   const [aiThinking, setAiThinking] = useState(false)
   const [feed, setFeed] = useState<FeedItem[]>([])
+  const [feedLoading, setFeedLoading] = useState(true)
   const inputRef = useRef<HTMLInputElement>(null)
   const sheetRef = useRef<HTMLDivElement>(null)
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -119,7 +121,14 @@ export default function SearchSheet({
       .then(d => setTrending((d.results || []).slice(0, 12)))
     fetch('/api/follows/feed')
       .then(r => r.json())
-      .then(d => setFeed(d.items || []))
+      .then(d => { setFeed(d.items || []); setFeedLoading(false) })
+      .catch(() => setFeedLoading(false))
+    fetch('/api/follows/list')
+      .then(r => r.json())
+      .then(d => {
+        setFollowingUsers(d.users || [])
+        setFollowing(new Set((d.users || []).map((u: UserResult) => u.id)))
+      })
   }, [])
 
   // Hent grupper + eksisterende ids
@@ -227,6 +236,12 @@ export default function SearchSheet({
     }
     setFollowing(newFollowing)
     setUserResults(prev => prev.map(x => x.id === u.id ? { ...x, is_following: optimisticFollowing } : x))
+    if (!optimisticFollowing) {
+      setFollowingUsers(prev => prev.filter(x => x.id !== u.id))
+      setFeed(prev => prev.filter(x => x.user_id !== u.id))
+    } else {
+      setFollowingUsers(prev => [...prev, { ...u, is_following: true }])
+    }
 
     if (optimisticFollowing) {
       await fetch('/api/follows', {
@@ -310,7 +325,7 @@ export default function SearchSheet({
     ? groups.find(g => g.id === activeContext)?.name ?? '...'
     : 'Min liste'
 
-  const showSearch = query.length >= 2
+  const showSearch = query.length >= 2 || filter === 'users'
   const filteredResults = filter === 'all' || filter === 'users' ? results : results.filter(r => r.media_type === filter)
 
   const trendingMovies = trending.filter(t => t.media_type === 'movie')
@@ -401,12 +416,65 @@ export default function SearchSheet({
                 className="px-4 pt-4 pb-2 flex flex-col gap-6"
               >
                 {/* FEED */}
-                {feed.length > 0 && (
-                  <div>
-                    <p className="text-white/50 text-xs font-medium mb-3 px-1">Dine venner ser</p>
-                    <div className="flex gap-2.5 overflow-x-auto scrollbar-none -mx-4 px-4 pb-1">
-                      {feed.slice(0, 10).map((item, i) => (
+                <div>
+                  <p className="text-white/50 text-xs font-medium mb-3 px-1">Dine venner ser</p>
+                  <div className="flex gap-2.5 overflow-x-auto scrollbar-none -mx-4 px-4 pb-1">
+                    {feedLoading ? (
+                      [0,1,2,3].map(i => (
+                        <div key={i} className="flex-shrink-0 w-28">
+                          <div className="w-28 h-40 rounded-xl bg-white/8 animate-pulse" />
+                          <div className="mt-1.5 h-2.5 w-16 rounded bg-white/8 animate-pulse" />
+                          <div className="mt-1 h-2.5 w-20 rounded bg-white/8 animate-pulse" />
+                        </div>
+                      ))
+                    ) : feed.length > 0 ? (
+                      feed.slice(0, 10).map((item, i) => (
                         <FeedCard key={`${item.user_id}-${item.tmdb_id}-${i}`} item={item} />
+                      ))
+                    ) : (
+                      <button
+                        onClick={() => { setFilter('users'); setTimeout(() => inputRef.current?.focus(), 50) }}
+                        className="flex items-center gap-2 px-3 py-2 rounded-xl"
+                        style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)' }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" strokeWidth="2">
+                          <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
+                        </svg>
+                        <span className="text-white/40 text-xs">Find venner at følge</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* DU FØLGER — kompakt horisontal række */}
+                {followingUsers.length > 0 && (
+                  <div>
+                    <p className="text-white/50 text-xs font-medium mb-3 px-1">Du følger</p>
+                    <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-4 px-4 pb-1">
+                      {followingUsers.map(u => (
+                        <div
+                          key={u.id}
+                          className="flex-shrink-0 flex items-center gap-2 pl-1 pr-2 py-1 rounded-full"
+                          style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}
+                        >
+                          <div className="w-6 h-6 rounded-full bg-white/10 overflow-hidden flex-shrink-0">
+                            {u.avatar ? (
+                              <Image src={u.avatar} alt={u.name} width={24} height={24} className="object-cover" />
+                            ) : (
+                              <span className="text-white text-xs font-semibold flex items-center justify-center h-full">{u.name?.[0]}</span>
+                            )}
+                          </div>
+                          <span className="text-white/80 text-xs font-medium whitespace-nowrap">{u.name.split(' ')[0]}</span>
+                          <button
+                            onClick={() => toggleFollow(u)}
+                            className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
+                            style={{ background: 'rgba(255,255,255,0.12)' }}
+                          >
+                            <svg width="6" height="6" viewBox="0 0 8 8" fill="none">
+                              <path d="M1 1L7 7M7 1L1 7" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round"/>
+                            </svg>
+                          </button>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -508,6 +576,45 @@ export default function SearchSheet({
                 {/* Bruger-resultater */}
                 {filter === 'users' && (
                   <div className="flex flex-col px-4 pb-2">
+                    {/* Idle: vis dem du følger */}
+                    {query.length < 2 && followingUsers.length > 0 && (
+                      <>
+                        <p className="text-white/40 text-xs font-medium pt-2 pb-3 px-1">Følger</p>
+                        {followingUsers.map(u => (
+                          <div
+                            key={u.id}
+                            className="flex items-center gap-3 py-3"
+                            style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}
+                          >
+                            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                              {u.avatar ? (
+                                <Image src={u.avatar} alt={u.name} width={40} height={40} className="object-cover" />
+                              ) : (
+                                <span className="text-white font-semibold text-base">{u.name?.[0]}</span>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-white text-sm font-medium">{u.name}</p>
+                              {u.username && <p className="text-white/40 text-xs">@{u.username}</p>}
+                            </div>
+                            <button
+                              onClick={() => toggleFollow(u)}
+                              className="px-4 py-1.5 rounded-full text-xs font-medium flex-shrink-0"
+                              style={{
+                                background: 'rgba(52,199,89,0.15)',
+                                border: '1px solid rgba(52,199,89,0.35)',
+                                color: 'rgb(52,199,89)',
+                              }}
+                            >
+                              Følger
+                            </button>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                    {query.length < 2 && followingUsers.length === 0 && (
+                      <p className="text-white/30 text-sm text-center py-8">Du følger ingen endnu</p>
+                    )}
                     {userResults.length === 0 && query.length >= 2 && (
                       <p className="text-white/40 text-sm text-center py-8">Ingen brugere fundet for &quot;{query}&quot;</p>
                     )}
@@ -725,7 +832,7 @@ export default function SearchSheet({
               />
               {query.length > 0 && (
                 <button
-                  onClick={() => { setQuery(''); setResults([]) }}
+                  onClick={() => { setQuery(''); setResults([]); setFilter('all') }}
                   className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
                   style={{ background: 'rgba(255,255,255,0.2)' }}
                 >
