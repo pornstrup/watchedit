@@ -1140,7 +1140,7 @@ export default function GroupView({
             <p className="text-white/60 text-xs uppercase tracking-widest font-semibold mb-4">
               Vil se ({wantItems.length})
             </p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-2">
               <AnimatePresence>
                 {wantItems.map(item => (
                   <GroupPosterCard
