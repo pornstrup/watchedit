@@ -37,6 +37,10 @@ export async function POST(request: Request) {
       .single()
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    await supabase.from('user_content').upsert(
+      { user_id: user.id, tmdb_id, media_type, on_list: true },
+      { onConflict: 'user_id,tmdb_id,media_type' }
+    )
     return NextResponse.json({ data })
   }
 
@@ -53,6 +57,10 @@ export async function POST(request: Request) {
     .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  await supabase.from('user_content').upsert(
+    { user_id: user.id, tmdb_id, media_type, on_list: true },
+    { onConflict: 'user_id,tmdb_id,media_type' }
+  )
   return NextResponse.json({ data })
 }
 
@@ -72,5 +80,9 @@ export async function DELETE(request: Request) {
     .is('group_id', null)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+  await supabase.from('user_content').upsert(
+    { user_id: user.id, tmdb_id, media_type, on_list: false },
+    { onConflict: 'user_id,tmdb_id,media_type' }
+  )
   return NextResponse.json({ success: true })
 }

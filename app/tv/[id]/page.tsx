@@ -11,6 +11,7 @@ import BackButton from '../../components/BackButton'
 import StickyHeader from '../../components/StickyHeader'
 import DynamicGlow from '../../components/DynamicGlow'
 import { getDKWebSchedule, formatDanishDate } from '@/lib/tvmaze'
+import TrailerButton from '@/app/components/TrailerButton'
 
 export default async function TVPage({
   params,
@@ -26,7 +27,7 @@ export default async function TVPage({
   if (!user) redirect('/login')
 
   const res = await fetch(
-    `https://api.themoviedb.org/3/tv/${id}?language=en-US&append_to_response=external_ids`,
+    `https://api.themoviedb.org/3/tv/${id}?language=en-US&append_to_response=external_ids,videos`,
     { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 3600 } }
   )
   const show = await res.json()
@@ -87,6 +88,9 @@ export default async function TVPage({
         .from('episode_progress')
         .select('*')
         .eq('watchlist_item_id', item?.id || '')
+
+  const trailerKey = (show.videos?.results || [])
+    .find((v: any) => v.type === 'Trailer' && v.site === 'YouTube')?.key ?? null
 
   const poster = show.poster_path
     ? `https://image.tmdb.org/t/p/w500${show.poster_path}`
@@ -169,6 +173,12 @@ export default async function TVPage({
               />
             </div>
           </div>
+
+          {trailerKey && (
+            <div className="mb-4">
+              <TrailerButton trailerKey={trailerKey} />
+            </div>
+          )}
 
           <div className="mb-5">
             <RatingInline tmdbId={Number(id)} mediaType="tv" />

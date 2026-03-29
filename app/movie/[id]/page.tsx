@@ -10,6 +10,7 @@ import DynamicGlow from '@/app/components/DynamicGlow'
 import ExpandableText from '@/app/components/ExpandableText'
 import RatingInline from '@/app/components/RatingInline'
 import SimilarTitles from '@/app/components/SimilarTitles'
+import TrailerButton from '@/app/components/TrailerButton'
 
 export default async function MoviePage({
   params,
@@ -25,7 +26,7 @@ export default async function MoviePage({
   if (!user) redirect('/login')
 
   const res = await fetch(
-    `https://api.themoviedb.org/3/movie/${id}?language=en-US`,
+    `https://api.themoviedb.org/3/movie/${id}?language=en-US&append_to_response=videos`,
     { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 3600 } }
   )
   const movie = await res.json()
@@ -75,6 +76,9 @@ export default async function MoviePage({
       .single()
     item = data
   }
+
+  const trailerKey = (movie.videos?.results || [])
+    .find((v: any) => v.type === 'Trailer' && v.site === 'YouTube')?.key ?? null
 
   const poster = movie.poster_path
     ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
@@ -141,6 +145,12 @@ export default async function MoviePage({
               />
             </div>
           </div>
+
+          {trailerKey && (
+            <div className="mb-4">
+              <TrailerButton trailerKey={trailerKey} />
+            </div>
+          )}
 
           <div className="mb-5">
             <RatingInline tmdbId={Number(id)} mediaType="movie" />
