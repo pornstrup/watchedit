@@ -54,7 +54,12 @@ function PosterCard({
   useEffect(() => {
     const el = cardRef.current
     if (!el) return
-    const handleTouchStart = (_e: TouchEvent) => {
+    let startX = 0
+    let startY = 0
+
+    const handleTouchStart = (e: TouchEvent) => {
+      startX = e.touches[0].clientX
+      startY = e.touches[0].clientY
       pressTimer.current = setTimeout(() => {
         if (cardRef.current) {
           const rect = cardRef.current.getBoundingClientRect()
@@ -76,14 +81,24 @@ function PosterCard({
       }, 600)
       setPressing(true)
     }
+    const handleTouchMove = (e: TouchEvent) => {
+      const dx = Math.abs(e.touches[0].clientX - startX)
+      const dy = Math.abs(e.touches[0].clientY - startY)
+      if (dx > 8 || dy > 8) {
+        if (pressTimer.current) clearTimeout(pressTimer.current)
+        setPressing(false)
+      }
+    }
     const handleTouchEnd = () => {
       if (pressTimer.current) clearTimeout(pressTimer.current)
       setPressing(false)
     }
     el.addEventListener('touchstart', handleTouchStart, { passive: true })
+    el.addEventListener('touchmove', handleTouchMove, { passive: true })
     el.addEventListener('touchend', handleTouchEnd)
     return () => {
       el.removeEventListener('touchstart', handleTouchStart)
+      el.removeEventListener('touchmove', handleTouchMove)
       el.removeEventListener('touchend', handleTouchEnd)
     }
   }, [])
