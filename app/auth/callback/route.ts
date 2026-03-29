@@ -6,6 +6,8 @@ export async function GET(request: Request) {
   const code = searchParams.get('code')
   const next = searchParams.get('next') ?? '/'
 
+  const base = process.env.NEXT_PUBLIC_APP_URL || origin
+
   if (code) {
     const supabase = await createClient()
     await supabase.auth.exchangeCodeForSession(code)
@@ -19,10 +21,10 @@ export async function GET(request: Request) {
         .single()
 
       if (!profile?.username) {
-        return NextResponse.redirect(`${origin}/onboarding`)
+        return NextResponse.redirect(`${base}/onboarding`)
       }
     }
   }
 
-  return NextResponse.redirect(`${origin}${next}`)
+  return NextResponse.redirect(`${base}${next}`)
 }
