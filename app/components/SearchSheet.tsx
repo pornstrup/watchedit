@@ -477,14 +477,19 @@ export default function SearchSheet({
                           className="flex-shrink-0 flex items-center gap-2 pl-1 pr-2 py-1 rounded-full"
                           style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}
                         >
-                          <div className="w-6 h-6 rounded-full bg-white/10 overflow-hidden flex-shrink-0">
-                            {u.avatar ? (
-                              <Image src={u.avatar} alt={u.name} width={24} height={24} className="object-cover" />
-                            ) : (
-                              <span className="text-white text-xs font-semibold flex items-center justify-center h-full">{u.name?.[0]}</span>
-                            )}
-                          </div>
-                          <span className="text-white/80 text-xs font-medium whitespace-nowrap">{u.name.split(' ')[0]}</span>
+                          <button
+                            className="flex items-center gap-2"
+                            onClick={() => setOpenUserId(u.id)}
+                          >
+                            <div className="w-6 h-6 rounded-full bg-white/10 overflow-hidden flex-shrink-0">
+                              {u.avatar ? (
+                                <Image src={u.avatar} alt={u.name} width={24} height={24} className="object-cover" />
+                              ) : (
+                                <span className="text-white text-xs font-semibold flex items-center justify-center h-full">{u.name?.[0]}</span>
+                              )}
+                            </div>
+                            <span className="text-white/80 text-xs font-medium whitespace-nowrap">{u.name.split(' ')[0]}</span>
+                          </button>
                           <button
                             onClick={() => toggleFollow(u)}
                             className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0"
