@@ -30,6 +30,21 @@ export default function BottomNav() {
     fetch('/api/opdag/providers')
   }, [])
 
+  useEffect(() => {
+    fetch('/api/profile/me')
+      .then(r => r.json())
+      .then(d => {
+        if (d?.id) {
+          window.op?.('identify', {
+            profileId: d.id,
+            email: d.email ?? undefined,
+            firstName: d.name?.split(' ')[0] ?? undefined,
+          })
+        }
+      })
+      .catch(() => {})
+  }, [])
+
   // Genåbn søgning når vi navigerer tilbage til forsiden med søge-params i URL
   useEffect(() => {
     if (isDetailPage) return
