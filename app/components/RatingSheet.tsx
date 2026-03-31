@@ -34,6 +34,9 @@ export default function RatingSheet({
         note: !skip && note.trim() ? note.trim() : null,
       }),
     })
+    if (!skip && rating > 0) {
+      try { localStorage.removeItem('flimr:recommendations') } catch {}
+    }
     onClose()
   }
 

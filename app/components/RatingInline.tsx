@@ -74,6 +74,10 @@ export default function RatingInline({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tmdb_id: tmdbId, media_type: mediaType, rating, note }),
+    }).then(() => {
+      if (rating != null) {
+        try { localStorage.removeItem('flimr:recommendations') } catch {}
+      }
     }).finally(() => setSaving(false))
   }
 

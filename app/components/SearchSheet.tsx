@@ -82,6 +82,8 @@ export default function SearchSheet({
   const [feed, setFeed] = useState<FeedItem[]>([])
   const [feedLoading, setFeedLoading] = useState(true)
   const [openUserId, setOpenUserId] = useState<string | null>(null)
+  const [recommendations, setRecommendations] = useState<Result[]>([])
+  const [recLoading, setRecLoading] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const dragControls = useDragControls()
   const sheetRef = useRef<HTMLDivElement>(null)
@@ -125,6 +127,33 @@ export default function SearchSheet({
       vv.removeEventListener('resize', adjust)
       vv.removeEventListener('scroll', adjust)
     }
+  }, [])
+
+  // Hent AI-anbefalinger med localStorage-cache (24h)
+  useEffect(() => {
+    const CACHE_KEY = 'flimr:recommendations'
+    const CACHE_TTL = 2 * 60 * 60 * 1000
+    try {
+      const cached = localStorage.getItem(CACHE_KEY)
+      if (cached) {
+        const { ts, data } = JSON.parse(cached)
+        if (Date.now() - ts < CACHE_TTL && data.length > 0) {
+          setRecommendations(data)
+          return
+        }
+      }
+    } catch {}
+    setRecLoading(true)
+    fetch('/api/ai-recommend')
+      .then(r => r.json())
+      .then(d => {
+        const recs = d.recommendations || []
+        setRecommendations(recs)
+        if (recs.length > 0) {
+          try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: recs })) } catch {}
+        }
+      })
+      .finally(() => setRecLoading(false))
   }, [])
 
   // Hent opdag-sektioner + feed ved mount
@@ -435,6 +464,36 @@ export default function SearchSheet({
                 transition={{ duration: 0.15 }}
                 className="px-4 pt-4 pb-2 flex flex-col gap-6"
               >
+                {/* UDVALGT TIL DIG */}
+                {(recLoading || recommendations.length > 0) && (
+                  <div>
+                    <p className="text-white/50 text-xs font-medium mb-3 px-1">Udvalgt til dig</p>
+                    <div className="flex gap-2.5 overflow-x-auto scrollbar-none -mx-4 px-4 pb-1">
+                      {recLoading ? (
+                        [0,1,2,3,4].map(i => (
+                          <div key={i} className="flex-shrink-0">
+                            <div className="w-24 h-36 rounded-xl bg-white/8 animate-pulse" />
+                            <div className="mt-1.5 h-2 w-16 rounded-full bg-white/8 animate-pulse" />
+                          </div>
+                        ))
+                      ) : recommendations.map(item => (
+                        <div key={`${item.tmdb_id}-${item.media_type}`} className="flex-shrink-0 w-24">
+                          <Link href={`/${item.media_type === 'movie' ? 'movie' : 'tv'}/${item.tmdb_id}${activeContext ? `?ctx=${activeContext}` : ''}`}>
+                            <div className="relative w-24 h-36 rounded-xl overflow-hidden bg-white/8">
+                              {item.poster && (
+                                <Image src={item.poster} alt={item.title} fill className="object-cover" sizes="96px" />
+                              )}
+                            </div>
+                          </Link>
+                          {(item as any).reason && (
+                            <p className="text-white/40 text-xs mt-1.5 leading-tight line-clamp-2">{(item as any).reason}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* FEED */}
                 <div>
                   <p className="text-white/50 text-xs font-medium mb-3 px-1">Dine venner ser</p>
