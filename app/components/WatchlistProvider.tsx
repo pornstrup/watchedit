@@ -257,7 +257,7 @@ useEffect(() => {
 
       {/* FLIMR LOGO */}
       <p className="text-2xl font-bold tracking-wide leading-none">
-        <span className="text-white">flim</span><span style={{ color: '#FF3B30' }}>r</span>
+        <span className="text-white">Flim</span><span style={{ color: '#FF3B30' }}>r</span>
       </p>
 
       <div className="flex flex-col gap-4">
