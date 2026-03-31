@@ -35,6 +35,8 @@ export default function RootLayout({
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <script defer src="https://stats.flimr.dk/script.js" data-website-id="7f26cb76-4efd-4463-8379-a8f5cf4acf87"></script>
+  <script dangerouslySetInnerHTML={{ __html: `window.op=window.op||function(){var n=[];return new Proxy(function(){arguments.length&&n.push([].slice.call(arguments))},{get:function(t,r){return"q"===r?n:function(){n.push([r].concat([].slice.call(arguments)))}},has:function(t,r){return"q"===r}})}();window.op('init',{apiUrl:'https://opapi.flimr.dk',clientId:'5004f2a4-d4a0-4882-aa55-02d8fc0592b5',trackScreenViews:true,trackOutgoingLinks:true,trackAttributes:true});` }} />
+  <script src="https://openpanel.dev/op1.js" defer async></script>
 </head>
       <body style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif' }}>
         {children}
