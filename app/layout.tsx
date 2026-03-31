@@ -12,13 +12,13 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'WatchedIt',
+  title: 'Flimr',
   description: 'Hold styr på hvad I ser – sammen',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'WatchedIt',
+    title: 'Flimr',
   },
 }
 

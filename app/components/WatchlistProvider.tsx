@@ -58,7 +58,7 @@ function NewGroupSheet({ onClose, onCreated }: { onClose: () => void; onCreated:
   const shareLink = async () => {
     if (!inviteUrl) return
     if (navigator.share) {
-      await navigator.share({ title: `Tilmeld dig ${name} på WatchedIt`, url: inviteUrl })
+      await navigator.share({ title: `Tilmeld dig ${name} på Flimr`, url: inviteUrl })
     } else {
       copyLink()
     }
@@ -254,6 +254,11 @@ useEffect(() => {
 
   return (
     <div className="w-full max-w-md flex flex-col gap-8">
+
+      {/* FLIMR LOGO */}
+      <p className="text-2xl font-bold tracking-wide leading-none">
+        <span className="text-white">flim</span><span style={{ color: '#FF3B30' }}>r</span>
+      </p>
 
       <div className="flex flex-col gap-4">
 

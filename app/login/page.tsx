@@ -20,8 +20,8 @@ export default function LoginPage() {
 
         {/* Logo + tagline */}
         <div>
-          <h1 className="text-5xl font-extrabold tracking-tight text-white leading-none">
-            Watched<span className="text-white/20">It</span>
+          <h1 className="text-5xl font-bold tracking-wide leading-none">
+            <span className="text-white">flim</span><span style={{ color: '#FF3B30' }}>r</span>
           </h1>
           <p className="text-white/50 text-base mt-4 leading-relaxed">
             Hold styr på hvad du vil se,<br />hvad du er i gang med,<br />og hvad du har set.

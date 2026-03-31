@@ -1,6 +1,6 @@
 {
-  "name": "WatchedIt",
-  "short_name": "WatchedIt",
+  "name": "Flimr",
+  "short_name": "Flimr",
   "description": "Hold styr på hvad I ser – sammen",
   "start_url": "/",
   "display": "standalone",

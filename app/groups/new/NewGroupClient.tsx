@@ -49,7 +49,7 @@ export default function NewGroupClient() {
     if (!inviteUrl) return
     if (navigator.share) {
       await navigator.share({
-        title: `Tilmeld dig ${name} på WatchedIt`,
+        title: `Tilmeld dig ${name} på Flimr`,
         url: inviteUrl,
       })
     } else {
