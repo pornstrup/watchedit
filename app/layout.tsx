@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
 import BottomNav from './components/BottomNav'
+import SentryInit from './components/SentryInit'
 
 export const viewport: Viewport = {
   themeColor: '#000000',
@@ -38,6 +39,7 @@ export default function RootLayout({
 
 </head>
       <body style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", sans-serif' }}>
+        <SentryInit />
         {children}
         <BottomNav />
       </body>
