@@ -266,6 +266,7 @@ export default function SearchSheet({
         const data = await res.json()
         setResults(data.results || [])
         setLoading(false)
+        window.umami?.track('search', { query: val })
       }, 300)
     }
   }

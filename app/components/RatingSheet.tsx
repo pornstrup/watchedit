@@ -36,6 +36,7 @@ export default function RatingSheet({
     })
     if (!skip && rating > 0) {
       try { localStorage.removeItem('flimr:recommendations') } catch {}
+      window.umami?.track('rate', { rating, media_type: mediaType })
     }
     onClose()
   }

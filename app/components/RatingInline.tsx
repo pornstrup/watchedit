@@ -77,6 +77,7 @@ export default function RatingInline({
     }).then(() => {
       if (rating != null) {
         try { localStorage.removeItem('flimr:recommendations') } catch {}
+        window.umami?.track('rate', { rating, media_type: mediaType })
       }
     }).finally(() => setSaving(false))
   }

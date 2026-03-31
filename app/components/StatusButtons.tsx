@@ -56,6 +56,7 @@ export default function StatusButtons({
 
   const addToList = async () => {
     if (navigator.vibrate) navigator.vibrate(8)
+    window.umami?.track('add-to-watchlist', { media_type: mediaType })
     setOnList(true)
     setStatus('want')
     if (ctx) setShowAlsoAdd(true)
@@ -112,7 +113,10 @@ export default function StatusButtons({
         body: JSON.stringify({ id: itemId, status: newStatus }),
       })
     }
-    if (newStatus === 'done' && title) setShowRating(true)
+    if (newStatus === 'done' && title) {
+      window.umami?.track('mark-watched', { media_type: mediaType })
+      setShowRating(true)
+    }
   }
 
   // ♥ tap-logik:

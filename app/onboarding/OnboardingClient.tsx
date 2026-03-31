@@ -16,7 +16,10 @@ export default function OnboardingClient({ userName }: { userName: string }) {
   const [step, setStep] = useState<Step>('username')
   const stepIndex = STEPS.indexOf(step)
 
-  const finish = () => router.replace('/')
+  const finish = () => {
+    window.umami?.track('sign-up')
+    router.replace('/')
+  }
 
   return (
     <main className="min-h-screen bg-black flex flex-col px-6 pt-16 pb-12">
