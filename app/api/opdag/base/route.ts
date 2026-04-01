@@ -34,30 +34,36 @@ export async function GET() {
 
   // Byg "Ny på dansk streaming" fra TVMaze DK-kalender
   const seenImdb = new Set<string>()
-  const dkItems: any[] = []
-
+  const uniqueEpisodes: typeof dkSchedule = []
   for (const ep of dkSchedule) {
     const imdb = ep.show?.externals?.imdb
     if (!imdb || seenImdb.has(imdb)) continue
     seenImdb.add(imdb)
-    if (dkItems.length >= 12) break
-
-    try {
-      const found = await tmdb(`/find/${imdb}?external_source=imdb_id`, 86400)
-      const result = found.tv_results?.[0] || found.movie_results?.[0]
-      if (!result?.poster_path) continue
-      const mediaType = found.tv_results?.[0] ? 'tv' : 'movie'
-      dkItems.push({
-        tmdb_id: result.id as number,
-        media_type: mediaType,
-        title: (result.title || result.name || ep.show?.name || '') as string,
-        year: ((result.release_date || result.first_air_date) as string | undefined)?.split('-')[0] ?? null,
-        poster: `https://image.tmdb.org/t/p/w300${result.poster_path}`,
-      })
-    } catch {
-      // skip hvis TMDB ikke har showet
-    }
+    uniqueEpisodes.push(ep)
+    if (uniqueEpisodes.length >= 12) break
   }
+
+  const dkResults = await Promise.all(
+    uniqueEpisodes.map(async ep => {
+      try {
+        const imdb = ep.show!.externals!.imdb!
+        const found = await tmdb(`/find/${imdb}?external_source=imdb_id`, 86400)
+        const result = found.tv_results?.[0] || found.movie_results?.[0]
+        if (!result?.poster_path) return null
+        const mediaType = found.tv_results?.[0] ? 'tv' : 'movie'
+        return {
+          tmdb_id: result.id as number,
+          media_type: mediaType,
+          title: (result.title || result.name || ep.show?.name || '') as string,
+          year: ((result.release_date || result.first_air_date) as string | undefined)?.split('-')[0] ?? null,
+          poster: `https://image.tmdb.org/t/p/w300${result.poster_path}`,
+        }
+      } catch {
+        return null
+      }
+    })
+  )
+  const dkItems = dkResults.filter(Boolean)
 
   const sections: any[] = [
     { id: 'trending-movies', title: 'Det snakkes om', items: mapItems(trendingMovies.results, 'movie') },
@@ -70,5 +76,7 @@ export async function GET() {
     sections.unshift({ id: 'dk-streaming', title: 'Ny på dansk streaming', items: dkItems })
   }
 
-  return NextResponse.json({ sections })
+  return NextResponse.json({ sections }, {
+    headers: { 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=21600' }
+  })
 }

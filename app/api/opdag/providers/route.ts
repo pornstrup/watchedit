@@ -75,5 +75,7 @@ export async function GET() {
     }]
   })
 
-  return NextResponse.json({ sections })
+  return NextResponse.json({ sections }, {
+    headers: { 'Cache-Control': 'private, max-age=1800, stale-while-revalidate=86400' }
+  })
 }
