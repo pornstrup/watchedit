@@ -34,6 +34,7 @@ function PosterCard({
   onStatusChange,
   onMarkNext,
   className,
+  priority,
 }: {
   item: WatchlistItem
   groups: Group[]
@@ -41,6 +42,7 @@ function PosterCard({
   onStatusChange?: (id: string, status: string) => void
   onMarkNext?: () => void
   className?: string
+  priority?: boolean
 }) {
   const [pressing, setPressing] = useState(false)
   const [showOverlay, setShowOverlay] = useState(false)
@@ -157,6 +159,7 @@ function PosterCard({
               fill
               className="object-cover"
               sizes="160px"
+              priority={priority}
               style={{ animation: 'fadeIn 0.3s ease-out' }}
             />
           ) : (
@@ -469,13 +472,14 @@ const updateStatus = (id: string, status: string) => {
             </p>
             <div className="flex gap-3 overflow-x-auto scrollbar-none pb-2 -mx-6 px-6">
               <AnimatePresence>
-                {watchingItems.map((item) => (
+                {watchingItems.map((item, i) => (
                   <PosterCard
                     key={item.id}
                     item={item}
                     groups={groups}
                     onRemove={removeItem}
                     onStatusChange={updateStatus}
+                    priority={i === 0}
                     onMarkNext={item.media_type === 'tv' ? () => {
                       setItems(prev => prev.map(i =>
                         i.id === item.id && i.progress
@@ -557,13 +561,14 @@ const updateStatus = (id: string, status: string) => {
             </p>
             <div className="grid grid-cols-3 gap-2">
               <AnimatePresence>
-                {wantItems.map((item) => (
+                {wantItems.map((item, i) => (
                   <PosterCard
                     key={item.id}
                     item={item}
                     groups={groups}
                     onRemove={removeItem}
                     onStatusChange={updateStatus}
+                    priority={i === 0}
                     className="aspect-[2/3]"
                   />
                 ))}
