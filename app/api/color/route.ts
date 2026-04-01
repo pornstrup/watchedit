@@ -6,7 +6,7 @@ export async function GET(request: Request) {
   if (!imageUrl) return NextResponse.json({ color: '30,30,30' })
 
   try {
-    const res = await fetch(imageUrl)
+    const res = await fetch(imageUrl, { next: { revalidate: 604800 } })
     const buffer = await res.arrayBuffer()
     const bytes = new Uint8Array(buffer)
 
@@ -36,7 +36,9 @@ export async function GET(request: Request) {
     g = Math.floor(g * 0.7)
     b = Math.floor(b * 0.7)
 
-    return NextResponse.json({ color: `${r},${g},${b}` })
+    return NextResponse.json({ color: `${r},${g},${b}` }, {
+      headers: { 'Cache-Control': 'public, max-age=604800, stale-while-revalidate=86400' }
+    })
   } catch {
     return NextResponse.json({ color: '30,30,30' })
   }

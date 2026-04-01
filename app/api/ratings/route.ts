@@ -22,26 +22,31 @@ export async function GET(req: Request) {
 
   const followingIds = (followingRows ?? []).map(f => f.following_id)
 
-  // Alle der har rated denne titel (ekskl. mig selv)
-  const { data: allContent } = await supabaseAdmin
+  // Hent vennernes ratings + fremmedes top-8 parallelt (i stedet for alle globalt)
+  const baseQuery = supabaseAdmin
     .from('user_content')
     .select('user_id, rating, note')
     .eq('tmdb_id', tmdb_id)
     .eq('media_type', media_type)
     .eq('watched', true)
     .not('rating', 'is', null)
-    .neq('user_id', user.id)
-    .order('rating', { ascending: false })
 
-  if (!allContent || allContent.length === 0) {
+  const [{ data: friendContent }, { data: strangerContent }] = await Promise.all([
+    followingIds.length > 0
+      ? baseQuery.in('user_id', followingIds).order('rating', { ascending: false })
+      : Promise.resolve({ data: [] as { user_id: string; rating: number; note: string | null }[] }),
+    baseQuery
+      .not('user_id', 'in', `(${[user.id, ...followingIds].join(',')})`)
+      .order('rating', { ascending: false })
+      .limit(8),
+  ])
+
+  if ((!friendContent || friendContent.length === 0) && (!strangerContent || strangerContent.length === 0)) {
     return NextResponse.json({ own_rating: own?.rating ?? null, own_note: own?.note ?? null, others: [], strangers: [] })
   }
 
-  const friendContent = allContent.filter(c => followingIds.includes(c.user_id))
-  const strangerContent = allContent.filter(c => !followingIds.includes(c.user_id)).slice(0, 8)
-
   // Hent profiler for begge grupper samlet
-  const allUserIds = [...friendContent.map(c => c.user_id), ...strangerContent.map(c => c.user_id)]
+  const allUserIds = [...(friendContent ?? []).map(c => c.user_id), ...(strangerContent ?? []).map(c => c.user_id)]
   const { data: profiles } = await supabaseAdmin
     .from('profiles')
     .select('id, name, username, avatar_url, searchable')
@@ -61,7 +66,7 @@ export async function GET(req: Request) {
   return NextResponse.json({
     own_rating: own?.rating ?? null,
     own_note: own?.note ?? null,
-    others: friendContent.map(toCard),
-    strangers: strangerContent.filter(c => profileMap[c.user_id]?.searchable).map(toCard),
+    others: (friendContent ?? []).map(toCard),
+    strangers: (strangerContent ?? []).filter(c => profileMap[c.user_id]?.searchable).map(toCard),
   })
 }
