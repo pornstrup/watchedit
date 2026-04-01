@@ -94,8 +94,8 @@ export default function UserSheet({
         className="fixed bottom-0 left-0 right-0 z-[60] flex flex-col rounded-t-3xl"
         style={{
           background: 'rgba(16, 16, 18, 0.97)',
-          backdropFilter: 'blur(60px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(60px) saturate(180%)',
+          backdropFilter: 'blur(24px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(24px) saturate(180%)',
           border: '1px solid rgba(255, 255, 255, 0.1)',
           boxShadow: '0 -8px 40px rgba(0,0,0,0.5)',
           borderBottom: 'none',

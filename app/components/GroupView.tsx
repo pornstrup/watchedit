@@ -288,8 +288,8 @@ function GroupPosterCard({
                 width: 220,
                 transformOrigin: popupPos.top !== undefined ? 'top left' : 'bottom left',
                 background: 'rgba(30, 30, 32, 0.98)',
-                backdropFilter: 'blur(40px)',
-                WebkitBackdropFilter: 'blur(40px)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
                 border: '1px solid rgba(255, 255, 255, 0.12)',
                 boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
               }}
@@ -516,8 +516,8 @@ function InspirationCard({
                 left: popupPos.left,
                 width: 200,
                 background: 'rgba(30, 30, 32, 0.98)',
-                backdropFilter: 'blur(40px)',
-                WebkitBackdropFilter: 'blur(40px)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
                 border: '1px solid rgba(255, 255, 255, 0.12)',
                 boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
               }}
@@ -585,8 +585,8 @@ function AllInspirationSheet({
         className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-3xl"
         style={{
           background: 'rgba(18, 18, 18, 0.98)',
-          backdropFilter: 'blur(60px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(60px) saturate(180%)',
+          backdropFilter: 'blur(24px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(24px) saturate(180%)',
           border: '1px solid rgba(255, 255, 255, 0.14)',
           boxShadow: '0 -8px 40px rgba(0,0,0,0.5)',
           borderBottom: 'none',
@@ -665,8 +665,8 @@ function HiddenInspirationSheet({
         className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-3xl"
         style={{
           background: 'rgba(18, 18, 18, 0.98)',
-          backdropFilter: 'blur(60px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(60px) saturate(180%)',
+          backdropFilter: 'blur(24px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(24px) saturate(180%)',
           border: '1px solid rgba(255, 255, 255, 0.14)',
           boxShadow: '0 -8px 40px rgba(0,0,0,0.5)',
           borderBottom: 'none',
@@ -807,8 +807,8 @@ const isOwner = group.created_by === currentUserId
         className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-3xl px-6 pt-5 pb-12"
         style={{
           background: 'rgba(28, 28, 30, 0.85)',
-          backdropFilter: 'blur(60px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(60px) saturate(180%)',
+          backdropFilter: 'blur(24px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(24px) saturate(180%)',
           border: '1px solid rgba(255, 255, 255, 0.14)',
           boxShadow: '0 -8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)',
           borderBottom: 'none',
@@ -1413,8 +1413,8 @@ function ActivitySheet({
         className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-3xl overflow-hidden"
         style={{
           background: 'rgba(28,28,30,0.97)',
-          backdropFilter: 'blur(60px) saturate(180%)',
-          WebkitBackdropFilter: 'blur(60px) saturate(180%)',
+          backdropFilter: 'blur(24px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(24px) saturate(180%)',
           border: '1px solid rgba(255,255,255,0.1)',
           borderBottom: 'none',
           boxShadow: '0 -8px 40px rgba(0,0,0,0.5)',

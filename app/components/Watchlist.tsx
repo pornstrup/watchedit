@@ -228,8 +228,8 @@ function PosterCard({
                 width: 220,
                 transformOrigin: popupPos.top !== undefined ? 'top left' : 'bottom left',
                 background: 'rgba(30, 30, 32, 0.98)',
-                backdropFilter: 'blur(40px)',
-                WebkitBackdropFilter: 'blur(40px)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
                 border: '1px solid rgba(255, 255, 255, 0.12)',
                 boxShadow: '0 20px 60px rgba(0,0,0,0.6)',
               }}
@@ -401,6 +401,7 @@ export default function Watchlist({ onRemove, groups = [], initialItems }: { onR
   const [loading, setLoading] = useState(initialItems === undefined)
 
   useEffect(() => {
+    if (initialItems !== undefined) return // SSR data er frisk — skip fetch
     fetch('/api/watchlist/list')
       .then(r => r.json())
       .then(watchlistData => {

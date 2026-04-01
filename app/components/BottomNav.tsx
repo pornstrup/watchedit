@@ -88,8 +88,8 @@ export default function BottomNav() {
               className="pointer-events-auto flex items-center gap-1 px-2 py-2 rounded-[28px]"
               style={{
                 background: 'rgba(255, 255, 255, 0.07)',
-                backdropFilter: 'blur(40px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+                backdropFilter: 'blur(20px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(20px) saturate(180%)',
                 border: '1px solid rgba(255, 255, 255, 0.12)',
                 boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
               }}

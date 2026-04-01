@@ -62,8 +62,8 @@ export default function RatingSheet({
         className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl"
         style={{
           background: 'rgba(22, 22, 24, 0.98)',
-          backdropFilter: 'blur(40px)',
-          WebkitBackdropFilter: 'blur(40px)',
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
           border: '1px solid rgba(255,255,255,0.1)',
           paddingBottom: 'calc(2rem + env(safe-area-inset-bottom))',
         }}

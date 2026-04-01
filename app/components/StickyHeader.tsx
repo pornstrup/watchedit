@@ -67,8 +67,8 @@ export default function StickyHeader({
           height: '56px',
           paddingTop: 'env(safe-area-inset-top)',
           background: visible ? 'rgba(0,0,0,0.7)' : 'transparent',
-          backdropFilter: visible ? 'blur(40px) saturate(180%)' : 'none',
-          WebkitBackdropFilter: visible ? 'blur(40px) saturate(180%)' : 'none',
+          backdropFilter: visible ? 'blur(20px) saturate(180%)' : 'none',
+          WebkitBackdropFilter: visible ? 'blur(20px) saturate(180%)' : 'none',
           opacity: visible ? 1 : 0,
           pointerEvents: visible ? 'auto' : 'none',
           transform: visible ? 'translateY(0)' : 'translateY(-6px)',
@@ -125,8 +125,8 @@ export default function StickyHeader({
               className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl overflow-hidden"
               style={{
                 background: 'rgba(20,20,22,0.98)',
-                backdropFilter: 'blur(60px) saturate(180%)',
-                WebkitBackdropFilter: 'blur(60px) saturate(180%)',
+                backdropFilter: 'blur(24px) saturate(180%)',
+                WebkitBackdropFilter: 'blur(24px) saturate(180%)',
                 border: '1px solid rgba(255,255,255,0.1)',
                 borderBottom: 'none',
                 boxShadow: '0 -8px 40px rgba(0,0,0,0.5)',
