@@ -455,6 +455,8 @@ function InspirationCard({
     setPressing(false)
   }
 
+  const href = `/${item.media_type === 'movie' ? 'movie' : 'tv'}/${item.tmdb_id}?ctx=${groupId}`
+
   return (
     <motion.div
       ref={cardRef}
@@ -462,7 +464,9 @@ function InspirationCard({
       transition={{ duration: 0.2 }}
       className="relative flex-shrink-0 w-28"
     >
-      <motion.div
+      <MotionLink
+        href={href}
+        onClick={e => showOverlay && e.preventDefault()}
         onMouseDown={startPress}
         onMouseUp={cancelPress}
         onMouseLeave={cancelPress}
@@ -471,7 +475,7 @@ function InspirationCard({
           filter: showOverlay ? 'brightness(1.15)' : 'brightness(1)',
         }}
         transition={{ type: 'spring', damping: 20, stiffness: 300 }}
-        className="cursor-pointer"
+        className="block no-underline"
       >
         <div className="relative w-28 rounded-xl overflow-hidden aspect-[2/3]">
           {item.poster ? (
@@ -491,7 +495,7 @@ function InspirationCard({
             <p className="text-white/70 text-xs font-medium leading-tight truncate">{item.title}</p>
           </div>
         </div>
-      </motion.div>
+      </MotionLink>
 
       {showOverlay && typeof document !== 'undefined' && createPortal(
           <>
