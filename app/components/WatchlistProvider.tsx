@@ -207,7 +207,7 @@ function NewGroupSheet({ onClose, onCreated }: { onClose: () => void; onCreated:
   )
 }
 
-export default function WatchlistProvider({ userName, userId }: { userName: string; userId: string }) {
+export default function WatchlistProvider({ userName, userId, initialItems }: { userName: string; userId: string; initialItems?: unknown[] }) {
   const [refreshKey, setRefreshKey] = useState(0)
   const [groups, setGroups] = useState<Group[]>([])
   const router = useRouter()
@@ -381,7 +381,7 @@ useEffect(() => {
             transition={{ duration: 0.2 }}
           >
             <PullToRefresh onRefresh={refresh} />
-            <Watchlist key={refreshKey} onRemove={refresh} groups={groups} />
+            <Watchlist key={refreshKey} onRemove={refresh} groups={groups} initialItems={refreshKey === 0 ? (initialItems as any) : undefined} />
           </motion.div>
         ) : (
           <motion.div

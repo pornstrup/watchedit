@@ -393,9 +393,9 @@ function PersonalMonthSection({
   )
 }
 
-export default function Watchlist({ onRemove, groups = [] }: { onRemove?: () => void; groups?: Group[] }) {
-  const [items, setItems] = useState<WatchlistItem[]>([])
-  const [loading, setLoading] = useState(true)
+export default function Watchlist({ onRemove, groups = [], initialItems }: { onRemove?: () => void; groups?: Group[]; initialItems?: WatchlistItem[] }) {
+  const [items, setItems] = useState<WatchlistItem[]>(initialItems || [])
+  const [loading, setLoading] = useState(initialItems === undefined)
 
   useEffect(() => {
     fetch('/api/watchlist/list')
