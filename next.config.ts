@@ -1,5 +1,4 @@
 import type { NextConfig } from "next";
-import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
   images: {
@@ -11,12 +10,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
-  org: "flimr",
-  project: "flimr",
-  silent: true,
-  disableLogger: true,
-  sourcemaps: {
-    disable: true,
-  },
-});
+export default nextConfig;
