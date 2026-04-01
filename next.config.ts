@@ -16,4 +16,7 @@ export default withSentryConfig(nextConfig, {
   project: "flimr",
   silent: true,
   disableLogger: true,
+  sourcemaps: {
+    disable: true,
+  },
 });
