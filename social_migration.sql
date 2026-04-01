@@ -1,5 +1,5 @@
 -- ============================================================
--- Social migration — session 10
+-- Social migration — session 10.
 -- Kør i Supabase SQL Editor (Dashboard → SQL Editor → New query)
 -- ============================================================
 
