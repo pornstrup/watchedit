@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
 import Link from 'next/link'
 import RatingSheet from './RatingSheet'
+import PullToRefresh from './PullToRefresh'
 
 const MotionLink = motion(Link)
 
@@ -111,6 +112,7 @@ function GroupPosterCard({
   onMarkNext,
   className,
   inScrollContainer,
+  priority,
 }: {
   item: GroupItem
   groupId: string
@@ -119,6 +121,7 @@ function GroupPosterCard({
   onMarkNext?: () => void
   className?: string
   inScrollContainer?: boolean
+  priority?: boolean
 }) {
   const [pressing, setPressing] = useState(false)
   const [showOverlay, setShowOverlay] = useState(false)
@@ -218,6 +221,7 @@ function GroupPosterCard({
               fill
               className="object-cover"
               sizes="160px"
+              priority={priority}
               style={{ animation: 'fadeIn 0.3s ease-out' }}
             />
           ) : (
@@ -226,6 +230,7 @@ function GroupPosterCard({
             </div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-200" />
 
           {item.status === 'done' && (
             <div className="absolute inset-0 flex items-center justify-center">
@@ -1059,6 +1064,7 @@ export default function GroupView({
 
   return (
     <>
+      <PullToRefresh onRefresh={onRefresh} />
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -1136,13 +1142,14 @@ export default function GroupView({
             </p>
             <div className="flex gap-3 overflow-x-auto scrollbar-none pb-2 -mx-6 px-6">
               <AnimatePresence>
-                {watchingItems.map(item => (
+                {watchingItems.map((item, i) => (
                     <GroupPosterCard
                       key={item.id}
                       item={item}
                       groupId={groupId}
                       onRemove={removeItem}
                       onStatusChange={updateStatus}
+                      priority={i === 0}
                       onMarkNext={item.media_type === 'tv' ? () => {
                         setItems(prev => prev.map(i =>
                           i.id === item.id && i.progress
@@ -1172,13 +1179,14 @@ export default function GroupView({
             </p>
             <div className="grid grid-cols-3 gap-2">
               <AnimatePresence>
-                {wantItems.map(item => (
+                {wantItems.map((item, i) => (
                   <GroupPosterCard
                     key={item.id}
                     item={item}
                     groupId={groupId}
                     onRemove={removeItem}
                     onStatusChange={updateStatus}
+                    priority={i === 0}
                     className="aspect-[2/3]"
                   />
                 ))}
