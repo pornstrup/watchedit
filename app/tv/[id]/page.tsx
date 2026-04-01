@@ -23,13 +23,15 @@ export default async function TVPage({
   const { id } = await params
   const { ctx } = await searchParams
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
 
-  const res = await fetch(
-    `https://api.themoviedb.org/3/tv/${id}?language=en-US&append_to_response=external_ids,videos`,
-    { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 3600 } }
-  )
+  const [{ data: { user } }, res] = await Promise.all([
+    supabase.auth.getUser(),
+    fetch(
+      `https://api.themoviedb.org/3/tv/${id}?language=en-US&append_to_response=external_ids,videos`,
+      { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 3600 } }
+    ),
+  ])
+  if (!user) redirect('/login')
   const show = await res.json()
 
   const [providersRes, recRes, dkSchedule] = await Promise.all([
@@ -124,14 +126,14 @@ export default async function TVPage({
         isOnList={!!item}
         ctx={ctx}
       />
+      <div className="relative h-[45vh] overflow-hidden">
+        {backdrop && (
+          <Image src={backdrop} alt={show.name} fill className="object-cover opacity-75" sizes="100vw" priority />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black" />
+        <BackButton />
+      </div>
       <SlideTransition>
-        <div className="relative h-[45vh] overflow-hidden">
-          {backdrop && (
-            <Image src={backdrop} alt={show.name} fill className="object-cover opacity-75" sizes="100vw" priority />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black" />
-          <BackButton />
-        </div>
 
         <div className="px-6 -mt-16 relative">
           <div className="flex gap-4 mb-4">
