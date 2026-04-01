@@ -4,7 +4,10 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
+import Link from 'next/link'
 import RatingSheet from './RatingSheet'
+
+const MotionLink = motion(Link)
 
 type WatchlistItem = {
   id: string
@@ -138,8 +141,8 @@ function PosterCard({
       transition={{ duration: 0.2 }}
       className={`relative group ${className || ''}`}
     >
-      <motion.a
-        href={showOverlay ? undefined : href}
+      <MotionLink
+        href={href}
         onClick={e => showOverlay && e.preventDefault()}
         onMouseDown={startPress}
         onMouseUp={cancelPress}
@@ -199,7 +202,7 @@ function PosterCard({
             )}
           </div>
         </div>
-      </motion.a>
+      </MotionLink>
 
 {showOverlay && typeof document !== 'undefined' && createPortal(
           <>
