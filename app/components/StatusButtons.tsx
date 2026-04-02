@@ -68,6 +68,7 @@ export default function StatusButtons({
     })
     const { data } = await res.json()
     if (data?.id) setItemId(data.id)
+    window.dispatchEvent(new Event('watchlist-updated'))
   }
 
   const addToPersonalList = async () => {
@@ -78,6 +79,7 @@ export default function StatusButtons({
       body: JSON.stringify({ tmdb_id: tmdbId, media_type: mediaType }),
     })
     if (navigator.vibrate) navigator.vibrate(8)
+    window.dispatchEvent(new Event('watchlist-updated'))
   }
 
   const removeFromList = async () => {
@@ -92,6 +94,7 @@ export default function StatusButtons({
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tmdb_id: tmdbId, media_type: mediaType }),
     })
+    window.dispatchEvent(new Event('watchlist-updated'))
   }
 
   const changeStatus = async (newStatus: Status) => {

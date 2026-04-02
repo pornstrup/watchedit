@@ -398,10 +398,10 @@ function PersonalMonthSection({
 
 export default function Watchlist({ onRemove, groups = [], initialItems }: { onRemove?: () => void; groups?: Group[]; initialItems?: WatchlistItem[] }) {
   const [items, setItems] = useState<WatchlistItem[]>(initialItems || [])
-  const [loading, setLoading] = useState(initialItems === undefined)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    if (initialItems !== undefined) return // SSR data er frisk — skip fetch
+    if (!initialItems) setLoading(true)
     fetch('/api/watchlist/list')
       .then(r => r.json())
       .then(watchlistData => {
