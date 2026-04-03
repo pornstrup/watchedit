@@ -4,77 +4,140 @@ import Anthropic from '@anthropic-ai/sdk'
 
 const client = new Anthropic()
 
+const PROVIDER_NAMES: Record<number, string> = {
+  8: 'Netflix',
+  337: 'Disney+',
+  119: 'Amazon Prime',
+  384: 'HBO Max',
+  2: 'Apple TV+',
+  531: 'Paramount+',
+  283: 'Crunchyroll',
+}
+
 export async function GET() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
-  // Hent brugerens ratings
-  const { data: rated } = await supabase
-    .from('user_content')
-    .select('tmdb_id, media_type, rating')
-    .eq('user_id', user.id)
-    .not('rating', 'is', null)
-    .order('rating', { ascending: false })
-    .limit(20)
+  // Hent ratings, watchlist og profil parallelt
+  const [ratedResult, watchlistResult, profileResult] = await Promise.all([
+    supabase
+      .from('user_content')
+      .select('tmdb_id, media_type, rating, note')
+      .eq('user_id', user.id)
+      .not('rating', 'is', null)
+      .order('rating', { ascending: false })
+      .limit(20),
+    supabase
+      .from('watchlist_items')
+      .select('tmdb_id, media_type, status')
+      .eq('owner_id', user.id)
+      .is('deleted_at', null),
+    supabase
+      .from('profiles')
+      .select('streaming_services')
+      .eq('id', user.id)
+      .single(),
+  ])
 
-  if (!rated || rated.length < 5) {
+  const rated = ratedResult.data || []
+  const watchlist = watchlistResult.data || []
+  const streamingIds: number[] = profileResult.data?.streaming_services || []
+
+  if (rated.length < 3) {
     return NextResponse.json({ recommendations: [] })
   }
 
-  // Hent titler fra tmdb_cache for at få navne
-  const keys = rated.map(r => `${r.tmdb_id}-${r.media_type}`)
+  // Hent titler + genredata fra tmdb_cache
   const { data: cached } = await supabase
     .from('tmdb_cache')
-    .select('tmdb_id, media_type, title')
+    .select('tmdb_id, media_type, title, data')
     .in('tmdb_id', rated.map(r => r.tmdb_id))
 
-  const titleMap: Record<string, string> = {}
+  const cacheMap: Record<string, { title: string; genres: string }> = {}
   for (const c of cached || []) {
-    titleMap[`${c.tmdb_id}-${c.media_type}`] = c.title
+    const genres = (c.data?.genres as { name: string }[] | undefined)
+      ?.slice(0, 2).map((g: { name: string }) => g.name).join('/') ?? ''
+    cacheMap[`${c.tmdb_id}-${c.media_type}`] = { title: c.title, genres }
   }
 
-  // Hent watchlist for at ekskludere dem fra anbefalinger
-  const { data: watchlist } = await supabase
-    .from('watchlist_items')
-    .select('tmdb_id, media_type')
-    .eq('owner_id', user.id)
-    .is('deleted_at', null)
+  const onList = new Set((watchlist).map(w => `${w.tmdb_id}-${w.media_type}`))
 
-  const onList = new Set((watchlist || []).map(w => `${w.tmdb_id}-${w.media_type}`))
+  // Want-liste til svagt signal (hvis færre end 5 ratings)
+  let wantLines = ''
+  if (rated.length < 5) {
+    const wantItems = watchlist.filter(w => w.status === 'want').slice(0, 5)
+    const wantTmdbIds = wantItems.map(w => w.tmdb_id)
+    if (wantTmdbIds.length > 0) {
+      const { data: wantCached } = await supabase
+        .from('tmdb_cache')
+        .select('tmdb_id, media_type, title')
+        .in('tmdb_id', wantTmdbIds)
+      const wantTitleMap: Record<string, string> = {}
+      for (const c of wantCached || []) {
+        wantTitleMap[`${c.tmdb_id}-${c.media_type}`] = c.title
+      }
+      wantLines = wantItems
+        .map(w => {
+          const title = wantTitleMap[`${w.tmdb_id}-${w.media_type}`]
+          const type = w.media_type === 'tv' ? 'serie' : 'film'
+          return title ? `- ${title} [${type}]` : null
+        })
+        .filter(Boolean)
+        .join('\n')
+    }
+  }
 
-  // Byg prompt
+  // Byg prompt-linjer med genrer og noter
   const ratedLines = rated
-    .filter(r => titleMap[`${r.tmdb_id}-${r.media_type}`])
+    .filter(r => cacheMap[`${r.tmdb_id}-${r.media_type}`])
     .slice(0, 12)
-    .map(r => `- ${titleMap[`${r.tmdb_id}-${r.media_type}`]} (${r.rating}★) [${r.media_type === 'tv' ? 'serie' : 'film'}]`)
+    .map(r => {
+      const { title, genres } = cacheMap[`${r.tmdb_id}-${r.media_type}`]
+      const type = r.media_type === 'tv' ? 'serie' : 'film'
+      const genrePart = genres ? ` {${genres}}` : ''
+      const notePart = (r.note && r.rating >= 4)
+        ? ` — "${r.note.trim().slice(0, 30)}"` : ''
+      return `- ${title} (${r.rating}★) [${type}]${genrePart}${notePart}`
+    })
     .join('\n')
 
   const excludeTitles = rated
-    .map(r => titleMap[`${r.tmdb_id}-${r.media_type}`])
+    .map(r => cacheMap[`${r.tmdb_id}-${r.media_type}`]?.title)
     .filter(Boolean)
     .join(', ')
 
+  const streamingLine = streamingIds
+    .map(id => PROVIDER_NAMES[id])
+    .filter(Boolean)
+    .join(', ')
+
+  const wantSection = wantLines
+    ? `\nBrugerens ønskeliste (svagere signal):\n${wantLines}\n` : ''
+  const streamingSection = streamingLine
+    ? `\nBrugerens streaming-tjenester: ${streamingLine}\nPrioritér titler tilgængelige på disse tjenester, men anbefal gerne andre gode titler også.\n` : ''
+
   const message = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 400,
+    max_tokens: 600,
     system: 'Du er en film- og serieekspert. Svar KUN med et JSON array, ingen tekst før eller efter.',
     messages: [
       {
         role: 'user',
-        content: `Baseret på denne brugers smag, anbefal 5 titler de sandsynligvis vil elske.
+        content: `Baseret på denne brugers smag, anbefal 10 titler de sandsynligvis vil elske.
 
 Brugerens ratings:
 ${ratedLines}
-
-Undgå disse titler: ${excludeTitles}
+${wantSection}${streamingSection}
+Undgå disse titler (allerede set eller på liste): ${excludeTitles}
 
 Returner PRÆCIS dette JSON-format:
-[{"title":"Titel","media_type":"tv","reason":"Kort dansk begrundelse maks 40 tegn"}]
+[{"title":"Titel på originalsprog","media_type":"tv","reason":"Kort dansk begrundelse maks 40 tegn"}]
 
 Regler:
-- Bland film og serier
+- Bland film og serier (medmindre smagsprofilet klart peger mod én type)
 - Kun rigtige titler der eksisterer
+- Brug titlen på originalsprog (engelsk/original) så TMDB kan finde den
 - Begrundelsen må maks være 40 tegn`,
       },
     ],
@@ -89,8 +152,8 @@ Regler:
     return NextResponse.json({ recommendations: [] })
   }
 
-  // Berig med TMDB
-  const enriched = await Promise.all(
+  // Berig med TMDB — returnér op til 8 gyldige resultater
+  const enriched = (await Promise.all(
     suggestions.map(async (s) => {
       const res = await fetch(
         `https://api.themoviedb.org/3/search/multi?query=${encodeURIComponent(s.title)}&language=da-DK`,
@@ -110,7 +173,7 @@ Regler:
         reason: s.reason,
       }
     })
-  )
+  )).filter(Boolean).slice(0, 8)
 
-  return NextResponse.json({ recommendations: enriched.filter(Boolean) })
+  return NextResponse.json({ recommendations: enriched })
 }

@@ -129,29 +129,44 @@ export default function SearchSheet({
     }
   }, [])
 
-  // Hent AI-anbefalinger med localStorage-cache (24h)
+  // Hent AI-anbefalinger — stale-while-revalidate med roterende slots
   useEffect(() => {
     const CACHE_KEY = 'flimr:recommendations'
-    const CACHE_TTL = 2 * 60 * 60 * 1000
+    let current: Result[] = []
+
+    // Vis cached med det samme
     try {
       const cached = localStorage.getItem(CACHE_KEY)
       if (cached) {
-        const { ts, data } = JSON.parse(cached)
-        if (Date.now() - ts < CACHE_TTL && data.length > 0) {
-          setRecommendations(data)
-          return
+        const { items } = JSON.parse(cached)
+        if (items?.length > 0) {
+          setRecommendations(items)
+          current = items
         }
       }
     } catch {}
-    setRecLoading(true)
+
+    if (current.length === 0) setRecLoading(true)
+
+    // Fetch altid i baggrunden
     fetch('/api/ai-recommend')
       .then(r => r.json())
       .then(d => {
-        const recs = d.recommendations || []
-        setRecommendations(recs)
-        if (recs.length > 0) {
-          try { localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), data: recs })) } catch {}
-        }
+        const fresh: Result[] = d.recommendations || []
+        if (fresh.length === 0) return
+
+        // Behold de første 3 stabile, udskift de sidste 3 med nye kandidater
+        const stable = current.slice(0, 3)
+        const stableIds = new Set(stable.map(r => `${r.tmdb_id}-${r.media_type}`))
+        const newSlots = fresh
+          .filter(r => !stableIds.has(`${r.tmdb_id}-${r.media_type}`))
+          .slice(0, 3)
+        const merged = stable.length >= 3
+          ? [...stable, ...newSlots]
+          : fresh.slice(0, 6)
+
+        setRecommendations(merged)
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ items: merged })) } catch {}
       })
       .finally(() => setRecLoading(false))
   }, [])
