@@ -6,6 +6,7 @@ import { Tv2, Compass, User } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
 import SearchSheet from './SearchSheet'
 import ProfileSheet from './ProfileSheet'
+import NotificationBell from './NotificationBell'
 
 export default function BottomNav() {
   const pathname = usePathname()
@@ -129,6 +130,9 @@ export default function BottomNav() {
                 />
                 <span style={{ color: searchOpen ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.5)', fontSize: '10px', fontWeight: 500, lineHeight: 1 }}>Opdag</span>
               </button>
+
+              {/* NYHEDER */}
+              <NotificationBell />
 
               {/* PROFIL */}
               <button
