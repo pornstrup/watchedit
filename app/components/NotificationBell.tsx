@@ -37,6 +37,15 @@ export default function NotificationBell() {
   const dragControls = useDragControls()
 
   useEffect(() => {
+    if (open) {
+      document.body.style.overscrollBehavior = 'none'
+    } else {
+      document.body.style.overscrollBehavior = ''
+    }
+    return () => { document.body.style.overscrollBehavior = '' }
+  }, [open])
+
+  useEffect(() => {
     fetch('/api/notifications')
       .then(r => r.json())
       .then(d => {
@@ -94,7 +103,7 @@ export default function NotificationBell() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-40"
+              className="fixed inset-0 z-[60]"
               style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }}
               onClick={() => setOpen(false)}
             />
@@ -109,7 +118,7 @@ export default function NotificationBell() {
               dragConstraints={{ top: 0 }}
               dragElastic={{ top: 0, bottom: 0.3 }}
               onDragEnd={(_, info) => { if (info.offset.y > 80 || info.velocity.y > 500) setOpen(false) }}
-              className="fixed bottom-0 left-0 right-0 z-50 flex flex-col rounded-t-3xl"
+              className="fixed bottom-0 left-0 right-0 z-[70] flex flex-col rounded-t-3xl"
               style={{
                 background: 'rgba(28, 28, 30, 0.95)',
                 backdropFilter: 'blur(24px) saturate(180%)',
@@ -135,7 +144,7 @@ export default function NotificationBell() {
               </div>
 
               {/* Liste */}
-              <div className="overflow-y-auto flex-1 px-4">
+              <div className="overflow-y-auto flex-1 px-4" style={{ overscrollBehavior: 'contain' }}>
                 {notifications.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-16 gap-3">
                     <p className="text-white/30 text-3xl">🔔</p>
