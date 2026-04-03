@@ -42,11 +42,16 @@ export default function NotificationBell() {
 
   useEffect(() => {
     if (open) {
+      document.body.style.overflow = 'hidden'
       document.body.style.overscrollBehavior = 'none'
     } else {
+      document.body.style.overflow = ''
       document.body.style.overscrollBehavior = ''
     }
-    return () => { document.body.style.overscrollBehavior = '' }
+    return () => {
+      document.body.style.overflow = ''
+      document.body.style.overscrollBehavior = ''
+    }
   }, [open])
 
   useEffect(() => {
