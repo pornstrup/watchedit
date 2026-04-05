@@ -26,7 +26,6 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
   const [usernameError, setUsernameError] = useState('')
   const [allProviders, setAllProviders] = useState<StreamingProvider[]>([])
   const [providerQuery, setProviderQuery] = useState('')
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const dragControls = useDragControls()
 
   useEffect(() => {
@@ -93,6 +92,7 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ streaming_services: updated }),
     })
+    window.dispatchEvent(new Event('profile-updated'))
   }
 
   const filteredProviders = providerQuery.length >= 1

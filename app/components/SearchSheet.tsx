@@ -5,6 +5,13 @@ import { motion, AnimatePresence, useDragControls } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
 import UserSheet from './UserSheet'
+import {
+  getDiscoveryBaseSections,
+  getDiscoveryProviderSections,
+  prefetchDiscoveryData,
+  refreshDiscoveryData,
+  type OpdagSection,
+} from './discoveryCache'
 
 type FeedItem = {
   user_id: string
@@ -24,7 +31,7 @@ type Result = {
   tmdb_id: number
   media_type: string
   title: string
-  year?: string
+  year?: string | null
   poster: string | null
   reason?: string
 }
@@ -61,7 +68,6 @@ export default function SearchSheet({
 }) {
   const [query, setQuery] = useState(initialQuery)
   const [results, setResults] = useState<Result[]>([])
-  type OpdagSection = { id: string; title: string; providerLogo?: string; items: Result[] }
   const [baseSections, setBaseSections] = useState<OpdagSection[]>([])
   const [providerSections, setProviderSections] = useState<OpdagSection[]>([])
   const [baseLoading, setBaseLoading] = useState(true)
@@ -88,6 +94,9 @@ export default function SearchSheet({
   const dragControls = useDragControls()
   const sheetRef = useRef<HTMLDivElement>(null)
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const searchRequestId = useRef(0)
+  const providerRequestId = useRef(0)
+  const activeSearchAbort = useRef<AbortController | null>(null)
 
   // Lås baggrunds-scroll mens sheet er åben
   useEffect(() => {
@@ -173,22 +182,56 @@ export default function SearchSheet({
 
   // Hent opdag-sektioner + feed ved mount
   useEffect(() => {
-    fetch('/api/opdag/base')
-      .then(r => r.json())
-      .then(d => { setBaseSections(d.sections || []); setBaseLoading(false) })
-    fetch('/api/opdag/providers')
-      .then(r => r.json())
-      .then(d => setProviderSections(d.sections || []))
+    let cancelled = false
+
+    prefetchDiscoveryData()
+      .then(async () => {
+        const [base, providers] = await Promise.all([
+          getDiscoveryBaseSections(),
+          getDiscoveryProviderSections(),
+        ])
+        if (cancelled) return
+        setBaseSections(base)
+        setProviderSections(providers.sections)
+        setBaseLoading(false)
+      })
+      .catch(() => {
+        if (!cancelled) setBaseLoading(false)
+      })
+
     fetch('/api/follows/feed')
       .then(r => r.json())
-      .then(d => { setFeed(d.items || []); setFeedLoading(false) })
-      .catch(() => setFeedLoading(false))
+      .then(d => { if (!cancelled) setFeed(d.items || []) })
+      .finally(() => { if (!cancelled) setFeedLoading(false) })
+
     fetch('/api/follows/list')
       .then(r => r.json())
       .then(d => {
+        if (cancelled) return
         setFollowingUsers(d.users || [])
         setFollowing(new Set((d.users || []).map((u: UserResult) => u.id)))
       })
+
+    const handleProfileUpdate = () => {
+      refreshDiscoveryData()
+        .then(async () => {
+          const [base, providers] = await Promise.all([
+            getDiscoveryBaseSections(),
+            getDiscoveryProviderSections(true),
+          ])
+          if (cancelled) return
+          setBaseSections(base)
+          setProviderSections(providers.sections)
+        })
+        .catch(() => {})
+    }
+
+    window.addEventListener('profile-updated', handleProfileUpdate)
+
+    return () => {
+      cancelled = true
+      window.removeEventListener('profile-updated', handleProfileUpdate)
+    }
   }, [])
 
   // Hent grupper + eksisterende ids
@@ -213,18 +256,31 @@ export default function SearchSheet({
   // Hent providers staggered for søgeresultater
   useEffect(() => {
     if (query.length < 2) return
+    const runId = ++providerRequestId.current
+    const timers: ReturnType<typeof setTimeout>[] = []
     const toFetch = results.slice(0, 6).filter(item => {
       const key = `${item.tmdb_id}-${item.media_type}`
       return providers[key] === undefined
     })
     toFetch.forEach((item, i) => {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
+        if (runId !== providerRequestId.current) return
         const key = `${item.tmdb_id}-${item.media_type}`
         fetch(`/api/tmdb/item-providers?id=${item.tmdb_id}&type=${item.media_type}`)
           .then(r => r.json())
-          .then(d => setProviders(prev => ({ ...prev, [key]: d.providers || [] })))
+          .then(d => {
+            if (runId !== providerRequestId.current) return
+            setProviders(prev => ({ ...prev, [key]: d.providers || [] }))
+          })
       }, i * 80)
+      timers.push(timer)
     })
+    return () => {
+      timers.forEach(clearTimeout)
+      if (runId === providerRequestId.current) {
+        providerRequestId.current += 1
+      }
+    }
   }, [results, query])
 
   const updateUrl = (q: string, ai: boolean) => {
@@ -245,7 +301,7 @@ export default function SearchSheet({
     setQuery(val)
     if (filter !== 'users') setFilter('all')
     updateUrl(val, aiMode)
-    if (searchTimer.current) clearTimeout(searchTimer.current)
+    cancelActiveSearch()
     if (val.length < 2) {
       setResults([])
       setUserResults([])
@@ -253,11 +309,26 @@ export default function SearchSheet({
       setAiThinking(false)
       return
     }
+
+    const runId = searchRequestId.current
+    const controller = new AbortController()
+    activeSearchAbort.current = controller
+
     if (filter === 'users') {
       searchTimer.current = setTimeout(async () => {
-        const res = await fetch(`/api/users/search?q=${encodeURIComponent(val)}`)
-        const data = await res.json()
-        setUserResults(data.users || [])
+        try {
+          const res = await fetch(`/api/users/search?q=${encodeURIComponent(val)}`, {
+            signal: controller.signal,
+          })
+          if (!res.ok || runId !== searchRequestId.current || controller.signal.aborted) return
+          const data = await res.json()
+          if (runId !== searchRequestId.current || controller.signal.aborted) return
+          setUserResults(data.users || [])
+        } catch (error) {
+          if ((error as { name?: string })?.name !== 'AbortError') {
+            setUserResults([])
+          }
+        }
       }, 300)
       return
     }
@@ -265,23 +336,48 @@ export default function SearchSheet({
       setAiThinking(true)
       setResults([])
       searchTimer.current = setTimeout(async () => {
-        const res = await fetch('/api/ai-search', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: val }),
-        })
-        const data = await res.json()
-        setResults(data.results || [])
-        setAiThinking(false)
+        try {
+          const res = await fetch('/api/ai-search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: val }),
+            signal: controller.signal,
+          })
+          if (!res.ok || runId !== searchRequestId.current || controller.signal.aborted) return
+          const data = await res.json()
+          if (runId !== searchRequestId.current || controller.signal.aborted) return
+          setResults(data.results || [])
+        } catch (error) {
+          if ((error as { name?: string })?.name !== 'AbortError' && runId === searchRequestId.current) {
+            setResults([])
+          }
+        } finally {
+          if (runId === searchRequestId.current && !controller.signal.aborted) {
+            setAiThinking(false)
+          }
+        }
       }, 600)
     } else {
       setLoading(true)
       searchTimer.current = setTimeout(async () => {
-        const res = await fetch(`/api/tmdb/search?query=${encodeURIComponent(val)}`)
-        const data = await res.json()
-        setResults(data.results || [])
-        setLoading(false)
-        window.umami?.track('search', { query: val })
+        try {
+          const res = await fetch(`/api/tmdb/search?query=${encodeURIComponent(val)}`, {
+            signal: controller.signal,
+          })
+          if (!res.ok || runId !== searchRequestId.current || controller.signal.aborted) return
+          const data = await res.json()
+          if (runId !== searchRequestId.current || controller.signal.aborted) return
+          setResults(data.results || [])
+          window.umami?.track('search', { query: val })
+        } catch (error) {
+          if ((error as { name?: string })?.name !== 'AbortError' && runId === searchRequestId.current) {
+            setResults([])
+          }
+        } finally {
+          if (runId === searchRequestId.current && !controller.signal.aborted) {
+            setLoading(false)
+          }
+        }
       }, 300)
     }
   }
@@ -324,6 +420,7 @@ export default function SearchSheet({
   }
 
   const toggleAiMode = () => {
+    cancelActiveSearch()
     const newAi = !aiMode
     setAiMode(newAi)
     setQuery('')
@@ -392,6 +489,20 @@ export default function SearchSheet({
 
   const showSearch = query.length >= 2 || filter === 'users'
   const filteredResults = filter === 'all' || filter === 'users' ? results : results.filter(r => r.media_type === filter)
+
+  const cancelActiveSearch = () => {
+    if (searchTimer.current) {
+      clearTimeout(searchTimer.current)
+      searchTimer.current = null
+    }
+    activeSearchAbort.current?.abort()
+    activeSearchAbort.current = null
+    searchRequestId.current += 1
+  }
+
+  useEffect(() => {
+    return () => cancelActiveSearch()
+  }, [])
 
 
   return (

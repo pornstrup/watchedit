@@ -80,13 +80,26 @@ export async function getTmdbItems(
     .select('tmdb_id, media_type, data, cached_at')
     .in('tmdb_id', items.map(i => i.tmdb_id))
 
+  type CachedEntry = {
+    tmdb_id: number
+    media_type: string
+    data: unknown
+    cached_at: string
+  }
+
+  const cachedMap = new Map<string, CachedEntry>(
+    (cached || []).map((entry) => [
+      `${entry.tmdb_id}-${entry.media_type}`,
+      entry as CachedEntry,
+    ])
+  )
   const now = Date.now()
   const result: Record<string, TmdbItem> = {}
   const missing: { tmdb_id: number; media_type: string }[] = []
 
   for (const item of items) {
     const key = `${item.tmdb_id}-${item.media_type}`
-    const hit = cached?.find(c => c.tmdb_id === item.tmdb_id && c.media_type === item.media_type)
+    const hit = cachedMap.get(key)
     if (hit) {
       const age = (now - new Date(hit.cached_at).getTime()) / (1000 * 60 * 60 * 24)
       const data = hit.data as Record<string, unknown>
@@ -102,13 +115,20 @@ export async function getTmdbItems(
 
   if (missing.length === 0) return result
 
-  // Hent manglende fra TMDB i parallel
-  await Promise.all(
-    missing.map(async (item) => {
-      const key = `${item.tmdb_id}-${item.media_type}`
-      result[key] = await getTmdbItem(item.tmdb_id, item.media_type)
-    })
-  )
+  // Hent manglende fra TMDB i små parallelle batches
+  const chunks: { tmdb_id: number; media_type: string }[][] = []
+  for (let i = 0; i < missing.length; i += 10) {
+    chunks.push(missing.slice(i, i + 10))
+  }
+
+  for (const chunk of chunks) {
+    await Promise.all(
+      chunk.map(async (item) => {
+        const key = `${item.tmdb_id}-${item.media_type}`
+        result[key] = await getTmdbItem(item.tmdb_id, item.media_type)
+      })
+    )
+  }
 
   return result
 }
