@@ -97,6 +97,7 @@ export default function SearchSheet({
   const searchRequestId = useRef(0)
   const providerRequestId = useRef(0)
   const activeSearchAbort = useRef<AbortController | null>(null)
+  const providersRef = useRef<Record<string, Provider[]>>({})
 
   // Lås baggrunds-scroll mens sheet er åben
   useEffect(() => {
@@ -180,7 +181,7 @@ export default function SearchSheet({
       .finally(() => setRecLoading(false))
   }, [])
 
-  // Hent opdag-sektioner + feed ved mount
+  // Hent opdag-sektioner + feed + grupper ved mount
   useEffect(() => {
     let cancelled = false
 
@@ -255,12 +256,16 @@ export default function SearchSheet({
 
   // Hent providers staggered for søgeresultater
   useEffect(() => {
+    providersRef.current = providers
+  }, [providers])
+
+  useEffect(() => {
     if (query.length < 2) return
     const runId = ++providerRequestId.current
     const timers: ReturnType<typeof setTimeout>[] = []
     const toFetch = results.slice(0, 6).filter(item => {
       const key = `${item.tmdb_id}-${item.media_type}`
-      return providers[key] === undefined
+      return providersRef.current[key] === undefined
     })
     toFetch.forEach((item, i) => {
       const timer = setTimeout(() => {
@@ -520,7 +525,7 @@ export default function SearchSheet({
 
       {/* Sheet */}
       <motion.div
-        ref={sheetRef as any}
+        ref={sheetRef}
         initial={{ y: '100%' }}
         animate={{ y: 0 }}
         exit={{ y: '100%' }}
@@ -612,8 +617,8 @@ export default function SearchSheet({
                               )}
                             </div>
                           </Link>
-                          {(item as any).reason && (
-                            <p className="text-white/40 text-xs mt-1.5 leading-tight line-clamp-2">{(item as any).reason}</p>
+                          {item.reason && (
+                            <p className="text-white/40 text-xs mt-1.5 leading-tight line-clamp-2">{item.reason}</p>
                           )}
                         </div>
                       ))}
@@ -1175,7 +1180,11 @@ function TrendingCard({
         <p className="text-white/70 text-xs mt-1.5 leading-tight line-clamp-2 px-0.5">{item.title}</p>
       </Link>
       <button
-        onClick={e => { e.preventDefault(); isAdded ? onRemove() : onAdd() }}
+        onClick={e => {
+          e.preventDefault()
+          if (isAdded) onRemove()
+          else onAdd()
+        }}
         className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center"
         style={{
           background: isAdded ? 'rgba(52,199,89,0.2)' : 'rgba(0,0,0,0.5)',

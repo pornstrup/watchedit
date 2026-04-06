@@ -2,13 +2,63 @@
 
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { Tv2, Compass, User } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
-import SearchSheet from './SearchSheet'
-import ProfileSheet from './ProfileSheet'
 import NotificationBell from './NotificationBell'
 import { prefetchDiscoveryData, refreshDiscoveryData } from './discoveryCache'
+
+function SheetFallback({ title }: { title: string }) {
+  return (
+    <div
+      className="fixed inset-0 z-[120] flex items-end justify-center"
+      style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}
+    >
+      <div
+        className="absolute inset-0"
+        style={{ background: 'rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)' }}
+      />
+      <div
+        className="relative w-full max-w-md flex flex-col rounded-t-3xl px-6 pt-5 pb-6"
+        style={{
+          minHeight: '45vh',
+          background: 'rgba(28, 28, 30, 0.95)',
+          backdropFilter: 'blur(24px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+          borderBottom: 'none',
+          boxShadow: '0 -8px 40px rgba(0,0,0,0.5)',
+        }}
+      >
+        <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-5 flex-shrink-0" />
+        <div className="flex items-center justify-between mb-5">
+          <div>
+            <div className="h-4 w-24 rounded-full bg-white/10 mb-2" />
+            <div className="h-3 w-36 rounded-full bg-white/5" />
+          </div>
+          <div className="h-8 w-8 rounded-full bg-white/8" />
+        </div>
+        <div className="flex-1 space-y-3">
+          <div className="h-12 rounded-2xl bg-white/7" />
+          <div className="h-12 rounded-2xl bg-white/7" />
+          <div className="h-12 rounded-2xl bg-white/7" />
+        </div>
+        <div className="mt-6 text-center text-white/35 text-sm">{title} loader...</div>
+      </div>
+    </div>
+  )
+}
+
+const SearchSheet = dynamic(() => import('./SearchSheet'), {
+  ssr: false,
+  loading: () => <SheetFallback title="Opdag" />,
+})
+
+const ProfileSheet = dynamic(() => import('./ProfileSheet'), {
+  ssr: false,
+  loading: () => <SheetFallback title="Profil" />,
+})
 
 export default function BottomNav() {
   const pathname = usePathname()
@@ -33,6 +83,15 @@ export default function BottomNav() {
   }, [])
 
   useEffect(() => {
+    if (isDetailPage) return
+    const timer = window.setTimeout(() => {
+      void import('./SearchSheet')
+      void import('./ProfileSheet')
+    }, 1200)
+    return () => window.clearTimeout(timer)
+  }, [isDetailPage])
+
+  useEffect(() => {
     const handleProfileUpdate = () => {
       refreshDiscoveryData()
     }
@@ -52,7 +111,7 @@ export default function BottomNav() {
       setInitialAiMode(urlParams.get('aiMode') === '1')
       setSearchOpen(true)
     }
-  }, [pathname])
+  }, [pathname, isDetailPage])
 
   useEffect(() => {
     const checkSearchUrl = () => {
