@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { motion, useDragControls } from 'framer-motion'
 import Image from 'next/image'
 
@@ -36,7 +36,7 @@ export default function UserSheet({
   const [loadingTab, setLoadingTab] = useState<Tab | null>('want')
   const [following, setFollowing] = useState(false)
 
-  const fetchTab = async (tab: Tab) => {
+  const fetchTab = useCallback(async (tab: Tab) => {
     if (tabItems[tab]) return
     setLoadingTab(tab)
     const res = await fetch(`/api/users/${userId}/list?status=${tab}`)
@@ -47,9 +47,13 @@ export default function UserSheet({
     }
     setTabItems(prev => ({ ...prev, [tab]: data.items ?? [] }))
     setLoadingTab(null)
-  }
+  }, [tabItems, userId])
 
-  useEffect(() => { fetchTab('want') }, [userId])
+  useEffect(() => {
+    queueMicrotask(() => {
+      void fetchTab('want')
+    })
+  }, [fetchTab])
 
   const handleTabChange = (tab: Tab) => {
     setActiveTab(tab)
@@ -59,11 +63,13 @@ export default function UserSheet({
   const handleFollow = async () => {
     const newFollowing = !following
     setFollowing(newFollowing)
-    await fetch('/api/follows', {
+    const res = await fetch('/api/follows', {
       method: newFollowing ? 'POST' : 'DELETE',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ user_id: userId }),
     })
+    if (!res.ok) return
+    window.dispatchEvent(new Event('follows-updated'))
   }
 
   const currentItems = tabItems[activeTab]
@@ -189,7 +195,13 @@ export default function UserSheet({
                   style={{ aspectRatio: '2/3' }}
                 >
                   {item.poster && (
-                    <Image src={item.poster} alt={item.title} fill className="object-cover" sizes="33vw" />
+                    <Image
+                      src={item.poster}
+                      alt={item.title}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 33vw, 220px"
+                    />
                   )}
                   {activeTab === 'done' && item.rating && (
                     <div

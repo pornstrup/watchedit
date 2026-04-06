@@ -8,6 +8,18 @@ import Image from 'next/image'
 import Link from 'next/link'
 import RatingSheet from './RatingSheet'
 import PullToRefresh from './PullToRefresh'
+import {
+  applyWatchlistOptimisticAdd,
+  applyWatchlistOptimisticConfirm,
+  applyWatchlistOptimisticRemove,
+  applyWatchlistOptimisticStatus,
+  WATCHLIST_ITEM_OPTIMISTIC_ADD,
+  WATCHLIST_ITEM_OPTIMISTIC_CONFIRM,
+  WATCHLIST_ITEM_OPTIMISTIC_REMOVE,
+  WATCHLIST_ITEM_OPTIMISTIC_STATUS,
+  type WatchlistMutationDetail,
+  type WatchlistMutationStatusDetail,
+} from './watchlistEvents'
 
 const MotionLink = motion(Link)
 
@@ -773,6 +785,7 @@ function GroupSettingsSheet({
       body: JSON.stringify({ name: newName.trim() }),
     })
     onRename(newName.trim())
+    window.dispatchEvent(new Event('groups-updated'))
     setRenaming(false)
   }
 
@@ -784,6 +797,7 @@ const isOwner = group.created_by === currentUserId
     } else {
       await fetch(`/api/groups/${group.id}/leave`, { method: 'DELETE' })
     }
+    window.dispatchEvent(new Event('groups-updated'))
     onLeave()
   }
 
@@ -897,24 +911,43 @@ export default function GroupView({
   const [showActivity, setShowActivity] = useState(false)
 
   useEffect(() => {
-    setLoading(true)
-    // Hent members + watchlist først så listen vises med det samme
-    Promise.all([
-      fetch(`/api/groups/${groupId}/members`).then(r => r.json()),
-      fetch(`/api/groups/${groupId}/watchlist`).then(r => r.json()),
-    ]).then(([membersData, itemsData]) => {
-      setMembers(membersData.members || [])
-      setItems(itemsData.items || [])
-      setLoading(false)
-    })
-    // Inspiration hentes separat og vises når den er klar
-    fetch(`/api/groups/${groupId}/inspiration`)
-      .then(r => r.json())
-      .then(d => setInspiration(d.items || []))
-    // Aktivitet hentes i baggrunden
-    fetch(`/api/groups/${groupId}/activity`)
-      .then(r => r.json())
-      .then(d => setActivity(d.events || []))
+    let cancelled = false
+
+    fetch(`/api/groups/${groupId}/bootstrap`)
+      .then(async (r) => {
+        if (!r.ok) throw new Error('bootstrap failed')
+        return r.json()
+      })
+      .then((data) => {
+        if (cancelled) return
+        setMembers(data.members || [])
+        setItems(data.items || [])
+        setInspiration(data.inspiration || [])
+        setActivity(data.activity || [])
+        setLoading(false)
+      })
+      .catch(() => {
+        // Fallback til de eksisterende endpoints, hvis bootstrap ikke er tilgængelig
+        Promise.all([
+          fetch(`/api/groups/${groupId}/members`).then(r => r.json()),
+          fetch(`/api/groups/${groupId}/watchlist`).then(r => r.json()),
+        ]).then(([membersData, itemsData]) => {
+          if (cancelled) return
+          setMembers(membersData.members || [])
+          setItems(itemsData.items || [])
+          setLoading(false)
+        })
+        fetch(`/api/groups/${groupId}/inspiration`)
+          .then(r => r.json())
+          .then(d => { if (!cancelled) setInspiration(d.items || []) })
+        fetch(`/api/groups/${groupId}/activity`)
+          .then(r => r.json())
+          .then(d => { if (!cancelled) setActivity(d.events || []) })
+      })
+
+    return () => {
+      cancelled = true
+    }
   }, [groupId, refreshKey])
 // Lyt på status-ændringer fra personlig liste og refresh inspiration
   useEffect(() => {
@@ -925,6 +958,43 @@ export default function GroupView({
     }
     window.addEventListener('personal-status-updated', handler)
     return () => window.removeEventListener('personal-status-updated', handler)
+  }, [groupId])
+
+  useEffect(() => {
+    const handleOptimisticAdd = (event: Event) => {
+      const detail = (event as CustomEvent<WatchlistMutationDetail>).detail
+      if (!detail || detail.scope !== 'group' || detail.groupId !== groupId) return
+      setItems(prev => applyWatchlistOptimisticAdd(prev, detail))
+    }
+
+    const handleOptimisticConfirm = (event: Event) => {
+      const detail = (event as CustomEvent<WatchlistMutationDetail>).detail
+      if (!detail || detail.scope !== 'group' || detail.groupId !== groupId) return
+      setItems(prev => applyWatchlistOptimisticConfirm(prev, detail))
+    }
+
+    const handleOptimisticRemove = (event: Event) => {
+      const detail = (event as CustomEvent<WatchlistMutationDetail>).detail
+      if (!detail || detail.scope !== 'group' || detail.groupId !== groupId) return
+      setItems(prev => applyWatchlistOptimisticRemove(prev, detail))
+    }
+
+    const handleOptimisticStatus = (event: Event) => {
+      const detail = (event as CustomEvent<WatchlistMutationStatusDetail>).detail
+      if (!detail || detail.scope !== 'group' || detail.groupId !== groupId) return
+      setItems(prev => applyWatchlistOptimisticStatus(prev, detail))
+    }
+
+    window.addEventListener(WATCHLIST_ITEM_OPTIMISTIC_ADD, handleOptimisticAdd)
+    window.addEventListener(WATCHLIST_ITEM_OPTIMISTIC_CONFIRM, handleOptimisticConfirm)
+    window.addEventListener(WATCHLIST_ITEM_OPTIMISTIC_REMOVE, handleOptimisticRemove)
+    window.addEventListener(WATCHLIST_ITEM_OPTIMISTIC_STATUS, handleOptimisticStatus)
+    return () => {
+      window.removeEventListener(WATCHLIST_ITEM_OPTIMISTIC_ADD, handleOptimisticAdd)
+      window.removeEventListener(WATCHLIST_ITEM_OPTIMISTIC_CONFIRM, handleOptimisticConfirm)
+      window.removeEventListener(WATCHLIST_ITEM_OPTIMISTIC_REMOVE, handleOptimisticRemove)
+      window.removeEventListener(WATCHLIST_ITEM_OPTIMISTIC_STATUS, handleOptimisticStatus)
+    }
   }, [groupId])
 
   useEffect(() => {
@@ -1183,14 +1253,14 @@ export default function GroupView({
             </p>
             <div className="grid grid-cols-3 gap-2">
               <AnimatePresence>
-                {wantItems.map((item, i) => (
+                {wantItems.map(item => (
                   <GroupPosterCard
                     key={item.id}
                     item={item}
                     groupId={groupId}
                     onRemove={removeItem}
                     onStatusChange={updateStatus}
-                    priority={i === 0}
+                    priority={false}
                     className="aspect-[2/3]"
                   />
                 ))}
@@ -1382,10 +1452,13 @@ function ActivitySheet({
 }) {
   const dragControls2 = useDragControls()
   const groups: { label: string; events: ActivityEvent[] }[] = []
+  const yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+  const yesterdayString = yesterday.toDateString()
   for (const e of events) {
     const d = new Date(e.timestamp)
     const isToday = d.toDateString() === new Date().toDateString()
-    const isYesterday = d.toDateString() === new Date(Date.now() - 86400000).toDateString()
+    const isYesterday = d.toDateString() === yesterdayString
     const label = isToday ? 'I dag' : isYesterday ? 'I går' : d.toLocaleDateString('da-DK', { day: 'numeric', month: 'long' })
     const last = groups[groups.length - 1]
     if (last?.label === label) last.events.push(e)

@@ -1,8 +1,12 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence, useDragControls } from 'framer-motion'
 import Image from 'next/image'
+import {
+  clearRecommendationsCache,
+  clearSearchSheetSnapshot,
+} from './searchSheetCache'
 
 type Profile = {
   name: string
@@ -29,17 +33,40 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
   const dragControls = useDragControls()
 
   useEffect(() => {
-    Promise.all([
-      fetch('/api/profile/me').then(r => r.json()),
-      fetch('/api/streaming-providers').then(r => r.json()),
-    ]).then(([profileData, providersData]) => {
-      setProfile(profileData)
-      setUsernameInput(profileData.username || '')
-      setAllProviders(providersData.providers || [])
-    })
+    let cancelled = false
+
+    fetch('/api/profile/bootstrap')
+      .then(async (r) => {
+        if (!r.ok) throw new Error('bootstrap failed')
+        return r.json()
+      })
+      .then(({ profile: profileData, providers: providersData }) => {
+        if (cancelled) return
+        setProfile(profileData)
+        setUsernameInput(profileData.username || '')
+        setAllProviders(providersData || [])
+      })
+      .catch(() => {
+        Promise.all([
+          fetch('/api/profile/me').then(r => r.json()),
+          fetch('/api/streaming-providers').then(r => r.json()),
+        ]).then(([profileData, providersData]) => {
+          if (cancelled) return
+          setProfile(profileData)
+          setUsernameInput(profileData.username || '')
+          setAllProviders(providersData.providers || [])
+        })
+      })
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   const handleLogout = async () => {
+    clearRecommendationsCache()
+    clearSearchSheetSnapshot()
+    window.dispatchEvent(new Event('app-logout'))
     await fetch('/api/auth/logout', { method: 'POST' })
     window.location.href = '/login'
   }

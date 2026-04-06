@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
 import { createPortal } from 'react-dom'
+import { clearRecommendationsCache } from './searchSheetCache'
 
 export default function RatingSheet({
   tmdbId,
@@ -35,7 +36,7 @@ export default function RatingSheet({
       }),
     })
     if (!skip && rating > 0) {
-      try { localStorage.removeItem('flimr:recommendations') } catch {}
+      clearRecommendationsCache()
       window.umami?.track('rate', { rating, media_type: mediaType })
     }
     onClose()

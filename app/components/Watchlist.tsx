@@ -6,6 +6,18 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
 import RatingSheet from './RatingSheet'
+import {
+  applyWatchlistOptimisticAdd,
+  applyWatchlistOptimisticConfirm,
+  applyWatchlistOptimisticRemove,
+  applyWatchlistOptimisticStatus,
+  WATCHLIST_ITEM_OPTIMISTIC_ADD,
+  WATCHLIST_ITEM_OPTIMISTIC_CONFIRM,
+  WATCHLIST_ITEM_OPTIMISTIC_REMOVE,
+  WATCHLIST_ITEM_OPTIMISTIC_STATUS,
+  type WatchlistMutationDetail,
+  type WatchlistMutationStatusDetail,
+} from './watchlistEvents'
 
 const MotionLink = motion(Link)
 
@@ -396,18 +408,67 @@ function PersonalMonthSection({
   )
 }
 
-export default function Watchlist({ onRemove, groups = [], initialItems }: { onRemove?: () => void; groups?: Group[]; initialItems?: WatchlistItem[] }) {
+export default function Watchlist({
+  onRemove,
+  groups = [],
+  initialItems,
+  refreshToken = 0,
+}: {
+  onRemove?: () => void
+  groups?: Group[]
+  initialItems?: WatchlistItem[]
+  refreshToken?: number
+}) {
   const [items, setItems] = useState<WatchlistItem[]>(initialItems || [])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(() => !initialItems)
 
   useEffect(() => {
-    if (!initialItems) setLoading(true)
+    let cancelled = false
     fetch('/api/watchlist/list')
       .then(r => r.json())
       .then(watchlistData => {
+        if (cancelled) return
         setItems(watchlistData.items || [])
         setLoading(false)
       })
+    return () => { cancelled = true }
+  }, [refreshToken])
+
+  useEffect(() => {
+    const handleOptimisticAdd = (event: Event) => {
+      const detail = (event as CustomEvent<WatchlistMutationDetail>).detail
+      if (!detail || detail.scope !== 'personal') return
+      setItems(prev => applyWatchlistOptimisticAdd(prev, detail))
+    }
+
+    const handleOptimisticConfirm = (event: Event) => {
+      const detail = (event as CustomEvent<WatchlistMutationDetail>).detail
+      if (!detail || detail.scope !== 'personal') return
+      setItems(prev => applyWatchlistOptimisticConfirm(prev, detail))
+    }
+
+    const handleOptimisticRemove = (event: Event) => {
+      const detail = (event as CustomEvent<WatchlistMutationDetail>).detail
+      if (!detail || detail.scope !== 'personal') return
+      setItems(prev => applyWatchlistOptimisticRemove(prev, detail))
+    }
+
+    const handleOptimisticStatus = (event: Event) => {
+      const detail = (event as CustomEvent<WatchlistMutationStatusDetail>).detail
+      if (!detail || detail.scope !== 'personal') return
+      setItems(prev => applyWatchlistOptimisticStatus(prev, detail))
+    }
+
+    window.addEventListener(WATCHLIST_ITEM_OPTIMISTIC_ADD, handleOptimisticAdd)
+    window.addEventListener(WATCHLIST_ITEM_OPTIMISTIC_CONFIRM, handleOptimisticConfirm)
+    window.addEventListener(WATCHLIST_ITEM_OPTIMISTIC_REMOVE, handleOptimisticRemove)
+    window.addEventListener(WATCHLIST_ITEM_OPTIMISTIC_STATUS, handleOptimisticStatus)
+    return () => {
+      window.removeEventListener(WATCHLIST_ITEM_OPTIMISTIC_ADD, handleOptimisticAdd)
+      window.removeEventListener(WATCHLIST_ITEM_OPTIMISTIC_CONFIRM, handleOptimisticConfirm)
+      window.removeEventListener(WATCHLIST_ITEM_OPTIMISTIC_REMOVE, handleOptimisticRemove)
+      window.removeEventListener(WATCHLIST_ITEM_OPTIMISTIC_STATUS, handleOptimisticStatus)
+    }
   }, [])
 
   const removeItem = async (id: string, tmdbId: number, mediaType: string) => {
@@ -565,14 +626,14 @@ const updateStatus = (id: string, status: string) => {
             </p>
             <div className="grid grid-cols-3 gap-2">
               <AnimatePresence>
-                {wantItems.map((item, i) => (
+                {wantItems.map(item => (
                   <PosterCard
                     key={item.id}
                     item={item}
                     groups={groups}
                     onRemove={removeItem}
                     onStatusChange={updateStatus}
-                    priority={i === 0}
+                    priority={false}
                     className="aspect-[2/3]"
                   />
                 ))}
@@ -597,7 +658,7 @@ const updateStatus = (id: string, status: string) => {
             <div className="flex flex-col gap-4">
               {Object.entries(doneByMonth)
                 .sort(([a], [b]) => b.localeCompare(a))
-                .map(([key, { label, items: monthItems }], index) => (
+                .map(([key, { label, items: monthItems }]) => (
                   <PersonalMonthSection
                     key={key}
                     label={label}

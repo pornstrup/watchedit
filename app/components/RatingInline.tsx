@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import UserSheet from './UserSheet'
+import { clearRecommendationsCache } from './searchSheetCache'
 
 type OtherRating = {
   user_id: string
@@ -76,7 +77,7 @@ export default function RatingInline({
       body: JSON.stringify({ tmdb_id: tmdbId, media_type: mediaType, rating, note }),
     }).then(() => {
       if (rating != null) {
-        try { localStorage.removeItem('flimr:recommendations') } catch {}
+        clearRecommendationsCache()
         window.umami?.track('rate', { rating, media_type: mediaType })
       }
     }).finally(() => setSaving(false))

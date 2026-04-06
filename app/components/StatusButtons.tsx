@@ -3,6 +3,14 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import RatingSheet from './RatingSheet'
+import {
+  dispatchWatchlistOptimisticStatus,
+  createWatchlistTempId,
+  dispatchWatchlistOptimisticAdd,
+  dispatchWatchlistOptimisticConfirm,
+  dispatchWatchlistOptimisticRemove,
+  type WatchlistMutationItem,
+} from './watchlistEvents'
 
 type Status = 'want' | 'watching' | 'done'
 
@@ -14,6 +22,34 @@ const glassInactive = {
 const glassActive = {
   background: 'rgba(52, 199, 89, 0.15)',
   border: '1px solid rgba(52, 199, 89, 0.35)',
+}
+
+function buildWatchlistMutationItem({
+  id,
+  tmdbId,
+  mediaType,
+  status,
+  title,
+  poster,
+}: {
+  id: string
+  tmdbId: number
+  mediaType: string
+  status: Status
+  title?: string
+  poster?: string | null
+}): WatchlistMutationItem {
+  return {
+    id,
+    tmdb_id: tmdbId,
+    media_type: mediaType,
+    status,
+    title: title ?? '',
+    poster: poster ?? null,
+    added_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    progress: null,
+  }
 }
 
 
@@ -61,24 +97,123 @@ export default function StatusButtons({
     setStatus('want')
     if (ctx) setShowAlsoAdd(true)
     const endpoint = ctx ? `/api/groups/${ctx}/watchlist` : '/api/watchlist'
+    const scope = ctx ? 'group' : 'personal'
+    const tempId = createWatchlistTempId(scope, ctx ?? null, tmdbId, mediaType)
+    dispatchWatchlistOptimisticAdd({
+      scope,
+      groupId: ctx ?? null,
+      tempId,
+      item: buildWatchlistMutationItem({
+        id: tempId,
+        tmdbId,
+        mediaType,
+        status: 'want',
+        title,
+        poster,
+      }),
+    })
     const res = await fetch(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tmdb_id: tmdbId, media_type: mediaType }),
     })
+    if (!res.ok) {
+      setOnList(false)
+      setStatus(null)
+      setShowAlsoAdd(false)
+      dispatchWatchlistOptimisticRemove({
+        scope,
+        groupId: ctx ?? null,
+        tempId,
+        item: buildWatchlistMutationItem({
+          id: tempId,
+          tmdbId,
+          mediaType,
+          status: 'want',
+          title,
+          poster,
+        }),
+      })
+      return
+    }
+
     const { data } = await res.json()
-    if (data?.id) setItemId(data.id)
+    if (data?.id) {
+      setItemId(data.id)
+      dispatchWatchlistOptimisticConfirm({
+        scope,
+        groupId: ctx ?? null,
+        tempId,
+        item: buildWatchlistMutationItem({
+          id: data.id,
+          tmdbId,
+          mediaType,
+          status: 'want',
+          title,
+          poster,
+        }),
+      })
+    }
     window.dispatchEvent(new Event('watchlist-updated'))
   }
 
   const addToPersonalList = async () => {
     setShowAlsoAdd(false)
-    await fetch('/api/watchlist', {
+    const tempId = createWatchlistTempId('personal', null, tmdbId, mediaType)
+    dispatchWatchlistOptimisticAdd({
+      scope: 'personal',
+      groupId: null,
+      tempId,
+      item: buildWatchlistMutationItem({
+        id: tempId,
+        tmdbId,
+        mediaType,
+        status: 'want',
+        title,
+        poster,
+      }),
+    })
+    const res = await fetch('/api/watchlist', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tmdb_id: tmdbId, media_type: mediaType }),
     })
     if (navigator.vibrate) navigator.vibrate(8)
+    if (!res.ok) {
+      setOnList(false)
+      setStatus(null)
+      dispatchWatchlistOptimisticRemove({
+        scope: 'personal',
+        groupId: null,
+        tempId,
+        item: buildWatchlistMutationItem({
+          id: tempId,
+          tmdbId,
+          mediaType,
+          status: 'want',
+          title,
+          poster,
+        }),
+      })
+      return
+    }
+    const { data } = await res.json()
+    if (data?.id) {
+      setItemId(data.id)
+      dispatchWatchlistOptimisticConfirm({
+        scope: 'personal',
+        groupId: null,
+        tempId,
+        item: buildWatchlistMutationItem({
+          id: data.id,
+          tmdbId,
+          mediaType,
+          status: 'want',
+          title,
+          poster,
+        }),
+      })
+    }
     window.dispatchEvent(new Event('watchlist-updated'))
   }
 
@@ -89,6 +224,21 @@ export default function StatusButtons({
     setItemId(undefined)
     setShowAlsoAdd(false)
     const endpoint = ctx ? `/api/groups/${ctx}/watchlist` : '/api/watchlist'
+    const scope = ctx ? 'group' : 'personal'
+    const tempId = itemId || createWatchlistTempId(scope, ctx ?? null, tmdbId, mediaType)
+    dispatchWatchlistOptimisticRemove({
+      scope,
+      groupId: ctx ?? null,
+      tempId,
+      item: buildWatchlistMutationItem({
+        id: tempId,
+        tmdbId,
+        mediaType,
+        status: 'want',
+        title,
+        poster,
+      }),
+    })
     await fetch(endpoint, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
@@ -116,10 +266,17 @@ export default function StatusButtons({
         body: JSON.stringify({ id: itemId, status: newStatus }),
       })
     }
+    window.dispatchEvent(new Event('watchlist-updated'))
     if (newStatus === 'done' && title) {
       window.umami?.track('mark-watched', { media_type: mediaType })
       setShowRating(true)
     }
+    dispatchWatchlistOptimisticStatus({
+      scope: ctx ? 'group' : 'personal',
+      groupId: ctx ?? null,
+      itemId: itemId!,
+      status: newStatus,
+    })
   }
 
   // ♥ tap-logik:

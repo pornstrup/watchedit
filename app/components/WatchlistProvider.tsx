@@ -15,6 +15,7 @@ type Group = {
 }
 
 type SheetStep = 'name' | 'invite'
+type WatchlistInitialItems = Parameters<typeof Watchlist>[0]['initialItems']
 
 function NewGroupSheet({ onClose, onCreated }: { onClose: () => void; onCreated: (group: Group) => void }) {
   const dragControls = useDragControls()
@@ -207,7 +208,7 @@ function NewGroupSheet({ onClose, onCreated }: { onClose: () => void; onCreated:
   )
 }
 
-export default function WatchlistProvider({ userName, userId, initialItems }: { userName: string; userId: string; initialItems?: unknown[] }) {
+export default function WatchlistProvider({ userName, userId, initialItems }: { userName: string; userId: string; initialItems?: WatchlistInitialItems }) {
   const [refreshKey, setRefreshKey] = useState(0)
   const [groups, setGroups] = useState<Group[]>([])
   const router = useRouter()
@@ -244,9 +245,10 @@ useEffect(() => {
     window.addEventListener('watchlist-updated', handler)
     return () => window.removeEventListener('watchlist-updated', handler)
   }, [refresh])
-  const handleGroupCreated = (group: Group) => {
+const handleGroupCreated = (group: Group) => {
   setGroups(prev => [...prev, group])
   switchGroup(group.id)
+  window.dispatchEvent(new Event('groups-updated'))
 }
 
   const activeGroup = groups.find(g => g.id === activeGroupId) ?? null
@@ -381,7 +383,7 @@ useEffect(() => {
             transition={{ duration: 0.2 }}
           >
             <PullToRefresh onRefresh={refresh} />
-            <Watchlist key={refreshKey} onRemove={refresh} groups={groups} initialItems={refreshKey === 0 ? (initialItems as any) : undefined} />
+            <Watchlist onRemove={refresh} groups={groups} initialItems={initialItems} refreshToken={refreshKey} />
           </motion.div>
         ) : (
           <motion.div

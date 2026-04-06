@@ -7,11 +7,31 @@ import Link from 'next/link'
 import UserSheet from './UserSheet'
 import {
   getDiscoveryBaseSections,
+  getDiscoveryFeed,
+  getDiscoveryBootstrap,
   getDiscoveryProviderSections,
+  getDiscoveryGroups,
+  getFollowingUsers,
   prefetchDiscoveryData,
+  prefetchSocialDiscoveryData,
   refreshDiscoveryData,
+  refreshSocialDiscoveryData,
   type OpdagSection,
 } from './discoveryCache'
+import {
+  loadSearchSheetSnapshot,
+  saveSearchSheetSnapshot,
+  loadRecommendationsCache,
+  saveRecommendationsCache,
+  type SearchFilter,
+} from './searchSheetCache'
+import {
+  createWatchlistTempId,
+  dispatchWatchlistOptimisticAdd,
+  dispatchWatchlistOptimisticConfirm,
+  dispatchWatchlistOptimisticRemove,
+  type WatchlistMutationItem,
+} from './watchlistEvents'
 
 type FeedItem = {
   user_id: string
@@ -55,6 +75,21 @@ type UserResult = {
   is_following: boolean
 }
 
+function buildWatchlistMutationItem(item: Result, id: string): WatchlistMutationItem {
+  return {
+    id,
+    tmdb_id: item.tmdb_id,
+    media_type: item.media_type,
+    status: 'want',
+    title: item.title,
+    poster: item.poster,
+    year: item.year ?? null,
+    added_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    progress: null,
+  }
+}
+
 export default function SearchSheet({
   onClose,
   initialGroupId,
@@ -66,7 +101,14 @@ export default function SearchSheet({
   initialQuery?: string
   initialAiMode?: boolean
 }) {
-  const [query, setQuery] = useState(initialQuery)
+  const restoredSnapshotRef = useRef(loadSearchSheetSnapshot())
+  const restoredSnapshot = restoredSnapshotRef.current
+  const resolvedInitialQuery = initialQuery || restoredSnapshot?.query || ''
+  const resolvedInitialAiMode = initialQuery ? initialAiMode : (restoredSnapshot?.aiMode ?? initialAiMode)
+  const resolvedInitialFilter = restoredSnapshot?.filter || 'all'
+  const resolvedInitialContext = initialGroupId ?? restoredSnapshot?.activeContext ?? null
+
+  const [query, setQuery] = useState(resolvedInitialQuery)
   const [results, setResults] = useState<Result[]>([])
   const [baseSections, setBaseSections] = useState<OpdagSection[]>([])
   const [providerSections, setProviderSections] = useState<OpdagSection[]>([])
@@ -75,15 +117,15 @@ export default function SearchSheet({
   const [added, setAdded] = useState<Set<string>>(new Set())
   const [existingIds, setExistingIds] = useState<Set<string>>(new Set())
   const [groups, setGroups] = useState<Group[]>([])
-  const [activeContext, setActiveContext] = useState<string | null>(initialGroupId)
+  const [activeContext, setActiveContext] = useState<string | null>(resolvedInitialContext)
   const [showContextPicker, setShowContextPicker] = useState(false)
   const [alsoAddPrompt, setAlsoAddPrompt] = useState<Result | null>(null)
   const [providers, setProviders] = useState<Record<string, Provider[]>>({})
-  const [filter, setFilter] = useState<'all' | 'movie' | 'tv' | 'users'>('all')
+  const [filter, setFilter] = useState<SearchFilter>(resolvedInitialFilter)
   const [userResults, setUserResults] = useState<UserResult[]>([])
   const [followingUsers, setFollowingUsers] = useState<UserResult[]>([])
   const [following, setFollowing] = useState<Set<string>>(new Set())
-  const [aiMode, setAiMode] = useState(initialAiMode)
+  const [aiMode, setAiMode] = useState(resolvedInitialAiMode)
   const [aiThinking, setAiThinking] = useState(false)
   const [feed, setFeed] = useState<FeedItem[]>([])
   const [feedLoading, setFeedLoading] = useState(true)
@@ -98,6 +140,13 @@ export default function SearchSheet({
   const providerRequestId = useRef(0)
   const activeSearchAbort = useRef<AbortController | null>(null)
   const providersRef = useRef<Record<string, Provider[]>>({})
+  const existingIdsHydratedRef = useRef(false)
+  const latestSnapshotRef = useRef({
+    query: resolvedInitialQuery,
+    aiMode: resolvedInitialAiMode,
+    filter: resolvedInitialFilter,
+    activeContext: resolvedInitialContext,
+  })
 
   // Lås baggrunds-scroll mens sheet er åben
   useEffect(() => {
@@ -107,19 +156,56 @@ export default function SearchSheet({
 
   // Auto-fokus — kun hvis ingen initial query
   useEffect(() => {
-    if (!initialQuery) {
+    if (!resolvedInitialQuery) {
       const timer = setTimeout(() => inputRef.current?.focus(), 150)
       return () => clearTimeout(timer)
     }
-  }, [initialQuery])
+  }, [resolvedInitialQuery])
 
   // Kør initial søgning hvis der er en query fra URL
   useEffect(() => {
-    if (initialQuery && initialQuery.length >= 2) {
-      handleInput(initialQuery)
+    if (resolvedInitialQuery && resolvedInitialQuery.length >= 2) {
+      handleInput(resolvedInitialQuery)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedInitialQuery])
+
+  useEffect(() => {
+    latestSnapshotRef.current = {
+      query,
+      aiMode,
+      filter,
+      activeContext,
+    }
+    const timer = setTimeout(() => {
+      saveSearchSheetSnapshot(latestSnapshotRef.current)
+    }, 180)
+    return () => clearTimeout(timer)
+  }, [query, aiMode, filter, activeContext])
+
+  useEffect(() => {
+    return () => {
+      saveSearchSheetSnapshot(latestSnapshotRef.current)
+    }
   }, [])
+
+  useEffect(() => {
+    if (!existingIdsHydratedRef.current) {
+      existingIdsHydratedRef.current = true
+      return
+    }
+    const url = activeContext
+      ? `/api/groups/${activeContext}/watchlist`
+      : '/api/watchlist/list'
+    fetch(url)
+      .then(r => r.json())
+      .then(d => {
+        const ids = new Set<string>(
+          (d.items || []).map((i: { tmdb_id: number; media_type: string }) => `${i.tmdb_id}-${i.media_type}`)
+        )
+        setExistingIds(ids)
+      })
+  }, [activeContext])
 
   // Flyt sheet præcis over tastaturet (iOS visualViewport)
   useEffect(() => {
@@ -141,27 +227,21 @@ export default function SearchSheet({
 
   // Hent AI-anbefalinger — stale-while-revalidate med roterende slots
   useEffect(() => {
-    const CACHE_KEY = 'flimr:recommendations'
-    let current: Result[] = []
+    let cancelled = false
+    const cached = loadRecommendationsCache()
+    const current: Result[] = cached || []
 
-    // Vis cached med det samme
-    try {
-      const cached = localStorage.getItem(CACHE_KEY)
-      if (cached) {
-        const { items } = JSON.parse(cached)
-        if (items?.length > 0) {
-          setRecommendations(items)
-          current = items
-        }
-      }
-    } catch {}
-
-    if (current.length === 0) setRecLoading(true)
+    if (current.length > 0) {
+      setRecommendations(current)
+    } else {
+      setRecLoading(true)
+    }
 
     // Fetch altid i baggrunden
     fetch('/api/ai-recommend')
       .then(r => r.json())
       .then(d => {
+        if (cancelled) return
         const fresh: Result[] = d.recommendations || []
         if (fresh.length === 0) return
 
@@ -175,84 +255,149 @@ export default function SearchSheet({
           ? [...stable, ...newSlots]
           : fresh.slice(0, 6)
 
+        if (cancelled) return
         setRecommendations(merged)
-        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ items: merged })) } catch {}
+        saveRecommendationsCache(merged)
       })
-      .finally(() => setRecLoading(false))
+      .finally(() => { if (!cancelled) setRecLoading(false) })
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   // Hent opdag-sektioner + feed + grupper ved mount
   useEffect(() => {
     let cancelled = false
 
-    prefetchDiscoveryData()
-      .then(async () => {
-        const [base, providers] = await Promise.all([
-          getDiscoveryBaseSections(),
-          getDiscoveryProviderSections(),
-        ])
+    const applyBootstrap = async () => {
+      try {
+        const data = await getDiscoveryBootstrap(resolvedInitialContext)
         if (cancelled) return
-        setBaseSections(base)
-        setProviderSections(providers.sections)
+        setBaseSections(data.baseSections || [])
+        setProviderSections(data.providerSections || [])
+        setFeed(data.feed || [])
+        setFollowingUsers(data.followingUsers || [])
+        setFollowing(new Set((data.followingUsers || []).map((u: UserResult) => u.id)))
+        setGroups((data.groups || []).filter(Boolean))
+        setExistingIds(new Set((data.existingIds || []).filter(Boolean)))
         setBaseLoading(false)
-      })
-      .catch(() => {
-        if (!cancelled) setBaseLoading(false)
-      })
+        setFeedLoading(false)
+        return
+      } catch {
+        // Falder tilbage til de eksisterende fetches, hvis bootstrap ikke virker
+      }
 
-    fetch('/api/follows/feed')
-      .then(r => r.json())
-      .then(d => { if (!cancelled) setFeed(d.items || []) })
-      .finally(() => { if (!cancelled) setFeedLoading(false) })
+      void prefetchDiscoveryData()
+      void prefetchSocialDiscoveryData()
 
-    fetch('/api/follows/list')
-      .then(r => r.json())
-      .then(d => {
-        if (cancelled) return
-        setFollowingUsers(d.users || [])
-        setFollowing(new Set((d.users || []).map((u: UserResult) => u.id)))
-      })
-
-    const handleProfileUpdate = () => {
-      refreshDiscoveryData()
-        .then(async () => {
-          const [base, providers] = await Promise.all([
-            getDiscoveryBaseSections(),
-            getDiscoveryProviderSections(true),
-          ])
+      getDiscoveryBaseSections()
+        .then((base) => {
           if (cancelled) return
           setBaseSections(base)
+        })
+        .catch(() => {
+          if (!cancelled) setBaseSections([])
+        })
+        .finally(() => {
+          if (!cancelled) setBaseLoading(false)
+        })
+
+      getDiscoveryProviderSections()
+        .then((providers) => {
+          if (cancelled) return
           setProviderSections(providers.sections)
         })
-        .catch(() => {})
+        .catch(() => {
+          if (!cancelled) setProviderSections([])
+        })
+
+      getDiscoveryFeed()
+        .then((items) => {
+          if (!cancelled) setFeed(items)
+        })
+        .finally(() => {
+          if (!cancelled) setFeedLoading(false)
+        })
+
+      getFollowingUsers()
+        .then((users) => {
+          if (cancelled) return
+          setFollowingUsers(users)
+          setFollowing(new Set(users.map((u: UserResult) => u.id)))
+        })
+
+      getDiscoveryGroups()
+        .then((items) => {
+          if (!cancelled) setGroups((items || []).filter(Boolean))
+        })
+
+      const currentIdsUrl = resolvedInitialContext
+        ? `/api/groups/${resolvedInitialContext}/watchlist`
+        : '/api/watchlist/list'
+
+      fetch(currentIdsUrl)
+        .then(r => r.json())
+        .then(d => {
+          if (cancelled) return
+          const ids = new Set<string>(
+            (d.items || []).map((i: { tmdb_id: number; media_type: string }) => `${i.tmdb_id}-${i.media_type}`)
+          )
+          setExistingIds(ids)
+        })
+    }
+
+    void applyBootstrap()
+
+    const handleProfileUpdate = () => {
+      void refreshDiscoveryData()
+      getDiscoveryBaseSections()
+        .then((base) => {
+          if (cancelled) return
+          setBaseSections(base)
+        })
+        .catch(() => {
+          if (!cancelled) setBaseSections([])
+        })
+      getDiscoveryProviderSections(true)
+        .then((providers) => {
+          if (cancelled) return
+          setProviderSections(providers.sections)
+        })
+        .catch(() => {
+          if (!cancelled) setProviderSections([])
+        })
+    }
+
+    const handleSocialUpdate = () => {
+      void refreshSocialDiscoveryData()
+      getDiscoveryFeed(true)
+        .then((items) => {
+          if (!cancelled) setFeed(items)
+        })
+      getFollowingUsers(true)
+        .then((users) => {
+          if (cancelled) return
+          setFollowingUsers(users)
+          setFollowing(new Set(users.map((u: UserResult) => u.id)))
+        })
+      getDiscoveryGroups(true)
+        .then((items) => {
+          if (!cancelled) setGroups((items || []).filter(Boolean))
+        })
     }
 
     window.addEventListener('profile-updated', handleProfileUpdate)
+    window.addEventListener('follows-updated', handleSocialUpdate)
+    window.addEventListener('groups-updated', handleSocialUpdate)
 
     return () => {
       cancelled = true
       window.removeEventListener('profile-updated', handleProfileUpdate)
+      window.removeEventListener('follows-updated', handleSocialUpdate)
+      window.removeEventListener('groups-updated', handleSocialUpdate)
     }
-  }, [])
-
-  // Hent grupper + eksisterende ids
-  useEffect(() => {
-    fetch('/api/groups')
-      .then(r => r.json())
-      .then(d => setGroups((d.groups || []).filter(Boolean)))
-
-    const url = activeContext
-      ? `/api/groups/${activeContext}/watchlist`
-      : '/api/watchlist/list'
-    fetch(url)
-      .then(r => r.json())
-      .then(d => {
-        const ids = new Set<string>(
-          (d.items || []).map((i: { tmdb_id: number; media_type: string }) => `${i.tmdb_id}-${i.media_type}`)
-        )
-        setExistingIds(ids)
-      })
-  }, [activeContext])
+  }, [resolvedInitialContext])
 
   // Hent providers staggered for søgeresultater
   useEffect(() => {
@@ -263,7 +408,7 @@ export default function SearchSheet({
     if (query.length < 2) return
     const runId = ++providerRequestId.current
     const timers: ReturnType<typeof setTimeout>[] = []
-    const toFetch = results.slice(0, 6).filter(item => {
+    const toFetch = results.slice(0, 4).filter(item => {
       const key = `${item.tmdb_id}-${item.media_type}`
       return providersRef.current[key] === undefined
     })
@@ -406,22 +551,22 @@ export default function SearchSheet({
     }
 
     if (optimisticFollowing) {
-      await fetch('/api/follows', {
+      const res = await fetch('/api/follows', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: u.id }),
       })
-      // Opdater feed så den nye brugers aktivitet vises med det samme
-      fetch('/api/follows/feed')
-        .then(r => r.json())
-        .then(d => { setFeed(d.items || []) })
+      if (!res.ok) return
     } else {
-      await fetch('/api/follows', {
+      const res = await fetch('/api/follows', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_id: u.id }),
       })
+      if (!res.ok) return
     }
+
+    window.dispatchEvent(new Event('follows-updated'))
   }
 
   const toggleAiMode = () => {
@@ -440,6 +585,14 @@ export default function SearchSheet({
     const key = `${item.tmdb_id}-${item.media_type}`
     setAlsoAddPrompt(null)
     const url = activeContext ? `/api/groups/${activeContext}/watchlist` : '/api/watchlist'
+    const scope = activeContext ? 'group' : 'personal'
+    const tempId = createWatchlistTempId(scope, activeContext, item.tmdb_id, item.media_type)
+    dispatchWatchlistOptimisticRemove({
+      scope,
+      groupId: activeContext,
+      tempId,
+      item: buildWatchlistMutationItem(item, tempId),
+    })
     await fetch(url, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
@@ -458,28 +611,76 @@ export default function SearchSheet({
     if (navigator.vibrate) navigator.vibrate(8)
     if (activeContext) setAlsoAddPrompt(item)
     const url = activeContext ? `/api/groups/${activeContext}/watchlist` : '/api/watchlist'
+    const scope = activeContext ? 'group' : 'personal'
+    const tempId = createWatchlistTempId(scope, activeContext, item.tmdb_id, item.media_type)
+    dispatchWatchlistOptimisticAdd({
+      scope,
+      groupId: activeContext,
+      tempId,
+      item: buildWatchlistMutationItem(item, tempId),
+    })
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tmdb_id: item.tmdb_id, media_type: item.media_type })
     })
     if (res.ok) {
+      const data = await res.json()
+      if (data?.data?.id) {
+        dispatchWatchlistOptimisticConfirm({
+          scope,
+          groupId: activeContext,
+          tempId,
+          item: buildWatchlistMutationItem(item, data.data.id),
+        })
+      }
       window.dispatchEvent(new CustomEvent('watchlist-updated', { detail: { groupId: activeContext } }))
     } else {
       // Fortryd optimistisk opdatering ved fejl
       setAdded(prev => { const s = new Set(prev); s.delete(key); return s })
       setAlsoAddPrompt(null)
+      dispatchWatchlistOptimisticRemove({
+        scope,
+        groupId: activeContext,
+        tempId,
+        item: buildWatchlistMutationItem(item, tempId),
+      })
     }
   }
 
   const addToPersonalList = async (item: Result) => {
     setAlsoAddPrompt(null)
-    await fetch('/api/watchlist', {
+    const tempId = createWatchlistTempId('personal', null, item.tmdb_id, item.media_type)
+    dispatchWatchlistOptimisticAdd({
+      scope: 'personal',
+      groupId: null,
+      tempId,
+      item: buildWatchlistMutationItem(item, tempId),
+    })
+    const res = await fetch('/api/watchlist', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ tmdb_id: item.tmdb_id, media_type: item.media_type })
     })
     if (navigator.vibrate) navigator.vibrate(8)
+    if (res.ok) {
+      const data = await res.json()
+      if (data?.data?.id) {
+        dispatchWatchlistOptimisticConfirm({
+          scope: 'personal',
+          groupId: null,
+          tempId,
+          item: buildWatchlistMutationItem(item, data.data.id),
+        })
+      }
+    } else {
+      dispatchWatchlistOptimisticRemove({
+        scope: 'personal',
+        groupId: null,
+        tempId,
+        item: buildWatchlistMutationItem(item, tempId),
+      })
+    }
     window.dispatchEvent(new CustomEvent('watchlist-updated', { detail: { groupId: null } }))
   }
 
@@ -596,19 +797,21 @@ export default function SearchSheet({
                 transition={{ duration: 0.15 }}
                 className="px-4 pt-4 pb-2 flex flex-col gap-6"
               >
-                {/* UDVALGT TIL DIG */}
-                {(recLoading || recommendations.length > 0) && (
-                  <div>
-                    <p className="text-white/50 text-xs font-medium mb-3 px-1">Udvalgt til dig</p>
-                    <div className="flex gap-2.5 overflow-x-auto scrollbar-none -mx-4 px-4 pb-1">
-                      {recLoading ? (
-                        [0,1,2,3,4].map(i => (
-                          <div key={i} className="flex-shrink-0">
-                            <div className="w-24 h-36 rounded-xl bg-white/8 animate-pulse" />
-                            <div className="mt-1.5 h-2 w-16 rounded-full bg-white/8 animate-pulse" />
-                          </div>
-                        ))
-                      ) : recommendations.map(item => (
+                {/* UDVALGT TIL DIG — fast teaser i toppen */}
+                <div className="pb-1">
+                  <div className="flex items-center gap-2 mb-3 px-1">
+                    <p className="text-white/50 text-xs font-medium">Udvalgt til dig</p>
+                  </div>
+                  <div className="flex gap-2.5 overflow-x-auto scrollbar-none -mx-4 px-4 pb-1 min-h-[9.75rem]">
+                    {recLoading && recommendations.length === 0 ? (
+                      [0, 1, 2, 3].map(i => (
+                        <div key={i} className="flex-shrink-0 w-24">
+                          <div className="w-24 h-36 rounded-xl bg-white/8 animate-pulse" />
+                          <div className="mt-1.5 h-2 w-16 rounded-full bg-white/8 animate-pulse" />
+                        </div>
+                      ))
+                    ) : recommendations.length > 0 ? (
+                      recommendations.slice(0, 4).map(item => (
                         <div key={`${item.tmdb_id}-${item.media_type}`} className="flex-shrink-0 w-24">
                           <Link href={`/${item.media_type === 'movie' ? 'movie' : 'tv'}/${item.tmdb_id}${activeContext ? `?ctx=${activeContext}` : ''}`}>
                             <div className="relative w-24 h-36 rounded-xl overflow-hidden bg-white/8">
@@ -621,10 +824,26 @@ export default function SearchSheet({
                             <p className="text-white/40 text-xs mt-1.5 leading-tight line-clamp-2">{item.reason}</p>
                           )}
                         </div>
-                      ))}
-                    </div>
+                      ))
+                    ) : (
+                      <div className="flex-shrink-0 w-[18rem] rounded-2xl px-4 py-4 flex flex-col justify-between"
+                        style={{
+                          background: 'rgba(255,255,255,0.06)',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          minHeight: '9.75rem',
+                        }}
+                      >
+                        <div className="flex items-center justify-between gap-3 mb-3">
+                          <p className="text-white/70 text-sm font-medium">Vi lærer din smag at kende</p>
+                          <span className="text-white/30 text-[10px] uppercase tracking-[0.18em]">Beta</span>
+                        </div>
+                        <p className="text-white/35 text-xs leading-relaxed max-w-[13rem]">
+                          Rate nogle titler eller brug Opdag lidt mere, så kommer der bedre forslag her.
+                        </p>
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
 
                 {/* FEED */}
                 <div>
@@ -727,6 +946,7 @@ export default function SearchSheet({
                     </div>
                   ))
                 )}
+
               </motion.div>
             ) : (
               /* ── SØGERESULTATER ── */
@@ -917,7 +1137,7 @@ export default function SearchSheet({
                             )}
                             {!aiMode && itemProviders && itemProviders.length > 0 && (
                               <div className="flex gap-1 mt-1.5">
-                                {itemProviders.slice(0, 3).map(p => (
+                                {itemProviders.slice(0, 2).map(p => (
                                   <Image key={p.id} src={p.logo} alt={p.name} width={16} height={16} className="rounded-sm object-cover" />
                                 ))}
                               </div>
