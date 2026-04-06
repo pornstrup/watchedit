@@ -240,11 +240,6 @@ const switchGroup = (id: string | null) => {
         setLoadingGroups(false)
       })
   }, [refreshKey])
-useEffect(() => {
-    const handler = () => refresh()
-    window.addEventListener('watchlist-updated', handler)
-    return () => window.removeEventListener('watchlist-updated', handler)
-  }, [refresh])
 const handleGroupCreated = (group: Group) => {
   setGroups(prev => [...prev, group])
   switchGroup(group.id)
