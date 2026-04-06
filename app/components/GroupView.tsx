@@ -8,6 +8,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import RatingSheet from './RatingSheet'
 import PullToRefresh from './PullToRefresh'
+import { dispatchOpenSearch } from './searchEvents'
 import {
   applyWatchlistOptimisticAdd,
   applyWatchlistOptimisticConfirm,
@@ -1127,7 +1128,7 @@ export default function GroupView({
         <p className="text-white/55 text-sm leading-relaxed max-w-[220px]">Tilføj film og serier I vil se sammen med gruppen</p>
       </div>
       <button
-        onClick={() => window.dispatchEvent(new Event('open-search'))}
+        onClick={() => dispatchOpenSearch(groupId)}
         className="px-6 py-3 rounded-full text-black text-sm font-semibold"
         style={{ background: 'white' }}
       >

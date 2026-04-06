@@ -106,7 +106,7 @@ export default function SearchSheet({
   const resolvedInitialQuery = initialQuery || restoredSnapshot?.query || ''
   const resolvedInitialAiMode = initialQuery ? initialAiMode : (restoredSnapshot?.aiMode ?? initialAiMode)
   const resolvedInitialFilter = restoredSnapshot?.filter || 'all'
-  const resolvedInitialContext = initialGroupId ?? restoredSnapshot?.activeContext ?? null
+  const resolvedInitialContext = initialGroupId ?? null
 
   const [query, setQuery] = useState(resolvedInitialQuery)
   const [results, setResults] = useState<Result[]>([])

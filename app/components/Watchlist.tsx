@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
 import RatingSheet from './RatingSheet'
+import { dispatchOpenSearch } from './searchEvents'
 import {
   applyWatchlistOptimisticAdd,
   applyWatchlistOptimisticConfirm,
@@ -601,7 +602,7 @@ const updateStatus = (id: string, status: string) => {
               <p className="text-white/55 text-sm leading-relaxed max-w-[220px]">Søg efter film og serier og tilføj dem til din liste</p>
             </div>
             <button
-              onClick={() => window.dispatchEvent(new Event('open-search'))}
+              onClick={() => dispatchOpenSearch(null)}
               className="px-6 py-3 rounded-full text-black text-sm font-semibold"
               style={{ background: 'white' }}
             >

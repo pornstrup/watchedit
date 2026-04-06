@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { usePathname } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import { Tv2, Compass, User } from 'lucide-react'
 import { AnimatePresence } from 'framer-motion'
 import NotificationBell from './NotificationBell'
 import { prefetchDiscoveryData, refreshDiscoveryData } from './discoveryCache'
+import { OPEN_SEARCH_EVENT, type OpenSearchDetail } from './searchEvents'
 
 function SheetFallback({ title }: { title: string }) {
   return (
@@ -62,7 +63,9 @@ const ProfileSheet = dynamic(() => import('./ProfileSheet'), {
 
 export default function BottomNav() {
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const [searchOpen, setSearchOpen] = useState(false)
+  const [searchGroupId, setSearchGroupId] = useState<string | null | undefined>(undefined)
   const [profileOpen, setProfileOpen] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
   const [initialQuery, setInitialQuery] = useState('')
@@ -73,10 +76,7 @@ export default function BottomNav() {
     pathname.startsWith('/tv/') ||
     pathname === '/login'
 
-  const params = typeof window !== 'undefined'
-    ? new URLSearchParams(window.location.search)
-    : new URLSearchParams()
-  const groupId = params.get('group')
+  const groupId = searchParams.get('group')
 
   useEffect(() => {
     prefetchDiscoveryData()
@@ -104,20 +104,18 @@ export default function BottomNav() {
   // Genåbn søgning når vi navigerer tilbage til forsiden med søge-params i URL
   useEffect(() => {
     if (isDetailPage) return
-    const urlParams = new URLSearchParams(window.location.search)
-    const savedQuery = urlParams.get('search') || ''
+    const savedQuery = searchParams.get('search') || ''
     if (savedQuery) {
       setInitialQuery(savedQuery)
-      setInitialAiMode(urlParams.get('aiMode') === '1')
+      setInitialAiMode(searchParams.get('aiMode') === '1')
       setSearchOpen(true)
     }
-  }, [pathname, isDetailPage])
+  }, [pathname, isDetailPage, searchParams])
 
   useEffect(() => {
     const checkSearchUrl = () => {
-      const urlParams = new URLSearchParams(window.location.search)
-      const savedQuery = urlParams.get('search') || ''
-      const savedAiMode = urlParams.get('aiMode') === '1'
+      const savedQuery = searchParams.get('search') || ''
+      const savedAiMode = searchParams.get('aiMode') === '1'
       if (savedQuery) {
         setInitialQuery(savedQuery)
         setInitialAiMode(savedAiMode)
@@ -133,17 +131,23 @@ export default function BottomNav() {
 
     const show = () => setSheetOpen(true)
     const hide = () => setSheetOpen(false)
-    const openSearch = () => setSearchOpen(true)
+    const openSearch = (event: Event) => {
+      const detail = (event as CustomEvent<OpenSearchDetail | undefined>).detail
+      setSearchGroupId(detail?.groupId)
+      setSearchOpen(true)
+    }
     window.addEventListener('sheet-opened', show)
     window.addEventListener('sheet-closed', hide)
-    window.addEventListener('open-search', openSearch)
+    window.addEventListener(OPEN_SEARCH_EVENT, openSearch)
     return () => {
       window.removeEventListener('popstate', checkSearchUrl)
       window.removeEventListener('sheet-opened', show)
       window.removeEventListener('sheet-closed', hide)
-      window.removeEventListener('open-search', openSearch)
+      window.removeEventListener(OPEN_SEARCH_EVENT, openSearch)
     }
-  }, [])
+  }, [searchParams])
+
+  const initialSearchGroupId = searchGroupId !== undefined ? searchGroupId : groupId
 
   if (isDetailPage) return null
 
@@ -184,7 +188,10 @@ export default function BottomNav() {
 
               {/* OPDAG */}
               <button
-                onClick={() => setSearchOpen(true)}
+                onClick={() => {
+                  setSearchGroupId(groupId)
+                  setSearchOpen(true)
+                }}
                 aria-label="Opdag"
                 className="relative flex flex-col items-center gap-1 px-5 py-2 rounded-[20px] transition-all duration-200"
                 style={{
@@ -232,6 +239,7 @@ export default function BottomNav() {
               setSearchOpen(false)
               setInitialQuery('')
               setInitialAiMode(false)
+              setSearchGroupId(undefined)
               // Ryd søge-params fra URL
               const urlParams = new URLSearchParams(window.location.search)
               urlParams.delete('search')
@@ -239,7 +247,7 @@ export default function BottomNav() {
               const qs = urlParams.toString()
               window.history.replaceState(null, '', qs ? `/?${qs}` : '/')
             }}
-            initialGroupId={groupId}
+            initialGroupId={initialSearchGroupId ?? null}
             initialQuery={initialQuery}
             initialAiMode={initialAiMode}
           />
