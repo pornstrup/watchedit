@@ -9,6 +9,7 @@ import Link from 'next/link'
 import RatingSheet from './RatingSheet'
 import PullToRefresh from './PullToRefresh'
 import { dispatchOpenSearch } from './searchEvents'
+import { applyGroupMutationOverlay, recordGroupMutation } from './watchlistMutationBridge'
 import {
   applyWatchlistOptimisticAdd,
   applyWatchlistOptimisticConfirm,
@@ -922,7 +923,7 @@ export default function GroupView({
       .then((data) => {
         if (cancelled) return
         setMembers(data.members || [])
-        setItems(data.items || [])
+        setItems(applyGroupMutationOverlay(data.items || [], groupId))
         setInspiration(data.inspiration || [])
         setActivity(data.activity || [])
         setLoading(false)
@@ -935,7 +936,7 @@ export default function GroupView({
         ]).then(([membersData, itemsData]) => {
           if (cancelled) return
           setMembers(membersData.members || [])
-          setItems(itemsData.items || [])
+          setItems(applyGroupMutationOverlay(itemsData.items || [], groupId))
           setLoading(false)
         })
         fetch(`/api/groups/${groupId}/inspiration`)
@@ -1010,7 +1011,7 @@ export default function GroupView({
       }, () => {
         fetch(`/api/groups/${groupId}/watchlist`)
           .then(r => r.json())
-          .then(d => setItems(d.items || []))
+          .then(d => setItems(applyGroupMutationOverlay(d.items || [], groupId)))
         fetch(`/api/groups/${groupId}/inspiration`)
           .then(r => r.json())
           .then(d => setInspiration(d.items || []))
@@ -1021,6 +1022,14 @@ export default function GroupView({
   }, [groupId])
   const removeItem = async (id: string, tmdbId: number, mediaType: string) => {
     if (navigator.vibrate) navigator.vibrate(8)
+    const currentItem = items.find(i => i.id === id)
+    if (currentItem) {
+      recordGroupMutation('remove', {
+        groupId,
+        tempId: id,
+        item: currentItem,
+      })
+    }
     setItems(prev => prev.filter(i => i.id !== id))
     await fetch(`/api/groups/${groupId}/watchlist`, {
       method: 'DELETE',
@@ -1045,6 +1054,22 @@ export default function GroupView({
     const data = await res.json()
     setInspiration(prev => prev.filter(i => !(i.tmdb_id === item.tmdb_id && i.media_type === item.media_type)))
     if (data.data) {
+      recordGroupMutation('confirm', {
+        groupId,
+        tempId: data.data.id,
+        item: {
+          id: data.data.id,
+          tmdb_id: item.tmdb_id,
+          media_type: item.media_type,
+          status: 'want',
+          title: item.title,
+          poster: item.poster,
+          year: item.year,
+          added_at: data.data.added_at,
+          updated_at: data.data.updated_at,
+          progress: null,
+        },
+      })
       setItems(prev => [...prev, {
         ...data.data,
         title: item.title,

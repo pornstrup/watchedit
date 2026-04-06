@@ -1,3 +1,5 @@
+import { recordGroupMutation } from './watchlistMutationBridge'
+
 export type WatchlistScope = 'personal' | 'group'
 
 export type WatchlistMutationItem = {
@@ -40,14 +42,17 @@ export function createWatchlistTempId(scope: WatchlistScope, groupId: string | n
 }
 
 export function dispatchWatchlistOptimisticAdd(detail: WatchlistMutationDetail) {
+  recordGroupMutation('add', detail)
   window.dispatchEvent(new CustomEvent(WATCHLIST_ITEM_OPTIMISTIC_ADD, { detail }))
 }
 
 export function dispatchWatchlistOptimisticConfirm(detail: WatchlistMutationDetail) {
+  recordGroupMutation('confirm', detail)
   window.dispatchEvent(new CustomEvent(WATCHLIST_ITEM_OPTIMISTIC_CONFIRM, { detail }))
 }
 
 export function dispatchWatchlistOptimisticRemove(detail: WatchlistMutationDetail) {
+  recordGroupMutation('remove', detail)
   window.dispatchEvent(new CustomEvent(WATCHLIST_ITEM_OPTIMISTIC_REMOVE, { detail }))
 }
 
