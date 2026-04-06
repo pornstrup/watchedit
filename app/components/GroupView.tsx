@@ -1042,6 +1042,16 @@ export default function GroupView({
   }
 
   const updateStatus = (id: string, status: string) => {
+    const currentItem = items.find(i => i.id === id)
+    if (currentItem) {
+      recordGroupMutation('status', {
+        groupId,
+        itemId: id,
+        tmdb_id: currentItem.tmdb_id,
+        media_type: currentItem.media_type,
+        status: status as 'want' | 'watching' | 'done',
+      })
+    }
     setItems(prev => prev.map(i => i.id === id ? { ...i, status } : i))
   }
 

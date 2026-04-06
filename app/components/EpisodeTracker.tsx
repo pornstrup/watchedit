@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import Image from 'next/image'
+import { dispatchWatchlistOptimisticStatus } from './watchlistEvents'
 
 type Season = {
   season_number: number
@@ -75,6 +76,14 @@ export default function EpisodeTracker({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ item_id: itemId, status: 'watching' })
         })
+        dispatchWatchlistOptimisticStatus({
+          scope: 'group',
+          groupId: ctx,
+          itemId,
+          tmdb_id: Number(showId),
+          media_type: 'tv',
+          status: 'watching',
+        })
         onStatusChange?.('watching')
       }
     } else {
@@ -88,6 +97,14 @@ export default function EpisodeTracker({
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: itemId, status: 'watching' })
+        })
+        dispatchWatchlistOptimisticStatus({
+          scope: 'personal',
+          groupId: null,
+          itemId,
+          tmdb_id: Number(showId),
+          media_type: 'tv',
+          status: 'watching',
         })
         onStatusChange?.('watching')
       }
@@ -115,6 +132,14 @@ export default function EpisodeTracker({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ item_id: itemId, status: 'watching' })
         })
+        dispatchWatchlistOptimisticStatus({
+          scope: 'group',
+          groupId: ctx,
+          itemId,
+          tmdb_id: Number(showId),
+          media_type: 'tv',
+          status: 'watching',
+        })
         onStatusChange?.('watching')
       }
     } else {
@@ -128,6 +153,14 @@ export default function EpisodeTracker({
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ id: itemId, status: 'watching' })
+        })
+        dispatchWatchlistOptimisticStatus({
+          scope: 'personal',
+          groupId: null,
+          itemId,
+          tmdb_id: Number(showId),
+          media_type: 'tv',
+          status: 'watching',
         })
         onStatusChange?.('watching')
       }

@@ -29,6 +29,8 @@ export type WatchlistMutationStatusDetail = {
   scope: WatchlistScope
   groupId: string | null
   itemId: string
+  tmdb_id: number
+  media_type: string
   status: 'want' | 'watching' | 'done'
 }
 
@@ -57,6 +59,9 @@ export function dispatchWatchlistOptimisticRemove(detail: WatchlistMutationDetai
 }
 
 export function dispatchWatchlistOptimisticStatus(detail: WatchlistMutationStatusDetail) {
+  if (detail.scope === 'group') {
+    recordGroupMutation('status', detail)
+  }
   window.dispatchEvent(new CustomEvent(WATCHLIST_ITEM_OPTIMISTIC_STATUS, { detail }))
 }
 

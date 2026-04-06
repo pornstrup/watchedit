@@ -251,32 +251,61 @@ export default function StatusButtons({
     if (!onList || !itemId) return
     if (newStatus === 'done' && status === 'done') return
     if (navigator.vibrate) navigator.vibrate(8)
+    const previousStatus = status ?? 'want'
     setStatus(newStatus)
     onStatusChange?.(newStatus)
+    dispatchWatchlistOptimisticStatus({
+      scope: ctx ? 'group' : 'personal',
+      groupId: ctx ?? null,
+      itemId: itemId!,
+      tmdb_id: tmdbId,
+      media_type: mediaType,
+      status: newStatus,
+    })
     if (ctx) {
-      await fetch(`/api/groups/${ctx}/watchlist/status`, {
+      const res = await fetch(`/api/groups/${ctx}/watchlist/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ item_id: itemId, status: newStatus }),
       })
+      if (!res.ok) {
+        setStatus(previousStatus)
+        onStatusChange?.(previousStatus)
+        dispatchWatchlistOptimisticStatus({
+          scope: 'group',
+          groupId: ctx,
+          itemId: itemId!,
+          tmdb_id: tmdbId,
+          media_type: mediaType,
+          status: previousStatus,
+        })
+        return
+      }
     } else {
-      await fetch('/api/watchlist/status', {
+      const res = await fetch('/api/watchlist/status', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: itemId, status: newStatus }),
       })
+      if (!res.ok) {
+        setStatus(previousStatus)
+        onStatusChange?.(previousStatus)
+        dispatchWatchlistOptimisticStatus({
+          scope: 'personal',
+          groupId: null,
+          itemId: itemId!,
+          tmdb_id: tmdbId,
+          media_type: mediaType,
+          status: previousStatus,
+        })
+        return
+      }
     }
     window.dispatchEvent(new Event('watchlist-updated'))
     if (newStatus === 'done' && title) {
       window.umami?.track('mark-watched', { media_type: mediaType })
       setShowRating(true)
     }
-    dispatchWatchlistOptimisticStatus({
-      scope: ctx ? 'group' : 'personal',
-      groupId: ctx ?? null,
-      itemId: itemId!,
-      status: newStatus,
-    })
   }
 
   // ♥ tap-logik:
