@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence, useDragControls } from 'framer-motion'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -140,13 +140,33 @@ export default function SearchSheet({
   const providerRequestId = useRef(0)
   const activeSearchAbort = useRef<AbortController | null>(null)
   const providersRef = useRef<Record<string, Provider[]>>({})
-  const existingIdsHydratedRef = useRef(false)
+  const existingIdsRequestId = useRef(0)
   const latestSnapshotRef = useRef({
     query: resolvedInitialQuery,
     aiMode: resolvedInitialAiMode,
     filter: resolvedInitialFilter,
     activeContext: resolvedInitialContext,
   })
+
+  const refreshExistingIds = useCallback((context: string | null = activeContext) => {
+    const requestId = ++existingIdsRequestId.current
+    const url = context
+      ? `/api/groups/${context}/watchlist`
+      : '/api/watchlist/list'
+
+    fetch(url)
+      .then(r => r.json())
+      .then(d => {
+        if (requestId !== existingIdsRequestId.current) return
+        const ids = new Set<string>(
+          (d.items || []).map((i: { tmdb_id: number; media_type: string }) => `${i.tmdb_id}-${i.media_type}`)
+        )
+        setExistingIds(ids)
+      })
+      .catch(() => {
+        if (requestId !== existingIdsRequestId.current) return
+      })
+  }, [activeContext])
 
   // Lås baggrunds-scroll mens sheet er åben
   useEffect(() => {
@@ -190,22 +210,23 @@ export default function SearchSheet({
   }, [])
 
   useEffect(() => {
-    if (!existingIdsHydratedRef.current) {
-      existingIdsHydratedRef.current = true
-      return
+    refreshExistingIds(activeContext)
+
+    return () => {
+      existingIdsRequestId.current += 1
     }
-    const url = activeContext
-      ? `/api/groups/${activeContext}/watchlist`
-      : '/api/watchlist/list'
-    fetch(url)
-      .then(r => r.json())
-      .then(d => {
-        const ids = new Set<string>(
-          (d.items || []).map((i: { tmdb_id: number; media_type: string }) => `${i.tmdb_id}-${i.media_type}`)
-        )
-        setExistingIds(ids)
-      })
-  }, [activeContext])
+  }, [activeContext, refreshExistingIds])
+
+  useEffect(() => {
+    const handleWatchlistUpdated = (event: Event) => {
+      const detail = (event as CustomEvent<{ groupId?: string | null }>).detail
+      if (detail && detail.groupId !== activeContext) return
+      refreshExistingIds(activeContext)
+    }
+
+    window.addEventListener('watchlist-updated', handleWatchlistUpdated)
+    return () => window.removeEventListener('watchlist-updated', handleWatchlistUpdated)
+  }, [activeContext, refreshExistingIds])
 
   // Flyt sheet præcis over tastaturet (iOS visualViewport)
   useEffect(() => {
