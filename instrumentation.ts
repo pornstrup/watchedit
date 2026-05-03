@@ -6,9 +6,10 @@ export async function register() {
       async () => {
         try {
           const base = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-          await fetch(`${base}/api/cron/new-seasons`, {
+          const res = await fetch(`${base}/api/cron/new-seasons`, {
             headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` },
           })
+          console.log(`[cron] new-seasons kørte — status ${res.status}`)
         } catch (e) {
           console.error('[cron] new-seasons fejlede:', e)
         }
