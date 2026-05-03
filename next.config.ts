@@ -5,6 +5,9 @@ const withBundleAnalyzer = bundleAnalyzer({ enabled: process.env.ANALYZE === 'tr
 
 const nextConfig: NextConfig = {
   compress: true,
+  generateBuildId: async () => {
+    return Date.now().toString()
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'image.tmdb.org' },
