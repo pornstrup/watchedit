@@ -80,7 +80,7 @@ export async function GET(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
-  const [membersRes, itemsRes, inspirationRes, activityRes] = await Promise.all([
+  const [membersRes, itemsRes, inspirationRes] = await Promise.all([
     supabaseAdmin
       .from('group_members')
       .select(`
@@ -105,29 +105,22 @@ export async function GET(
       .select('tmdb_id, media_type')
       .eq('group_id', groupId)
       .eq('user_id', user.id),
-    supabaseAdmin
-      .from('group_watchlist_items')
-      .select('id, added_by, added_at, tmdb_id, media_type')
-      .eq('group_id', groupId)
-      .is('deleted_at', null)
-      .order('added_at', { ascending: false }),
   ])
 
   if (membersRes.error) return NextResponse.json({ error: membersRes.error.message }, { status: 500 })
   if (itemsRes.error) return NextResponse.json({ error: itemsRes.error.message }, { status: 500 })
   if (inspirationRes.error) return NextResponse.json({ error: inspirationRes.error.message }, { status: 500 })
-  if (activityRes.error) return NextResponse.json({ error: activityRes.error.message }, { status: 500 })
 
   const members = (membersRes.data ?? []) as GroupMemberRow[]
   const items = (itemsRes.data ?? []) as GroupWatchlistRow[]
   const hidden = (inspirationRes.data ?? []) as HiddenRow[]
-  const allItems = (activityRes.data ?? []) as ActivityRow[]
+  const allItems = items as unknown as ActivityRow[]
 
   const watchingTvIds = items
     .filter(i => i.media_type === 'tv' && i.status === 'watching')
     .map(i => i.id)
 
-  const [episodeCounts, tmdbMap, memberJoins] = await Promise.all([
+  const [episodeCounts, tmdbMap] = await Promise.all([
     watchingTvIds.length > 0
       ? supabaseAdmin
           .from('group_episode_progress')
@@ -142,11 +135,6 @@ export async function GET(
           })
       : Promise.resolve({} as Record<string, number>),
     getTmdbItems(items.map(i => ({ tmdb_id: i.tmdb_id, media_type: i.media_type }))),
-    supabaseAdmin
-      .from('group_members')
-      .select('user_id, joined_at')
-      .eq('group_id', groupId)
-      .order('joined_at', { ascending: false }),
   ])
 
   const memberProfiles = await supabaseAdmin
@@ -155,7 +143,7 @@ export async function GET(
     .in('id', [
       ...new Set([
         ...items.map(i => i.added_by).filter(Boolean),
-        ...(memberJoins.data || []).map(m => m.user_id).filter(Boolean),
+        ...members.map(m => m.user_id).filter(Boolean),
       ]),
     ])
   const itemMap = Object.fromEntries(items.map(i => [i.id, i]))
@@ -189,17 +177,27 @@ export async function GET(
   }
 
   const uniqueItems = Array.from(seen.values()).slice(0, 50)
-  const inspirationTmdbMap = uniqueItems.length > 0
-    ? await getTmdbItems(uniqueItems.map(i => ({ tmdb_id: i.tmdb_id, media_type: i.media_type })))
-    : {}
+  const tmdbActivityMap = [...new Map((allItems || []).map((i) => [`${i.tmdb_id}-${i.media_type}`, i])).values()].slice(0, 20)
 
-  const inspirationProfiles = await supabaseAdmin
-    .from('profiles')
-    .select('id, name')
-    .in('id', memberProfileRows.map(p => p.id))
+  const [inspirationTmdbMap, activityTmdb, episodes] = await Promise.all([
+    uniqueItems.length > 0
+      ? getTmdbItems(uniqueItems.map(i => ({ tmdb_id: i.tmdb_id, media_type: i.media_type })))
+      : Promise.resolve({} as Record<string, import('@/lib/tmdb').TmdbItem>),
+    tmdbActivityMap.length > 0
+      ? getTmdbItems(tmdbActivityMap.map(i => ({ tmdb_id: i.tmdb_id, media_type: i.media_type })))
+      : Promise.resolve({} as Record<string, import('@/lib/tmdb').TmdbItem>),
+    allItems.length > 0
+      ? supabaseAdmin
+          .from('group_episode_progress')
+          .select('id, marked_by, created_at, season_number, episode_number, group_watchlist_item_id')
+          .in('group_watchlist_item_id', allItems.map(i => i.id))
+          .order('created_at', { ascending: false })
+          .limit(20)
+          .then(({ data }) => (data ?? []) as EpisodeRow[])
+      : Promise.resolve([] as EpisodeRow[]),
+  ])
 
-  const inspirationProfileRows = (inspirationProfiles.data ?? []) as ProfileNameRow[]
-  const inspirationProfileMap = Object.fromEntries(inspirationProfileRows.map(p => [p.id, p.name]))
+  const inspirationProfileMap = Object.fromEntries(memberProfileRows.map(p => [p.id, p.name]))
 
   const inspiration = uniqueItems.map((item) => {
     const tmdb = inspirationTmdbMap[`${item.tmdb_id}-${item.media_type}`]
@@ -231,20 +229,6 @@ export async function GET(
     const profile = Array.isArray(m.profiles) ? m.profiles[0] : m.profiles
     return [m.user_id, profile || null]
   }))
-  const tmdbActivityMap = [...new Map((allItems || []).map((i) => [`${i.tmdb_id}-${i.media_type}`, i])).values()].slice(0, 20)
-  const activityTmdb = tmdbActivityMap.length > 0
-    ? await getTmdbItems(tmdbActivityMap.map((i) => ({ tmdb_id: i.tmdb_id, media_type: i.media_type })))
-    : {}
-
-  const episodes = allItems.length > 0
-    ? await supabaseAdmin
-        .from('group_episode_progress')
-        .select('id, marked_by, created_at, season_number, episode_number, group_watchlist_item_id')
-        .in('group_watchlist_item_id', allItems.map((i) => i.id))
-        .order('created_at', { ascending: false })
-        .limit(20)
-        .then(({ data }) => (data ?? []) as EpisodeRow[])
-    : []
 
   const events: ActivityEvent[] = []
   for (const item of (allItems || []).slice(0, 20)) {
@@ -284,7 +268,7 @@ export async function GET(
     })
   }
 
-  for (const m of (memberJoins.data || [])) {
+  for (const m of members) {
     const profile = profileMap[m.user_id]
     if (!profile) continue
     events.push({
