@@ -218,10 +218,6 @@ const [activeGroupId, setActiveGroupId] = useState<string | null>(
 )
   const [loadingGroups, setLoadingGroups] = useState(true)
 
-  useEffect(() => {
-    window.scrollTo(0, 0)
-  }, [])
-
 const switchGroup = (id: string | null) => {
   setActiveGroupId(id)
   if (id) {
