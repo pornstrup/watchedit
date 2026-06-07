@@ -23,17 +23,12 @@ export default async function MoviePage({
   const { ctx } = await searchParams
   const supabase = await createClient()
 
-  const [{ data: { user } }, res] = await Promise.all([
+  const [{ data: { user } }, movieRes, providersRes, recRes] = await Promise.all([
     supabase.auth.getUser(),
     fetch(
       `https://api.themoviedb.org/3/movie/${id}?language=en-US&append_to_response=videos`,
       { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 3600 } }
     ),
-  ])
-  if (!user) redirect('/login')
-  const movie = await res.json()
-
-  const [providersRes, recRes] = await Promise.all([
     fetch(`https://api.themoviedb.org/3/movie/${id}/watch/providers`, {
       headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 86400 },
     }),
@@ -41,9 +36,14 @@ export default async function MoviePage({
       headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 86400 },
     }),
   ])
-  const providersData = await providersRes.json()
+  if (!user) redirect('/login')
+
+  const [movie, providersData, recData] = await Promise.all([
+    movieRes.json(),
+    providersRes.json(),
+    recRes.json(),
+  ])
   const providers = providersData.results?.DK?.flatrate || []
-  const recData = await recRes.json()
   const similar = ((recData.results || []) as any[])
     .filter((r) => r.poster_path)
     .slice(0, 12)

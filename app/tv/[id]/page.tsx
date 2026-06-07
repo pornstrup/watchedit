@@ -24,28 +24,28 @@ export default async function TVPage({
   const { ctx } = await searchParams
   const supabase = await createClient()
 
-  const [{ data: { user } }, res] = await Promise.all([
+  const [{ data: { user } }, showRes, providersRes, recRes, dkSchedule] = await Promise.all([
     supabase.auth.getUser(),
     fetch(
       `https://api.themoviedb.org/3/tv/${id}?language=en-US&append_to_response=external_ids,videos`,
       { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 3600 } }
     ),
-  ])
-  if (!user) redirect('/login')
-  const show = await res.json()
-
-  const [providersRes, recRes, dkSchedule] = await Promise.all([
     fetch(`https://api.themoviedb.org/3/tv/${id}/watch/providers`, {
       headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 86400 },
     }),
     fetch(`https://api.themoviedb.org/3/tv/${id}/recommendations?language=en-US`, {
       headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 86400 },
     }),
-    getDKWebSchedule(10),
+    getDKWebSchedule(3),
   ])
-  const providersData = await providersRes.json()
+  if (!user) redirect('/login')
+
+  const [show, providersData, recData] = await Promise.all([
+    showRes.json(),
+    providersRes.json(),
+    recRes.json(),
+  ])
   const providers = providersData.results?.DK?.flatrate || []
-  const recData = await recRes.json()
   const similar = ((recData.results || []) as any[])
     .filter((r) => r.poster_path)
     .slice(0, 12)
