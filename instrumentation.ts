@@ -5,18 +5,20 @@ export async function register() {
     const { Agent, setGlobalDispatcher } = await import('undici')
     setGlobalDispatcher(new Agent({ keepAliveTimeout: 60_000, keepAliveMaxTimeout: 10 * 60_000 }))
 
-    // Hold 4 forbindelser til Supabase åbne i tomgang (bootstrap-ruterne kører op til 4 parallelt),
-    // så første klik efter en pause ikke skal lave nye TLS-forbindelser
+    // Hold Supabase's databaseforbindelser varme. Målt i prod 2026-09-16: efter ≥ 45 s
+    // stilhed tog 5 samtidige REST-kald ~1 s hver (nye DB-forbindelser), efter ≤ 10 s ~85 ms.
+    // En sidevisning laver ~6 samtidige kald, så 6 små HEAD-kald hvert 20. sekund.
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     if (supabaseUrl && anonKey) {
       const keepWarm = () =>
-        Promise.all(Array.from({ length: 4 }, () =>
-          fetch(`${supabaseUrl}/auth/v1/health`, { headers: { apikey: anonKey } })
-            .then(res => res.arrayBuffer())
-            .catch(() => undefined)
+        Promise.all(Array.from({ length: 6 }, () =>
+          fetch(`${supabaseUrl}/rest/v1/profiles?select=id&limit=1`, {
+            method: 'HEAD',
+            headers: { apikey: anonKey, Authorization: `Bearer ${anonKey}` },
+          }).catch(() => undefined)
         ))
-      setInterval(keepWarm, 50_000).unref()
+      setInterval(keepWarm, 20_000).unref()
     }
 
     // Diagnostik: log hvis Node's event loop har været blokeret (fx CPU-tungt arbejde),

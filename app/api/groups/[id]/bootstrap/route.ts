@@ -156,9 +156,9 @@ export async function GET(
     allItems.length > 0
       ? supabaseAdmin
           .from('group_episode_progress')
-          .select('id, marked_by, created_at, season_number, episode_number, group_watchlist_item_id')
+          .select('id, marked_by, created_at:watched_at, season_number, episode_number, group_watchlist_item_id')
           .in('group_watchlist_item_id', allItems.map(i => i.id))
-          .order('created_at', { ascending: false })
+          .order('watched_at', { ascending: false })
           .limit(20)
           .then(({ data }) => (data ?? []) as EpisodeRow[])
       : Promise.resolve([] as EpisodeRow[]),
