@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/supabase/auth'
+import { requireGroupMember, requireGroupItem } from '@/lib/groups'
 
 export async function POST(
   request: Request,
@@ -13,6 +14,13 @@ export async function POST(
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
   const { group_watchlist_item_id, season_number, episode_number } = await request.json()
+
+  const [notMember, notInGroup] = await Promise.all([
+    requireGroupMember(groupId, user.id),
+    requireGroupItem(groupId, group_watchlist_item_id),
+  ])
+  if (notMember) return notMember
+  if (notInGroup) return notInGroup
 
   const { error } = await supabaseAdmin
     .from('group_episode_progress')
@@ -45,6 +53,13 @@ export async function DELETE(
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
   const { group_watchlist_item_id, season_number, episode_number } = await request.json()
+
+  const [notMember, notInGroup] = await Promise.all([
+    requireGroupMember(groupId, user.id),
+    requireGroupItem(groupId, group_watchlist_item_id),
+  ])
+  if (notMember) return notMember
+  if (notInGroup) return notInGroup
 
   const { error } = await supabaseAdmin
     .from('group_episode_progress')

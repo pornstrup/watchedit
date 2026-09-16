@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/supabase/auth'
+import { requireGroupMember } from '@/lib/groups'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -9,6 +10,11 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
   const { group_id } = await request.json()
+  if (!group_id) return NextResponse.json({ error: 'Gruppe mangler' }, { status: 400 })
+
+  // Kun medlemmer må invitere — ellers kan alle generere et link og melde sig ind i enhver gruppe
+  const notMember = await requireGroupMember(group_id, user.id)
+  if (notMember) return notMember
 
   // Tjek om der allerede er et gyldigt token
   const { data: existing } = await supabaseAdmin

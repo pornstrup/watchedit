@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/supabase/auth'
+import { requireGroupMember, requireGroupItem } from '@/lib/groups'
 
 export async function GET(
   _: Request,
@@ -11,6 +12,9 @@ export async function GET(
   const supabase = await createClient()
   const user = await getAuthUser(supabase)
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
+
+  const notMember = await requireGroupMember(groupId, user.id)
+  if (notMember) return notMember
 
   // Hent alle item-IDs for gruppen
   const { data: items } = await supabaseAdmin
@@ -50,6 +54,13 @@ export async function POST(
 
   const { item_id } = await req.json()
 
+  const [notMember, notInGroup] = await Promise.all([
+    requireGroupMember(groupId, user.id),
+    requireGroupItem(groupId, item_id),
+  ])
+  if (notMember) return notMember
+  if (notInGroup) return notInGroup
+
   const { error } = await supabaseAdmin
     .from('group_reactions')
     .upsert({ group_watchlist_item_id: item_id, user_id: user.id })
@@ -66,6 +77,9 @@ export async function DELETE(
   const supabase = await createClient()
   const user = await getAuthUser(supabase)
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
+
+  const notMember = await requireGroupMember(groupId, user.id)
+  if (notMember) return notMember
 
   const { item_id } = await req.json()
 

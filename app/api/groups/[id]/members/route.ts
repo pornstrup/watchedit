@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/supabase/auth'
+import { requireGroupMember } from '@/lib/groups'
 
 export async function GET(
   _: Request,
@@ -10,6 +11,9 @@ export async function GET(
   const supabase = await createClient()
   const user = await getAuthUser(supabase)
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
+
+  const notMember = await requireGroupMember(id, user.id)
+  if (notMember) return notMember
 
   const { data: members, error } = await supabase
     .from('group_members')

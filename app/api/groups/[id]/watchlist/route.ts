@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 import { getTmdbItems } from '@/lib/tmdb'
 import { getAuthUser } from '@/lib/supabase/auth'
+import { requireGroupMember } from '@/lib/groups'
 
 export async function GET(
   _: Request,
@@ -12,6 +13,9 @@ export async function GET(
   const supabase = await createClient()
   const user = await getAuthUser(supabase)
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
+
+  const notMember = await requireGroupMember(groupId, user.id)
+  if (notMember) return notMember
 
   const { data: items, error } = await supabaseAdmin
     .from('group_watchlist_items')
@@ -72,6 +76,9 @@ export async function POST(
   const supabase = await createClient()
   const user = await getAuthUser(supabase)
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
+
+  const notMember = await requireGroupMember(groupId, user.id)
+  if (notMember) return notMember
 
   const { tmdb_id, media_type } = await request.json()
 
@@ -134,6 +141,9 @@ export async function DELETE(
   const supabase = await createClient()
   const user = await getAuthUser(supabase)
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
+
+  const notMember = await requireGroupMember(groupId, user.id)
+  if (notMember) return notMember
 
   const { tmdb_id, media_type } = await request.json()
 
