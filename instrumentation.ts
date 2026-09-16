@@ -1,5 +1,24 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
+    // Genbrug forbindelser til Supabase/TMDB længere end Node's standard 4 s.
+    // Målt i prod: 4 parallelle kald på nye forbindelser median 262 ms, genbrugte 121 ms.
+    const { Agent, setGlobalDispatcher } = await import('undici')
+    setGlobalDispatcher(new Agent({ keepAliveTimeout: 60_000, keepAliveMaxTimeout: 10 * 60_000 }))
+
+    // Hold 4 forbindelser til Supabase åbne i tomgang (bootstrap-ruterne kører op til 4 parallelt),
+    // så første klik efter en pause ikke skal lave nye TLS-forbindelser
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if (supabaseUrl && anonKey) {
+      const keepWarm = () =>
+        Promise.all(Array.from({ length: 4 }, () =>
+          fetch(`${supabaseUrl}/auth/v1/health`, { headers: { apikey: anonKey } })
+            .then(res => res.arrayBuffer())
+            .catch(() => undefined)
+        ))
+      setInterval(keepWarm, 50_000).unref()
+    }
+
     const cron = (await import('node-cron')).default
     const base = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 

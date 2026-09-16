@@ -22,6 +22,7 @@ import {
   type WatchlistMutationDetail,
   type WatchlistMutationStatusDetail,
 } from './watchlistEvents'
+import { loadGroupBootstrap } from './groupBootstrap'
 
 const MotionLink = motion(Link)
 
@@ -915,11 +916,7 @@ export default function GroupView({
   useEffect(() => {
     let cancelled = false
 
-    fetch(`/api/groups/${groupId}/bootstrap`)
-      .then(async (r) => {
-        if (!r.ok) throw new Error('bootstrap failed')
-        return r.json()
-      })
+    loadGroupBootstrap<{ members?: Member[]; items?: GroupItem[]; inspiration?: InspirationItem[]; activity?: ActivityEvent[] }>(groupId)
       .then((data) => {
         if (cancelled) return
         setMembers(data.members || [])

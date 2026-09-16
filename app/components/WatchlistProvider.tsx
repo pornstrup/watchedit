@@ -6,6 +6,7 @@ import { motion, AnimatePresence, useDragControls } from 'framer-motion'
 import Watchlist from './Watchlist'
 import GroupView from './GroupView'
 import PullToRefresh from './PullToRefresh'
+import { prefetchGroupBootstrap } from './groupBootstrap'
 
 type Group = {
   id: string
@@ -217,6 +218,11 @@ const [activeGroupId, setActiveGroupId] = useState<string | null>(
   searchParams.get('group')
 )
   const [loadingGroups, setLoadingGroups] = useState(true)
+
+  // Start gruppens data-kald straks — ventede før på /api/groups og GroupView's mount
+  useEffect(() => {
+    if (activeGroupId) prefetchGroupBootstrap(activeGroupId)
+  }, [activeGroupId])
 
 const switchGroup = (id: string | null) => {
   setActiveGroupId(id)

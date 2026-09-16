@@ -5,10 +5,30 @@ import PageTransition from './components/PageTransition'
 import { getTmdbItems } from '@/lib/tmdb'
 import { getAuthUser } from '@/lib/supabase/auth'
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ group?: string }>
+}) {
   const supabase = await createClient()
   const user = await getAuthUser(supabase)
   if (!user) redirect('/login')
+
+  // Når en gruppe er valgt, vises den personlige liste ikke — spring dens
+  // Supabase-kald over, så siden og gruppens data-kald kan starte hurtigere.
+  // Watchlist henter selv sine data, hvis man skifter til "Min liste".
+  const { group } = await searchParams
+  if (group) {
+    return (
+      <main className="min-h-screen bg-black flex flex-col items-center" style={{ paddingBottom: 'calc(6rem + env(safe-area-inset-bottom))' }}>
+        <div className="w-full max-w-md px-6 flex flex-col pt-14">
+          <PageTransition>
+            <WatchlistProvider userName={user.user_metadata.full_name} userId={user.id} />
+          </PageTransition>
+        </div>
+      </main>
+    )
+  }
 
   const { data: rawItems } = await supabase
     .from('watchlist_items')
