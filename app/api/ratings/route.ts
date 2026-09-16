@@ -1,12 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
+import { getAuthUser } from '@/lib/supabase/auth'
 
 // GET /api/ratings?tmdb_id=X&media_type=Y
 // Returnerer: din egen rating + følgeres ratings + fremmede med høje ratings
 export async function GET(req: Request) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser(supabase)
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
   const { searchParams } = new URL(req.url)

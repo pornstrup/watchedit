@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { getAuthUser } from '@/lib/supabase/auth'
 
 export async function DELETE(
   _: Request,
@@ -7,7 +8,7 @@ export async function DELETE(
 ) {
   const { id } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser(supabase)
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
   const { error } = await supabase

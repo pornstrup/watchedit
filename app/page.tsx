@@ -3,10 +3,11 @@ import { redirect } from 'next/navigation'
 import WatchlistProvider from './components/WatchlistProvider'
 import PageTransition from './components/PageTransition'
 import { getTmdbItems } from '@/lib/tmdb'
+import { getAuthUser } from '@/lib/supabase/auth'
 
 export default async function Home() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser(supabase)
   if (!user) redirect('/login')
 
   const { data: rawItems } = await supabase

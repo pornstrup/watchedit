@@ -23,7 +23,9 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  await supabase.auth.getUser()
+  // Fornyer session-cookien hvis token er udløbet. getClaims() verificerer
+  // lokalt mod JWKS i stedet for at kalde Supabase Auth på hver request.
+  await supabase.auth.getClaims()
   return supabaseResponse
 }
 

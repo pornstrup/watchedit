@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getAuthUser } from '@/lib/supabase/auth'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Image from 'next/image'
@@ -23,8 +24,8 @@ export default async function MoviePage({
   const { ctx } = await searchParams
   const supabase = await createClient()
 
-  const [{ data: { user } }, movieRes, providersRes, recRes] = await Promise.all([
-    supabase.auth.getUser(),
+  const [user, movieRes, providersRes, recRes] = await Promise.all([
+    getAuthUser(supabase),
     fetch(
       `https://api.themoviedb.org/3/movie/${id}?language=en-US&append_to_response=videos`,
       { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 3600 } }

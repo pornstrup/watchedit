@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
+import { getAuthUser } from '@/lib/supabase/auth'
 
 const KEY = process.env.TMDB_API_KEY
 
@@ -26,7 +27,7 @@ function mapItems(results: any[], mediaType: 'movie' | 'tv', limit = 6) {
 
 export async function GET() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser(supabase)
   if (!user) return NextResponse.json({ sections: [] })
 
   const { data: profile } = await supabaseAdmin

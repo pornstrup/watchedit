@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
+import { getAuthUser } from '@/lib/supabase/auth'
 
 export async function GET(
   _: Request,
@@ -8,7 +9,7 @@ export async function GET(
 ) {
   const { id: groupId } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser(supabase)
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
   // Hent alle item-IDs for gruppen
@@ -44,7 +45,7 @@ export async function POST(
 ) {
   const { id: groupId } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser(supabase)
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
   const { item_id } = await req.json()
@@ -63,7 +64,7 @@ export async function DELETE(
 ) {
   const { id: groupId } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser(supabase)
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
   const { item_id } = await req.json()

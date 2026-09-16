@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 import { getDKWebSchedule } from '@/lib/tvmaze'
 import { getTmdbItems } from '@/lib/tmdb'
+import { getAuthUser } from '@/lib/supabase/auth'
 
 const KEY = process.env.TMDB_API_KEY
 
@@ -79,7 +80,7 @@ export async function GET(request: Request) {
   const ctx = url.searchParams.get('ctx')
 
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser(supabase)
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
   const profilePromise = supabaseAdmin

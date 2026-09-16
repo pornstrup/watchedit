@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { supabaseAdmin } from '@/lib/supabase/admin'
+import { getAuthUser } from '@/lib/supabase/auth'
 
 export default async function JoinPage({
   params,
@@ -9,7 +10,7 @@ export default async function JoinPage({
 }) {
   const { token } = await params
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser(supabase)
 
   if (!user) {
     redirect(`/login?redirect=/join/${token}`)

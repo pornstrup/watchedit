@@ -1,11 +1,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { supabaseAdmin } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
+import { getAuthUser } from '@/lib/supabase/auth'
 
 export async function POST(request: Request) {
   const supabase = await createClient()
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  if (authError || !user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
+  const user = await getAuthUser(supabase)
+  if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
   const body = await request.json()
   const { tmdb_id, media_type } = body
@@ -66,7 +67,7 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser(supabase)
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
   const { tmdb_id, media_type } = await request.json()

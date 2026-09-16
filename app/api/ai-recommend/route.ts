@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { getAuthUser } from '@/lib/supabase/auth'
+import { getTmdbItems } from '@/lib/tmdb'
 
 const client = new Anthropic()
 
@@ -84,7 +86,7 @@ async function searchTmdbSuggestion(
 
 export async function GET() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser(supabase)
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
   // Hent ratings, watchlist og profil parallelt
@@ -117,17 +119,14 @@ export async function GET() {
     return NextResponse.json({ recommendations: [] })
   }
 
-  // Hent titler + genredata fra tmdb_cache
-  const { data: cached } = await supabase
-    .from('tmdb_cache')
-    .select('tmdb_id, media_type, title, data')
-    .in('tmdb_id', rated.map(r => r.tmdb_id))
+  // Hent titler + genredata (fra TMDB-cachen på serveren)
+  const ratedTmdb = await getTmdbItems(rated.map(r => ({ tmdb_id: r.tmdb_id, media_type: r.media_type })))
 
   const cacheMap: Record<string, { title: string; genres: string }> = {}
-  for (const c of cached || []) {
-    const genres = (c.data?.genres as { name: string }[] | undefined)
-      ?.slice(0, 2).map((g: { name: string }) => g.name).join('/') ?? ''
-    cacheMap[`${c.tmdb_id}-${c.media_type}`] = { title: c.title, genres }
+  for (const [key, item] of Object.entries(ratedTmdb)) {
+    if (!item.title) continue
+    const genres = item.genres.slice(0, 2).map(g => g.name).join('/')
+    cacheMap[key] = { title: item.title, genres }
   }
 
   const onList = new Set((watchlist).map(w => `${w.tmdb_id}-${w.media_type}`))
@@ -138,13 +137,10 @@ export async function GET() {
     const wantItems = watchlist.filter(w => w.status === 'want').slice(0, 5)
     const wantTmdbIds = wantItems.map(w => w.tmdb_id)
     if (wantTmdbIds.length > 0) {
-      const { data: wantCached } = await supabase
-        .from('tmdb_cache')
-        .select('tmdb_id, media_type, title')
-        .in('tmdb_id', wantTmdbIds)
+      const wantTmdb = await getTmdbItems(wantItems.map(w => ({ tmdb_id: w.tmdb_id, media_type: w.media_type })))
       const wantTitleMap: Record<string, string> = {}
-      for (const c of wantCached || []) {
-        wantTitleMap[`${c.tmdb_id}-${c.media_type}`] = c.title
+      for (const [key, item] of Object.entries(wantTmdb)) {
+        wantTitleMap[key] = item.title
       }
       wantLines = wantItems
         .map(w => {

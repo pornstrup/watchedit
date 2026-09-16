@@ -1,10 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { getAuthUser } from '@/lib/supabase/auth'
 
 // GET /api/follows — hent hvem jeg følger + mine følgere
 export async function GET() {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser(supabase)
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
   const [{ data: following }, { data: followers }] = await Promise.all([
@@ -22,7 +23,7 @@ export async function GET() {
 // POST /api/follows — følg en bruger
 export async function POST(req: Request) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser(supabase)
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
   const { user_id } = await req.json()
@@ -42,7 +43,7 @@ export async function POST(req: Request) {
 // DELETE /api/follows — unfolg en bruger
 export async function DELETE(req: Request) {
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const user = await getAuthUser(supabase)
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
   const { user_id } = await req.json()

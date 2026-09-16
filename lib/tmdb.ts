@@ -1,6 +1,13 @@
-import { supabaseAdmin } from './supabase/admin'
+import { unstable_cache } from 'next/cache'
 
-const CACHE_TTL_DAYS = 7
+// Data holdes friskt i 24 timer. Derefter returneres den gamle værdi straks,
+// mens en ny hentes i baggrunden (stale-while-revalidate) — brugeren venter aldrig.
+// Cachen ligger på app-serveren (Next.js data cache), ikke i Supabase, så et
+// opslag koster ingen database-rundtur. Cron'en /api/cron/warm-tmdb holder den varm.
+const REVALIDATE_SECONDS = 60 * 60 * 24
+
+// Max samtidige TMDB-kald ved kold cache (TMDB tillader ca. 50 req/s)
+const MAX_PARALLEL = 10
 
 export type TmdbItem = {
   title: string
@@ -17,32 +24,17 @@ export type TmdbItem = {
   tmdb_status: string | null
 }
 
-export async function getTmdbItem(tmdb_id: number, media_type: string): Promise<TmdbItem> {
-  // 1. Slå op i cache
-  const { data: cached } = await supabaseAdmin
-    .from('tmdb_cache')
-    .select('data, cached_at')
-    .eq('tmdb_id', tmdb_id)
-    .eq('media_type', media_type)
-    .maybeSingle()
-
-  if (cached) {
-    const age = (Date.now() - new Date(cached.cached_at).getTime()) / (1000 * 60 * 60 * 24)
-    const data = cached.data as Record<string, unknown>
-    if (age < CACHE_TTL_DAYS && 'number_of_episodes' in data && 'last_season_aired' in data) {
-      return data as TmdbItem
-    }
-  }
-
-  // 2. Hent fra TMDB
+async function fetchTmdbItem(tmdb_id: number, media_type: string): Promise<TmdbItem> {
   const type = media_type === 'movie' ? 'movie' : 'tv'
   const res = await fetch(
     `https://api.themoviedb.org/3/${type}/${tmdb_id}?language=en-US`,
-    { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, next: { revalidate: 3600 } }
+    { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, cache: 'no-store' }
   )
+  // Kast ved fejl, så et fejlsvar aldrig bliver gemt i cachen
+  if (!res.ok) throw new Error(`TMDB ${type}/${tmdb_id} svarede ${res.status}`)
   const tmdb = await res.json()
 
-  const item: TmdbItem = {
+  return {
     title: tmdb.title || tmdb.name || '',
     poster: tmdb.poster_path ? `https://image.tmdb.org/t/p/w300${tmdb.poster_path}` : null,
     backdrop: tmdb.backdrop_path ? `https://image.tmdb.org/t/p/w1280${tmdb.backdrop_path}` : null,
@@ -56,79 +48,36 @@ export async function getTmdbItem(tmdb_id: number, media_type: string): Promise<
     last_season_aired: tmdb.last_episode_to_air?.season_number ?? null,
     tmdb_status: tmdb.status ?? null,
   }
-
-  // 3. Gem i cache (upsert)
-  await supabaseAdmin
-    .from('tmdb_cache')
-    .upsert(
-      { tmdb_id, media_type, data: item, cached_at: new Date().toISOString() },
-      { onConflict: 'tmdb_id,media_type' }
-    )
-
-  return item
 }
 
-// Batch-version til endpoints der henter mange items på én gang
+// Henter én titel. Kaster hvis TMDB fejler og intet ligger i cachen.
+export const getTmdbItem = unstable_cache(fetchTmdbItem, ['tmdb-item-v2'], {
+  revalidate: REVALIDATE_SECONDS,
+  tags: ['tmdb'],
+})
+
+// Batch-version til endpoints der henter mange items på én gang.
+// Titler der ikke kan hentes udelades fra resultatet (kalderne bruger `tmdb?.`).
 export async function getTmdbItems(
   items: { tmdb_id: number; media_type: string }[]
 ): Promise<Record<string, TmdbItem>> {
-  if (items.length === 0) return {}
-
-  // Hent alt der er i cachen på én gang
-  const { data: cached } = await supabaseAdmin
-    .from('tmdb_cache')
-    .select('tmdb_id, media_type, data, cached_at')
-    .in('tmdb_id', items.map(i => i.tmdb_id))
-
-  type CachedEntry = {
-    tmdb_id: number
-    media_type: string
-    data: unknown
-    cached_at: string
-  }
-
-  const cachedMap = new Map<string, CachedEntry>(
-    (cached || []).map((entry) => [
-      `${entry.tmdb_id}-${entry.media_type}`,
-      entry as CachedEntry,
-    ])
-  )
-  const now = Date.now()
   const result: Record<string, TmdbItem> = {}
-  const missing: { tmdb_id: number; media_type: string }[] = []
 
-  for (const item of items) {
-    const key = `${item.tmdb_id}-${item.media_type}`
-    const hit = cachedMap.get(key)
-    if (hit) {
-      const age = (now - new Date(hit.cached_at).getTime()) / (1000 * 60 * 60 * 24)
-      const data = hit.data as Record<string, unknown>
-      const isStale = age >= CACHE_TTL_DAYS
-      const isMissingFields = !('number_of_episodes' in data) || !('last_season_aired' in data)
-      if (!isStale && !isMissingFields) {
-        result[key] = data as TmdbItem
-        continue
+  // Dedupliker — samme titel kan optræde flere gange
+  const unique = [...new Map(items.map(i => [`${i.tmdb_id}-${i.media_type}`, i])).values()]
+
+  let next = 0
+  const worker = async () => {
+    while (next < unique.length) {
+      const item = unique[next++]
+      try {
+        result[`${item.tmdb_id}-${item.media_type}`] = await getTmdbItem(item.tmdb_id, item.media_type)
+      } catch (e) {
+        console.error('[tmdb]', e instanceof Error ? e.message : e)
       }
     }
-    missing.push(item)
   }
-
-  if (missing.length === 0) return result
-
-  // Hent manglende fra TMDB i små parallelle batches
-  const chunks: { tmdb_id: number; media_type: string }[][] = []
-  for (let i = 0; i < missing.length; i += 10) {
-    chunks.push(missing.slice(i, i + 10))
-  }
-
-  for (const chunk of chunks) {
-    await Promise.all(
-      chunk.map(async (item) => {
-        const key = `${item.tmdb_id}-${item.media_type}`
-        result[key] = await getTmdbItem(item.tmdb_id, item.media_type)
-      })
-    )
-  }
+  await Promise.all(Array.from({ length: Math.min(MAX_PARALLEL, unique.length) }, worker))
 
   return result
 }
