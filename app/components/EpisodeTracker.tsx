@@ -24,6 +24,23 @@ type Progress = {
   episode_number: number
 }
 
+// Sæsonen med senest sete afsnit — eller næste sæson hvis den er set færdig
+function findCurrentSeason(seasons: Season[], progress: Progress[]): number {
+  const first = seasons[0]?.season_number || 1
+  if (progress.length === 0) return first
+
+  const lastSeason = Math.max(...progress.map(p => p.season_number))
+  const season = seasons.find(s => s.season_number === lastSeason)
+  if (!season) return first
+
+  const watchedInLast = progress.filter(p => p.season_number === lastSeason).length
+  if (watchedInLast >= season.episode_count) {
+    const next = seasons.find(s => s.season_number > lastSeason)
+    if (next) return next.season_number
+  }
+  return lastSeason
+}
+
 export default function EpisodeTracker({
   itemId,
   seasons,
@@ -41,7 +58,7 @@ export default function EpisodeTracker({
   onStatusChange?: (status: string) => void
   ctx?: string
 }) {
-  const [activeSeason, setActiveSeason] = useState(seasons[0]?.season_number || 1)
+  const [activeSeason, setActiveSeason] = useState(() => findCurrentSeason(seasons, progress))
   const [episodes, setEpisodes] = useState<Episode[]>([])
   const [watched, setWatched] = useState<Set<string>>(
     new Set(progress.map(p => `${p.season_number}-${p.episode_number}`))
@@ -264,7 +281,8 @@ export default function EpisodeTracker({
         )}
       </motion.div>
 
-      {/* MARKER SÆSON */}
+      {/* MARKER SÆSON — kun når der er usete afsnit */}
+      {watchedInSeason < (currentSeason?.episode_count || 0) && (
       <motion.button
         onClick={() => markSeasonWatched(activeSeason, currentSeason?.episode_count || 0)}
         className="w-full py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/50 text-sm font-medium hover:bg-white/10 transition-all"
@@ -273,6 +291,7 @@ export default function EpisodeTracker({
       >
         Marker hele sæsonen som set
       </motion.button>
+      )}
     </div>
   )
 }

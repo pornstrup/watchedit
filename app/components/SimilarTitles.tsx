@@ -16,7 +16,7 @@ export default function SimilarTitles({ items, ctx }: { items: SimilarItem[]; ct
     <div className="mb-6">
       <p className="text-white/50 text-sm mb-3">Lignende</p>
       <div
-        className="flex gap-3 overflow-x-auto pb-2 -mx-6 px-6"
+        className="flex gap-3 overflow-x-auto scrollbar-none pb-2 -mx-6 px-6"
         style={{ scrollbarWidth: 'none' }}
       >
         {items.map((item) => (

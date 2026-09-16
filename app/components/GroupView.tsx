@@ -1207,42 +1207,35 @@ export default function GroupView({
           </div>
         )}
 
-        {/* HVAD SER I I AFTEN */}
-        {featuredItem ? (
-          <div className="relative rounded-3xl overflow-hidden" style={{ minHeight: 160 }}>
+        {/* HVAD SER I I AFTEN — kun når intet er i gang (ellers står det i "Fortsæt med") */}
+        {watchingItems.length === 0 && (featuredItem ? (
+          <a
+            href={`/${featuredItem.media_type === 'movie' ? 'movie' : 'tv'}/${featuredItem.tmdb_id}?ctx=${groupId}`}
+            className="flex items-center gap-4 rounded-3xl p-4 no-underline active:scale-[0.98] transition-transform"
+            style={{
+              background: 'rgba(255, 255, 255, 0.06)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+            }}
+          >
             {featuredItem.poster && (
-              <Image
-                src={featuredItem.poster}
-                alt={featuredItem.title}
-                fill
-                className="object-cover opacity-40"
-                sizes="100vw"
-                style={{ filter: 'blur(12px)', transform: 'scale(1.1)' }}
-              />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-            <div className="relative p-6 flex flex-col gap-4">
-              <p className="text-white/50 text-xs uppercase tracking-widest font-semibold">
-                {watchingItems.length > 0 ? 'Fortsæt med' : 'Hvad ser I i aften?'}
-              </p>
-              <h2 className="text-white text-2xl font-bold leading-tight">{featuredItem.title}</h2>
-              <div className="flex gap-2">
-                <a
-                  href={`/${featuredItem.media_type === 'movie' ? 'movie' : 'tv'}/${featuredItem.tmdb_id}?ctx=${groupId}`}
-                  className="px-5 py-2.5 rounded-xl text-black text-sm font-semibold no-underline"
-                  style={{ background: 'white' }}
-                >
-                  {featuredAction} →
-                </a>
+              <div className="relative w-20 aspect-[2/3] rounded-xl overflow-hidden flex-shrink-0">
+                <Image src={featuredItem.poster} alt={featuredItem.title} fill className="object-cover" sizes="80px" />
               </div>
+            )}
+            <div className="flex flex-col gap-3 min-w-0">
+              <p className="text-white/55 text-xs uppercase tracking-widest font-semibold">Hvad ser I i aften?</p>
+              <h2 className="text-white text-xl font-bold leading-tight">{featuredItem.title}</h2>
+              <span className="self-start px-4 py-2 rounded-xl text-black text-sm font-semibold" style={{ background: 'white' }}>
+                {featuredAction} →
+              </span>
             </div>
-          </div>
+          </a>
         ) : (
           <div className="flex flex-col items-center gap-3 py-8 text-center">
             <p className="text-white text-lg font-semibold">Ingen titler endnu</p>
             <p className="text-white/55 text-sm">Søg efter film og serier og tilføj dem til {currentGroupName}</p>
           </div>
-        )}
+        ))}
 
         {/* I GANG */}
         {watchingItems.length > 0 && (

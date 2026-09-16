@@ -189,7 +189,9 @@ export default function BottomNav() {
               {/* OPDAG */}
               <button
                 onClick={() => {
-                  setSearchGroupId(groupId)
+                  // Fra fanebaren tilføjes altid til egen liste — gruppens egen
+                  // "Tilføj"-knap åbner søgning med gruppen som kontekst
+                  setSearchGroupId(null)
                   setSearchOpen(true)
                 }}
                 aria-label="Opdag"

@@ -490,7 +490,7 @@ const updateStatus = (id: string, status: string) => {
 
   if (loading) return (
     <div className="flex flex-col gap-8">
-      <div className="flex gap-3 overflow-x-auto pb-2">
+      <div className="flex gap-3 overflow-x-auto scrollbar-none pb-2">
         {Array.from({ length: 3 }).map((_, i) => (
           <div key={i} className="flex-shrink-0 w-40 h-60 rounded-2xl bg-white/5 animate-pulse" />
         ))}

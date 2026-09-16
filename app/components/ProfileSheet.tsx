@@ -175,7 +175,7 @@ export default function ProfileSheet({ onClose }: { onClose: () => void }) {
                     alt={profile.name}
                     width={56}
                     height={56}
-                    className="rounded-full object-cover ring-2 ring-white/10"
+                    className="w-14 h-14 rounded-full object-cover ring-2 ring-white/10"
                   />
                 ) : (
                   <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center ring-2 ring-white/10">

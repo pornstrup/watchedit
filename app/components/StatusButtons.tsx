@@ -312,6 +312,8 @@ export default function StatusButtons({
   // Ikke på liste → tilføj
   // På liste, status=want → fjern (toggle)
   // På liste, status=watching/done → skift til want
+  const heartActive = onList && (status === 'want' || status === null)
+
   const handleHeart = () => {
     if (!onList) {
       addToList()
@@ -334,14 +336,14 @@ export default function StatusButtons({
         >
           <div style={{ width: sz, height: sz, borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', ...glassInactive }}>
             <svg width={iconSz} height={iconSz} viewBox="0 0 24 24"
-              fill={onList ? 'rgba(255,59,48,1)' : 'none'}
-              stroke={onList ? 'rgba(255,59,48,1)' : 'rgba(255,255,255,0.3)'}
+              fill={heartActive ? 'rgba(255,59,48,1)' : 'none'}
+              stroke={heartActive ? 'rgba(255,59,48,1)' : 'rgba(255,255,255,0.3)'}
               strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
             >
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
           </div>
-          <span style={{ ...labelStyle, color: onList ? 'rgba(255,59,48,0.8)' : 'rgba(255,255,255,0.25)' }}>
+          <span style={{ ...labelStyle, color: heartActive ? 'rgba(255,59,48,0.8)' : 'rgba(255,255,255,0.55)' }}>
             Vil se
           </span>
         </button>
