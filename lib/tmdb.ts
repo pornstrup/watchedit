@@ -1,4 +1,5 @@
 import { unstable_cache } from 'next/cache'
+import { SLOW_CALL_MS } from '@/lib/timing'
 
 // Data holdes friskt i 24 timer. Derefter returneres den gamle værdi straks,
 // mens en ny hentes i baggrunden (stale-while-revalidate) — brugeren venter aldrig.
@@ -26,10 +27,13 @@ export type TmdbItem = {
 
 async function fetchTmdbItem(tmdb_id: number, media_type: string): Promise<TmdbItem> {
   const type = media_type === 'movie' ? 'movie' : 'tv'
+  const started = performance.now()
   const res = await fetch(
     `https://api.themoviedb.org/3/${type}/${tmdb_id}?language=en-US`,
     { headers: { Authorization: `Bearer ${process.env.TMDB_API_KEY}` }, cache: 'no-store' }
   )
+  const ms = Math.round(performance.now() - started)
+  if (ms >= SLOW_CALL_MS) console.warn(`[slow] tmdb ${type}/${tmdb_id} ${res.status} ${ms}ms`)
   // Kast ved fejl, så et fejlsvar aldrig bliver gemt i cachen
   if (!res.ok) throw new Error(`TMDB ${type}/${tmdb_id} svarede ${res.status}`)
   const tmdb = await res.json()

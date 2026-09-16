@@ -3,6 +3,7 @@ import { supabaseAdmin } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
 import { getTmdbItems } from '@/lib/tmdb'
 import { getAuthUser } from '@/lib/supabase/auth'
+import { createPhaseTimer } from '@/lib/timing'
 
 type GroupMemberRow = {
   user_id: string
@@ -77,8 +78,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: groupId } = await params
+  const timer = createPhaseTimer('bootstrap')
   const supabase = await createClient()
   const user = await getAuthUser(supabase)
+  timer.mark('auth')
   if (!user) return NextResponse.json({ error: 'Ikke logget ind' }, { status: 401 })
 
   // Runde 1 (parallelt): alt der kun kræver gruppe-id
@@ -109,6 +112,7 @@ export async function GET(
       .eq('user_id', user.id),
   ])
 
+  timer.mark('runde1')
   if (membersRes.error) return NextResponse.json({ error: membersRes.error.message }, { status: 500 })
   if (itemsRes.error) return NextResponse.json({ error: itemsRes.error.message }, { status: 500 })
   if (hiddenRes.error) return NextResponse.json({ error: hiddenRes.error.message }, { status: 500 })
@@ -168,6 +172,7 @@ export async function GET(
     getTmdbItems(items.map(i => ({ tmdb_id: i.tmdb_id, media_type: i.media_type }))),
   ])
 
+  timer.mark('runde2')
   const inspirationHidden = new Set((hidden || []).map(i => `${i.tmdb_id}-${i.media_type}`))
   const groupTmdbIds = new Set(items.map(i => `${i.tmdb_id}-${i.media_type}`))
 
@@ -194,6 +199,7 @@ export async function GET(
     ? await getTmdbItems(uniqueItems.map(i => ({ tmdb_id: i.tmdb_id, media_type: i.media_type })))
     : {}
   const activityTmdb = tmdbMap
+  timer.mark('runde3_tmdb')
 
   const inspirationProfileMap = Object.fromEntries(memberProfileRows.map(p => [p.id, p.name]))
 
@@ -306,6 +312,9 @@ export async function GET(
       progress,
     }
   })
+
+  timer.mark('byg_svar')
+  timer.done()
 
   return NextResponse.json({
     members: groupMembers,

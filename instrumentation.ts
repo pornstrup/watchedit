@@ -19,6 +19,21 @@ export async function register() {
       setInterval(keepWarm, 50_000).unref()
     }
 
+    // Diagnostik: log hvis Node's event loop har været blokeret (fx CPU-tungt arbejde),
+    // så alle requests samtidig ventede. Tjekkes hvert 10. sekund.
+    const { monitorEventLoopDelay } = await import('node:perf_hooks')
+    const loopDelay = monitorEventLoopDelay({ resolution: 20 })
+    loopDelay.enable()
+    setInterval(() => {
+      const maxMs = Math.round(loopDelay.max / 1e6)
+      if (maxMs >= 200) {
+        console.warn(`[slow] event loop blokeret: max=${maxMs}ms p99=${Math.round(loopDelay.percentile(99) / 1e6)}ms (seneste 10 s)`)
+      }
+      loopDelay.reset()
+    }, 10_000).unref()
+    const { SLOW_CALL_MS, SLOW_REQUEST_MS } = await import('./lib/timing')
+    console.log(`[timing] slow-logning aktiv (kald ≥ ${SLOW_CALL_MS} ms, requests ≥ ${SLOW_REQUEST_MS} ms, event loop ≥ 200 ms)`)
+
     const cron = (await import('node-cron')).default
     const base = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
 
